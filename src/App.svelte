@@ -18,7 +18,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="logo">◐</span>
-    <span class="brand-name">Macroscope</span>
+    <span class="brand-name">Parallax</span>
     <span class="brand-sub">M1 — Braids engine</span>
   </div>
   <ThemeSwitcher />
@@ -51,7 +51,7 @@
 
 <footer class="transport">
   <span class="readout">— BPM</span>
-  <span class="status">audio: <strong class:on={ready}>{ready ? "ready" : "idle"}</strong></span>
+  <span class="status">audio <span class="dot" aria-hidden="true">{ready ? "●" : "○"}</span> <strong>{ready ? "READY" : "idle"}</strong></span>
 </footer>
 
 <style>
@@ -144,8 +144,19 @@
     font-size: 0.75rem;
     color: var(--text-muted);
   }
-  .status strong { color: var(--text-dim); }
-  .status strong.on { color: var(--signal); }
+  /* Status uses shape + text-case + weight, not color alone — ready/idle is
+     readable in greyscale and remains accessible for colorblind users. */
+  .status { display: inline-flex; align-items: baseline; gap: 6px; }
+  .status .dot {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    color: var(--text);   /* same colour both states; the glyph carries the meaning */
+  }
+  .status strong {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--text);
+  }
 
   @media (max-width: 720px) {
     .grid {

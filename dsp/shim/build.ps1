@@ -1,4 +1,4 @@
-# Macroscope WASM build — compiles braids_shim.cc + minimal Braids/stmlib
+# Parallax WASM build — compiles braids_shim.cc + minimal Braids/stmlib
 # sources into public/braids.{js,wasm} for the AudioWorklet to consume.
 #
 # Requires emsdk to be installed at $env:USERPROFILE\emsdk (run once with

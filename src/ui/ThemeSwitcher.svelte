@@ -13,7 +13,10 @@
       aria-pressed={current === t.id}
       title={t.tagline}
       onclick={() => setTheme(t.id)}
-    >{t.name}</button>
+    >
+      <span class="marker" aria-hidden="true">{current === t.id ? "●" : "○"}</span>
+      {t.name}
+    </button>
   {/each}
 </div>
 
@@ -27,6 +30,9 @@
     border: var(--hairline-w) solid var(--hairline);
   }
   .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
     font-family: var(--font-mono);
     font-size: 0.72rem;
     text-transform: var(--label-case);
@@ -37,8 +43,15 @@
     transition: color var(--t-fast), background var(--t-fast);
   }
   .chip:hover { color: var(--text); }
+  .chip .marker {
+    font-size: 0.7em;
+    color: inherit;
+  }
+  /* Active uses both color AND a filled dot + bold weight, so the state is
+     still readable in greyscale (accessibility for colorblind users). */
   .chip.active {
     color: var(--bg);
     background: var(--signal);
+    font-weight: 600;
   }
 </style>

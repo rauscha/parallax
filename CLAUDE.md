@@ -1,4 +1,4 @@
-# Macroscope — project instructions for Claude Code
+# Parallax — project instructions for Claude Code
 
 Personal web synth: real Mutable Instruments **Braids** macro-oscillator in the browser, with a live oscilloscope, a per-model "explain the controls" panel, and a clickable 4-bar/4/4 staff. Engine sits behind a hot-swappable interface; everything routes as MIDI note numbers.
 
@@ -21,7 +21,7 @@ Personal web synth: real Mutable Instruments **Braids** macro-oscillator in the 
 - **Single responsive PWA.** No native wrapper.
 - **v1 scope** = MIDI file import/export + shareable URL links. **Deferred:** Web MIDI input, audio recording, insert FX.
 - **Snap-to-scale on by default.** Monophonic. Treble clef. 120 BPM default.
-- **Product name placeholder = "Macroscope"** (macro-oscillator + oscilloscope). Easy to rename.
+- **Product name = "Parallax"** (chosen 2026-05-31, replacing the working name "Macroscope"). The repo is `rauscha/parallax`.
 
 ## Trademark / licensing rule (important)
 - The code is MIT. Keep Émilie Gillet's copyright + MIT notice intact in every ported file. See `LICENSE-Braids.txt` (added in M1).

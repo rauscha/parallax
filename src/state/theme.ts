@@ -8,7 +8,7 @@ export const THEMES: { id: ThemeId; name: string; tagline: string }[] = [
   { id: "phosphor", name: "Phosphor",       tagline: "Vintage CRT. Green bloom. Scanlines." },
 ];
 
-const STORAGE_KEY = "macroscope:theme";
+const STORAGE_KEY = "parallax:theme";
 
 function readInitial(): ThemeId {
   if (typeof localStorage === "undefined") return "lab";

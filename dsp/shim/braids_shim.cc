@@ -1,4 +1,4 @@
-// Macroscope — extern "C" shim around braids::MacroOscillator.
+// Parallax — extern "C" shim around braids::MacroOscillator.
 // Compiled by Emscripten into a WASM module that the AudioWorklet loads.
 //
 // The shim itself is original code (MIT). It wraps Émilie Gillet's MIT Braids

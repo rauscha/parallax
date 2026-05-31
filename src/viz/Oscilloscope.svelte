@@ -6,7 +6,6 @@
   let wrap: HTMLDivElement;
   let raf = 0;
   let buf: Float32Array<ArrayBuffer> | null = null;
-  let heartbeatPhase = 0;
 
   // Edge-triggering parameters
   const HYSTERESIS = 0.02;   // must cross 0 by more than ±HYSTERESIS to count
@@ -113,20 +112,18 @@
     ctx2.lineCap = "round";
 
     if (idle) {
-      // Heartbeat sine
-      heartbeatPhase += 0.02;
-      ctx2.strokeStyle = glow;
-      ctx2.lineWidth = lineW * 2.5;
-      ctx2.beginPath();
-      for (let i = 0; i < W; ++i) {
-        const t = i / W;
-        const y = H / 2 + Math.sin(t * Math.PI * 4 + heartbeatPhase) * H * 0.04 * Math.exp(-Math.pow((t - 0.5) * 3, 2));
-        if (i === 0) ctx2.moveTo(i, y); else ctx2.lineTo(i, y);
-      }
-      ctx2.stroke();
+      // Idle: draw a static flat reference line at the zero axis. Earlier
+      // versions animated a "heartbeat" sine here, but a drifting waveform
+      // read as a glitch — a true scope shows a flat baseline when there's
+      // no signal, so we match that.
       ctx2.strokeStyle = traceColor;
       ctx2.lineWidth = lineW;
+      ctx2.globalAlpha = 0.45;
+      ctx2.beginPath();
+      ctx2.moveTo(0, H / 2);
+      ctx2.lineTo(W, H / 2);
       ctx2.stroke();
+      ctx2.globalAlpha = 1;
     } else {
       // Render twice: glow + core
       const drawTrace = () => {

@@ -26,13 +26,13 @@
 
 <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ttsTitle">
   <div class="card">
-    <h1 id="ttsTitle">Macroscope</h1>
+    <h1 id="ttsTitle">Parallax</h1>
     <p class="subtitle">A web playground for the sounds of Braids.</p>
     <button class="cta" onclick={start} disabled={starting}>
       {starting ? "Starting…" : "Tap to start audio"}
     </button>
     {#if error}
-      <p class="error" role="alert">Audio error: {error}</p>
+      <p class="error" role="alert"><strong>ERROR:</strong> {error}</p>
     {/if}
     <p class="fineprint">
       Browsers require a click before they'll make sound. One tap and you're in.

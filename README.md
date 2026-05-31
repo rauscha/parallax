@@ -1,4 +1,4 @@
-# Macroscope
+# Parallax
 
 A personal web playground for the **Mutable Instruments Braids** macro-oscillator. Real Braids DSP in the browser (Émilie Gillet's MIT C++ compiled to WebAssembly), a live oscilloscope, a per-model "what does this knob do *right now*" panel, and a 4-bar staff for noodling melodies.
 

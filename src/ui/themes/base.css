@@ -1,0 +1,99 @@
+/* Reset + base typography. Themes are in tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 0.875rem + 0.2vw, 16px);
+  line-height: 1.5;
+  letter-spacing: var(--label-tracking);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  overflow: hidden;     /* the app manages its own scroll regions */
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h1 { font-size: clamp(20px, 1.25rem + 0.5vw, 28px); }
+h2 { font-size: clamp(16px, 1rem + 0.3vw, 20px); }
+h3 { font-size: clamp(14px, 0.9rem + 0.2vw, 16px); }
+
+p { margin: 0; }
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Reusable label style */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: var(--label-case);
+  letter-spacing: var(--label-tracking);
+  color: var(--text-muted);
+}
+
+/* Tabular figures for readouts */
+.readout {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Hairlines */
+.hairline {
+  border: 0;
+  height: var(--hairline-w);
+  background: var(--hairline);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

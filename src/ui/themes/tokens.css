@@ -1,0 +1,152 @@
+/* Theme tokens — shared schema, three palettes.
+   Switch via [data-theme="lab"|"ko"|"phosphor"] on <html>.
+   Lab Instrument is the default. */
+
+:root,
+[data-theme="lab"] {
+  /* Surface tier */
+  --bg:               #0B0E11;
+  --surface:          #14181D;
+  --surface-raised:   #1C2228;
+  --hairline:         #2A323B;
+  --hairline-soft:    rgba(232, 237, 242, 0.06);
+
+  /* Text */
+  --text:             #E8EDF2;
+  --text-muted:       #9AA7B4;
+  --text-dim:         #5A6672;
+
+  /* Signal colors */
+  --signal:           #34E1C4;        /* teal — scope, active values */
+  --signal-dim:       rgba(52, 225, 196, 0.35);
+  --signal-glow:      rgba(52, 225, 196, 0.55);
+  --accent:           #FF4D8D;        /* magenta — record, active note */
+  --accent-dim:       rgba(255, 77, 141, 0.35);
+
+  /* Scope */
+  --scope-bg:         #07090B;
+  --scope-trace:      var(--signal);
+  --scope-trace-w:    1.5px;
+  --scope-glow:       var(--signal-glow);
+  --scope-grid:       rgba(52, 225, 196, 0.08);
+  --scope-persist:    0.85;           /* prior-frame alpha (closer to 1 = more persistence) */
+
+  /* Knob */
+  --knob-track:       #1C2228;
+  --knob-fill:        var(--signal);
+  --knob-pointer:     var(--text);
+  --knob-tick:        var(--text-dim);
+
+  /* Type stacks */
+  --font-heading:     "Space Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-sans:        "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono:        "JetBrains Mono", "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  /* Spacing / radii */
+  --radius-sm:        2px;
+  --radius-md:        4px;
+  --radius-lg:        8px;
+  --hairline-w:       1px;
+
+  /* Motion (gated by prefers-reduced-motion in base.css) */
+  --t-fast:           120ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-med:            240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-spring:         320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Letter-uppercase decisions per theme */
+  --label-case:       none;
+  --label-tracking:   0.02em;
+
+  color-scheme: dark;
+}
+
+/* —— K.O. Console — Teenage Engineering inspired —————————————————— */
+[data-theme="ko"] {
+  --bg:               #E9E5DC;
+  --surface:          #DAD4C7;
+  --surface-raised:   #C9C2B3;
+  --hairline:         #8C8779;
+  --hairline-soft:    rgba(0, 0, 0, 0.08);
+
+  --text:             #1A1A1A;
+  --text-muted:       #4A4A4A;
+  --text-dim:         #7A7A7A;
+
+  --signal:           #FF5A1F;        /* hot orange */
+  --signal-dim:       rgba(255, 90, 31, 0.35);
+  --signal-glow:      rgba(255, 90, 31, 0.45);
+  --accent:           #1A1A1A;        /* charcoal as "active" against the warm body */
+  --accent-dim:       rgba(26, 26, 26, 0.3);
+
+  /* Scope is a dark inset screen on a bright body */
+  --scope-bg:         #0D0D0D;
+  --scope-trace:      #FF8A4F;
+  --scope-trace-w:    1.2px;
+  --scope-glow:       rgba(255, 138, 79, 0.4);
+  --scope-grid:       rgba(255, 138, 79, 0.06);
+  --scope-persist:    0.78;
+
+  --knob-track:       #1A1A1A;
+  --knob-fill:        var(--signal);
+  --knob-pointer:     #E9E5DC;
+  --knob-tick:        #4A4A4A;
+
+  --label-case:       lowercase;       /* TE lowercase aesthetic */
+  --label-tracking:   0.04em;
+
+  color-scheme: light;
+}
+
+/* —— Phosphor — vintage CRT, green trace, scanlines ——————————————— */
+[data-theme="phosphor"] {
+  --bg:               #0A0805;
+  --surface:          #100C07;
+  --surface-raised:   #15110A;
+  --hairline:         #2C2418;
+  --hairline-soft:    rgba(125, 255, 107, 0.06);
+
+  --text:             #D5E6CC;
+  --text-muted:       #8FA682;
+  --text-dim:         #4F5A45;
+
+  --signal:           #7DFF6B;        /* phosphor green */
+  --signal-dim:       rgba(125, 255, 107, 0.4);
+  --signal-glow:      rgba(125, 255, 107, 0.65);
+  --accent:           #FFB347;        /* amber as secondary signal */
+  --accent-dim:       rgba(255, 179, 71, 0.35);
+
+  --scope-bg:         #050402;
+  --scope-trace:      var(--signal);
+  --scope-trace-w:    1.8px;
+  --scope-glow:       var(--signal-glow);
+  --scope-grid:       rgba(125, 255, 107, 0.06);
+  --scope-persist:    0.92;            /* heaviest persistence */
+
+  --knob-track:       #100C07;
+  --knob-fill:        var(--signal);
+  --knob-pointer:     var(--text);
+  --knob-tick:        var(--text-dim);
+
+  --font-heading:     "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans:        "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  --label-case:       uppercase;
+  --label-tracking:   0.08em;
+
+  color-scheme: dark;
+}
+
+/* Optional: scanlines layer for Phosphor (applied by ScopeFrame) */
+[data-theme="phosphor"] .scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.25) 3px
+  );
+  mix-blend-mode: multiply;
+}

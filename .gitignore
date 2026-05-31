@@ -1,0 +1,35 @@
+# Node / Vite
+node_modules/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+.vite/
+
+# Build outputs
+dsp/build/
+dsp/vendor/eurorack/.git/
+
+# Emscripten cache (if it ends up in-tree)
+.emscripten_cache/
+.emscripten_ports/
+emsdk/
+
+# Env / local
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Claude Code local settings (project-scoped)
+# .claude/settings.local.json is kept committed for the overnight allowlist
+.claude/scheduled_tasks.lock
+.claude/cache/

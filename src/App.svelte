@@ -2,13 +2,15 @@
   import ThemeSwitcher from "./ui/ThemeSwitcher.svelte";
   import TapToStart from "./ui/TapToStart.svelte";
   import ModelPicker from "./ui/ModelPicker.svelte";
-  import BasicParamPanel from "./ui/BasicParamPanel.svelte";
+  import ParamPanel from "./ui/ParamPanel.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
+  import Spectrum from "./viz/Spectrum.svelte";
   import { audioReadyStore } from "./state/stores";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
+  let viz = $state<"scope" | "spectrum">("scope");
 </script>
 
 {#if !ready}
@@ -25,15 +27,25 @@
 </header>
 
 <main class="grid">
-  <section class="region scope" aria-label="Oscilloscope">
-    <Oscilloscope />
+  <section class="region scope" aria-label="Visualizer">
+    <div class="viz-toggle" role="group" aria-label="Visualizer mode">
+      <button class="viz-btn" class:active={viz === "scope"} aria-pressed={viz === "scope"}
+        onclick={(e) => { viz = "scope"; e.currentTarget.blur(); }}>SCOPE</button>
+      <button class="viz-btn" class:active={viz === "spectrum"} aria-pressed={viz === "spectrum"}
+        onclick={(e) => { viz = "spectrum"; e.currentTarget.blur(); }}>SPECTRUM</button>
+    </div>
+    {#if viz === "scope"}
+      <Oscilloscope />
+    {:else}
+      <Spectrum />
+    {/if}
   </section>
 
   <section class="region controls" aria-label="Synth controls">
     <div class="region-label">Controls</div>
     <ModelPicker />
     <div class="divider"></div>
-    <BasicParamPanel />
+    <ParamPanel />
     <div class="divider"></div>
     <KeyboardHarness />
   </section>
@@ -100,7 +112,7 @@
     grid-template-areas:
       "scope    controls"
       "explain  controls"
-      "staff    staff";
+      "staff    controls";
   }
 
   .region {
@@ -110,6 +122,28 @@
     position: relative;
   }
   .scope    { grid-area: scope; background: var(--scope-bg); padding: 0; overflow: hidden; }
+  .viz-toggle {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    display: flex; gap: 2px;
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+  }
+  .viz-btn {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: calc(var(--radius-sm) - 2px);
+    color: var(--text-dim);
+    transition: color var(--t-fast), background var(--t-fast);
+  }
+  .viz-btn.active {
+    background: var(--signal);
+    color: var(--bg);
+    font-weight: 600;
+  }
   .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }
   .divider  { height: 1px; background: var(--hairline-soft); margin: 4px 0; }
   .explain  { grid-area: explain; }

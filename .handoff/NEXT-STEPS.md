@@ -1,42 +1,42 @@
 # Parallax — running next steps
 
-The single prioritized backlog. `SESSION-HANDOFF.md` is the per-session digest; **this
-file persists across sessions**. The full architecture / roadmap spec lives in the plan
-file: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`.
+The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
 Last reconciled: 2026-05-31 (desktop).
 
-## Now — M2: synth control surface
-- [ ] Auto-generate knobs from `ISynthEngine.getParameterSchema()` (TIMBRE / COLOR / etc.)
-- [ ] Custom rotary knob component with vertical-drag interaction *(default — see below)*
-- [ ] Replace the stub dropdown picker with: 4-char-code chip + prev/next steppers +
-      searchable, family-grouped model list *(default — see below)*
-- [ ] Spectrum view alongside the oscilloscope
-- [ ] Tag `v0.3.0-m2`, push
+## Now — act on the deep review (the v0.3.0-m2 polish gate)
+Ordered most-important first.
 
-## Soon
-- [ ] Explicit eyeball of the post-M1 visual fixes (audio was confirmed this session; the
-      UI was only seen in passing): Parallax branding, `audio ● READY`, theme chip
-      `●`/`○` markers, flat idle scope line.
+**P0 (do first):**
+- [ ] **Move the repo OUT of Google Drive** and sync via git push/pull only. Drive is syncing `.git` → cross-machine corruption/loss risk; it's why the M2 work nearly stranded. *Your action; §2.1.*
+- [ ] Surface WASM load failures instead of hanging silently forever (timeout + visible error). *§2.2 · `BraidsEngine.ts:64-71`, `braids-worklet.js:66-73`*
+- [ ] Stop stuck notes on focus loss (window blur/visibilitychange → `allNotesOff`; track held MIDI by key code). *§2.3 · `KeyboardHarness.svelte`*
 
-## Later milestones (per plan file — not yet broken down here)
-- Sequencer + clickable 4-bar / 4/4 staff (Tone.js Transport/Part, custom SVG notation).
-- MIDI file import/export · shareable URL links (lz-string → hash) · preset library (idb-keyval).
-- Theme polish across all three.
+**P1:**
+- [ ] **Decide knob vs slider** — sliders shipped; the vertical-drag Knob is built but parked (commented out in ParamPanel). Ship it compact or formally defer + fix the "auto-knob" wording. *§2.7*
+- [ ] Define missing CSS tokens `--surface-sunken` / `--signal-deep` in all 3 themes (picker selection is invisible without them); verify in browser. *§2.4 · `tokens.css`*
+- [ ] Engine authenticity pass (shim): reorder lo-fi chain (crush→waveshape, quadratic SIGN), port + gate the AD envelope, implement/remove DRIFT; rebuild WASM; re-listen. *§2.5 · `braids_shim.cc`*
+- [ ] Audio reliability: AudioContext resume on tab-return; fix envelope ramp anchoring (`cancelAndHoldAtTime`) before M3. *§2.6 · `AudioEngine.ts`, `BraidsEngine.ts`*
+- [ ] ModelPicker keyboard nav (arrow/enter/escape) + ≥44px touch targets + interim tappable note strip for phone. *§2.7*
+- [ ] Coalesce the lo-fi slider `postMessage` flood (bits/rate/sign/drift). *§2.9 · `ParamPanel.svelte`*
+- [ ] Make the hero glow: real (gated) scope bloom + breathing idle + boot sweep; subtle grain; fix `--text-dim` + K.O. orange contrast; apply `--t-spring` on model change. *§2.8, §2.10, §5*
+- [ ] Then re-verify in a browser and tag `v0.3.0-m2`, push.
 
-## Open decisions (fold-in from PENDING-DECISIONS)
-1. **M2 interaction defaults** — will build with these unless changed:
-   vertical-drag rotary knobs (pro-audio standard); model picker = 4-char chip +
-   prev/next + searchable family-grouped list.
-2. **4-char model codes** for pictogram glyphs (`SQR-`, `SAW-`, `SYN-Q`, `SYN-W`,
-   `SWx3`, `SQx3`, `TRx3`, `SWRM`) — purely cosmetic, rename freely in
-   `src/data/braids-models.ts`.
+## Soon (hygiene + smaller catches — deep review §4)
+- [ ] Security hardening: CSP `public/_headers`; self-host fonts; delete dead `public/icons.svg`; gitignore `dist/`; optional git-secrets hook.
+- [ ] Wire the central stores (`patchStore`/`engineIdStore`) as the first move of M3 so share-URLs/presets/undo "fall out for free."
+- [ ] Smaller bugs: pitch-bend re-baseline, init-failure node/listener leak, scope degenerate-frame clamp, future-note "panic", octave-shift-while-held stranded notes.
+
+## Later milestones (per plan file)
+- **M3** — Sequencer + clickable 4-bar/4-4 staff (Tone.Transport/Part, custom SVG notation, snap-to-scale, playhead + loop).
+- **M4** — Explain panel (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep).
+- **M5** — v1 finish: MIDI file import/export · shareable URL links (lz-string→hash) · presets (idb-keyval) · PWA install/offline · mobile pass · finalize all 3 themes · delight (patch postcard).
+- **M6 (optional)** — 2nd engine (Plaits / Web-MIDI-out) to prove hot-swap.
 
 ## Deferred (do not quietly add)
-Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine.
+Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
-- **2026-05-31 (desktop):** audio sanity-listen confirmed (sounds great across families);
-  dropdown focus bug fixed (`0d312e0`); Tailscale HTTPS remote-testing setup (`4d203ad`).
-- **2026-05-31 (laptop, overnight):** M0 + M1 shipped (`v0.1.0-m0`, `v0.2.0-m1`);
-  Macroscope → Parallax rename; colorblind-safe UI pass; scope idle flat-line fix.
+- **2026-05-31 (desktop):** Recovered the M2 control surface from an uncommitted GDrive-synced state → committed/pushed (`d6389c8`): schema-driven ParamPanel (sliders; Knob parked), searchable family-grouped ModelPicker, Spectrum view, SCOPE/SPECTRUM toggle, teal favicon. Ran the deep review → `reviews/2026-05-31-deep-review.md` (`890fb2f`). Deliberately **not** tagged v0.3.0-m2 (polish gate above). Discovered repo syncs via GDrive incl `.git`.
+- **2026-05-31 (desktop, earlier):** audio sanity-listen confirmed; dropdown focus bug fixed (`0d312e0`); Tailscale HTTPS remote-testing (`4d203ad`).
+- **2026-05-31 (laptop, overnight):** M0 + M1 shipped (`v0.1.0-m0`, `v0.2.0-m1`); Macroscope → Parallax rename; colorblind-safe UI; scope idle flat-line fix.

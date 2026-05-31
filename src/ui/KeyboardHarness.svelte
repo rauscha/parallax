@@ -67,13 +67,35 @@
     e.preventDefault();
   }
 
+  // If focus leaves the window (alt-tab, click in another app, tab hidden)
+  // we never see the keyup — without this, notes get stranded "held" and
+  // play indefinitely. Release every held note and let the engine know.
+  function releaseAllHeld() {
+    if (held.size === 0) return;
+    const eng = audioEngine.currentEngine;
+    if (eng) {
+      for (const midi of held) eng.noteOff(midi);
+      eng.allNotesOff();   // defence in depth — also clears the gain ramp
+    }
+    held = new Set();
+    activeNotesStore.set(held);
+  }
+
+  function onVisibilityChange() {
+    if (document.visibilityState === "hidden") releaseAllHeld();
+  }
+
   onMount(() => {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", releaseAllHeld);
+    document.addEventListener("visibilitychange", onVisibilityChange);
   });
   onDestroy(() => {
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
+    window.removeEventListener("blur", releaseAllHeld);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
   });
 </script>
 

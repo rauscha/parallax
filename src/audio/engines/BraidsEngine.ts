@@ -4,6 +4,22 @@ import type {
 } from "../types";
 import { BRAIDS_MODELS, type BraidsModel } from "../../data/braids-models";
 
+// Anchor an AudioParam at its current scheduled value at time `t`, then clear
+// future automation. Native cancelAndHoldAtTime preserves the ramp value
+// exactly at `t`; without it (Firefox), a fast retrigger could snap to a stale
+// snapshot of .value, causing audible clicks. The fallback matches the old
+// behaviour, so this is a strict no-regression upgrade.
+function cancelAndHold(param: AudioParam, t: number): void {
+  const p = param as AudioParam & { cancelAndHoldAtTime?: (t: number) => void };
+  if (typeof p.cancelAndHoldAtTime === "function") {
+    p.cancelAndHoldAtTime(t);
+  } else {
+    const v = param.value;
+    param.cancelScheduledValues(t);
+    param.setValueAtTime(v, t);
+  }
+}
+
 /**
  * BraidsEngine — wraps the Braids WASM AudioWorklet behind the ISynthEngine
  * interface. The worklet handles all DSP; this class manages the AudioNode
@@ -128,8 +144,7 @@ export class BraidsEngine implements ISynthEngine {
     // Envelope: short attack ramp to (v * gain), then optional decay sustain.
     const target = v * this.params.gain;
     const g = this.gainNode.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
+    cancelAndHold(g, t);
     g.linearRampToValueAtTime(target, t + this.params.attack);
     // Hold until noteOff. (For drum/percussion models we may want auto-release
     // — handled in M2 once the AD envelope wiring is exposed.)
@@ -140,8 +155,7 @@ export class BraidsEngine implements ISynthEngine {
     if (this.activeMidi !== null && this.activeMidi !== midi) return;
     const t = opts.time ?? this.ctx.currentTime;
     const g = this.gainNode.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
+    cancelAndHold(g, t);
     g.linearRampToValueAtTime(0, t + this.params.release);
     this.activeMidi = null;
     if (this.node) this.node.port.postMessage({ type: "gateOff" });
@@ -151,8 +165,7 @@ export class BraidsEngine implements ISynthEngine {
     if (!this.ctx || !this.gainNode) return;
     const t = this.ctx.currentTime;
     const g = this.gainNode.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
+    cancelAndHold(g, t);
     g.linearRampToValueAtTime(0, t + 0.04);
     this.activeMidi = null;
   }

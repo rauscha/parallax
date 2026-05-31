@@ -40,7 +40,19 @@ export class AudioEngine {
 
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this._started = true;
+
+    // Some browsers (Chrome/Edge on backgrounded tabs, iOS Safari, etc.) auto-
+    // suspend the AudioContext when the tab is hidden. Without this listener
+    // the user comes back to a silent app even after the page is visible again.
+    document.addEventListener("visibilitychange", this.onVisibility);
   }
+
+  private onVisibility = () => {
+    if (!this.ctx) return;
+    if (document.visibilityState === "visible" && this.ctx.state === "suspended") {
+      this.ctx.resume().catch(() => { /* user gesture may be required — TapToStart will retry */ });
+    }
+  };
 
   /** Hot-swap the active engine. Old engine is disposed after the new one is
    *  in place; both connections are routed through masterGain. */
@@ -74,6 +86,7 @@ export class AudioEngine {
   }
 
   async dispose(): Promise<void> {
+    document.removeEventListener("visibilitychange", this.onVisibility);
     if (this._engine) await this._engine.dispose();
     this._engine = null;
     if (this.ctx) await this.ctx.close();

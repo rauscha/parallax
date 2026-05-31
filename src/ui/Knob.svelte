@@ -124,9 +124,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    width: 5.5rem;
-    padding: 0.5rem;
+    gap: 0.1rem;
+    width: 3.6rem;
+    padding: 0.2rem;
     border-radius: var(--radius-md);
     cursor: ns-resize;
     touch-action: none;   /* vertical drag must not scroll the page on mobile */
@@ -139,13 +139,13 @@
   }
   .knob-label {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.58rem;
     letter-spacing: 0.08em;
     color: var(--text-dim);
   }
   .dial {
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
   .track {
     fill: none;
@@ -174,7 +174,7 @@
   }
   .knob-value {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     color: var(--text);
     font-variant-numeric: tabular-nums;
   }

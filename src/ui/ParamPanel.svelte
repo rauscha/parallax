@@ -2,11 +2,7 @@
   import { audioEngine } from "../audio/AudioEngine";
   import { audioReadyStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
-  // KNOBS (parked): vertical-drag rotary knobs. Liked the feel, but they eat too
-  // much vertical space for the controls column. Back to sliders for now.
-  // To bring knobs back: uncomment this import + the knob block in the markup,
-  // and comment out the slider block. See Knob.svelte.
-  // import Knob from "./Knob.svelte";
+  import Knob from "./Knob.svelte";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
@@ -80,44 +76,17 @@
   {#each groups as group (group.id)}
     <div class="group">
       <div class="group-label">{group.label}</div>
-      {#each group.specs as spec (spec.id)}
-        {@const value = values[spec.id] ?? spec.default}
-        <label class="row">
-          <span class="ctl-label">{spec.label}</span>
-          <input
-            type="range"
-            min={spec.min}
-            max={spec.max}
-            step={stepFor(spec)}
-            {value}
-            disabled={!ready}
-            aria-label={spec.label}
-            oninput={(e) => onChange(spec.id, +e.currentTarget.value)}
+      <div class="knob-row">
+        {#each group.specs as spec (spec.id)}
+          <Knob
+            {spec}
+            value={values[spec.id] ?? spec.default}
+            onchange={(v) => onChange(spec.id, v)}
           />
-          <span class="readout">{readout(spec, value)}</span>
-        </label>
-      {/each}
+        {/each}
+      </div>
     </div>
   {/each}
-
-  <!--
-    KNOBS (parked, per request) — vertical-drag rotary version. Same engine
-    binding as the sliders above. To re-enable: uncomment the `import Knob`
-    line at the top of the <script>, uncomment this block, comment out the
-    slider block above, and add this rule back to <style>:
-        .knob-row { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-
-    {#each groups as group (group.id)}
-      <div class="group">
-        <div class="group-label">{group.label}</div>
-        <div class="knob-row">
-          {#each group.specs as spec (spec.id)}
-            <Knob {spec} value={values[spec.id] ?? spec.default} onchange={(v) => onChange(spec.id, v)} />
-          {/each}
-        </div>
-      </div>
-    {/each}
-  -->
 </section>
 
 <style>
@@ -140,33 +109,9 @@
     padding-bottom: 4px;
     border-bottom: var(--hairline-w) solid var(--hairline-soft);
   }
-  .row {
-    display: grid;
-    grid-template-columns: 64px 1fr 60px;
-    align-items: center;
-    gap: 8px;
-  }
-  .ctl-label {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .readout {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-  input[type="range"] {
-    width: 100%;
-    accent-color: var(--signal);
-    cursor: pointer;
-  }
-  input[type="range"]:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .knob-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem;
   }
 </style>

@@ -179,7 +179,7 @@
   .search:disabled { opacity: 0.4; }
 
   .list {
-    max-height: 220px;
+    max-height: 160px;
     overflow-y: auto;
     border: var(--hairline-w) solid var(--hairline-soft);
     border-radius: var(--radius-md);

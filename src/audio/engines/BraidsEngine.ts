@@ -45,12 +45,25 @@ export class BraidsEngine implements ISynthEngine {
   async init(ctx: AudioContext): Promise<void> {
     this.ctx = ctx;
 
+    await ctx.audioWorklet.addModule("/braids-worklet.js");
+
     // Fetch the wasm binary on the main thread and hand it to the worklet via
     // processorOptions — sidesteps URL resolution quirks inside the worklet.
-    await ctx.audioWorklet.addModule("/braids-worklet.js");
-    const wasmResp = await fetch("/braids.wasm");
-    if (!wasmResp.ok) throw new Error(`Failed to load braids.wasm: ${wasmResp.status}`);
-    const wasmBinary = await wasmResp.arrayBuffer();
+    // AbortController guards against a hung connection (the file is ~150KB; if
+    // it isn't here in 5s something is structurally wrong, not just slow).
+    const fetchCtl = new AbortController();
+    const fetchTimer = setTimeout(() => fetchCtl.abort(), 5000);
+    let wasmBinary: ArrayBuffer;
+    try {
+      const wasmResp = await fetch("/braids.wasm", { signal: fetchCtl.signal });
+      if (!wasmResp.ok) throw new Error(`Failed to load braids.wasm: HTTP ${wasmResp.status}`);
+      wasmBinary = await wasmResp.arrayBuffer();
+    } catch (e) {
+      if ((e as Error).name === "AbortError") throw new Error("Timed out fetching /braids.wasm after 5s. Is the file deployed and reachable?");
+      throw e;
+    } finally {
+      clearTimeout(fetchTimer);
+    }
 
     this.node = new AudioWorkletNode(ctx, "braids", {
       numberOfInputs: 0,
@@ -60,14 +73,27 @@ export class BraidsEngine implements ISynthEngine {
     });
 
     // Wait for the worklet's "ready" message so we know WASM is up before any
-    // shape changes go through.
+    // shape changes go through. Race against a timeout so a silent worklet
+    // failure surfaces an error instead of hanging the Tap-to-start screen.
     await new Promise<void>((resolve, reject) => {
-      const onMsg = (e: MessageEvent) => {
-        if (e.data?.type === "ready") { this.node!.port.removeEventListener("message", onMsg); resolve(); }
-        if (e.data?.type === "error") { this.node!.port.removeEventListener("message", onMsg); reject(new Error(e.data.message)); }
+      const port = this.node!.port;
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        port.removeEventListener("message", onMsg);
+        clearTimeout(readyTimer);
+        fn();
       };
-      this.node!.port.addEventListener("message", onMsg);
-      this.node!.port.start();
+      const onMsg = (e: MessageEvent) => {
+        if (e.data?.type === "ready") finish(() => resolve());
+        else if (e.data?.type === "error") finish(() => reject(new Error(e.data.message)));
+      };
+      port.addEventListener("message", onMsg);
+      port.start();
+      const readyTimer = setTimeout(() => {
+        finish(() => reject(new Error("Braids WASM did not signal ready within 10s — the audio worklet failed to initialise silently. Reload to retry.")));
+      }, 10_000);
     });
 
     // Output gain — silenced at rest; ramped up on noteOn, ramped down on noteOff.

@@ -27,8 +27,17 @@
     return offset === undefined ? null : 12 * octave + offset;
   }
 
+  // Don't hijack the keyboard while a form control is focused (dropdown typeahead,
+  // and the model-search field arriving in M2 would both fight the note keys otherwise).
+  function isEditableTarget(e: KeyboardEvent): boolean {
+    const t = e.target as HTMLElement | null;
+    if (!t) return false;
+    return t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+  }
+
   function onKeyDown(e: KeyboardEvent) {
     if (!ready) return;
+    if (isEditableTarget(e)) return;
     if (e.repeat) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.code === "Minus" || e.code === "BracketLeft") { octave = Math.max(0, octave - 1); e.preventDefault(); return; }

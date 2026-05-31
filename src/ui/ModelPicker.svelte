@@ -34,7 +34,14 @@
   </div>
   <div class="name">{current.name}</div>
   <div class="desc">{current.description}</div>
-  <select class="dropdown" bind:value={modelIndex} onchange={() => setModel(modelIndex)} disabled={!ready}>
+  <!-- blur on commit: a focused <select> eats held note-keys as native typeahead,
+       cycling through models. Dropping focus returns the keyboard to playing. -->
+  <select
+    class="dropdown"
+    bind:value={modelIndex}
+    onchange={(e) => { setModel(modelIndex); e.currentTarget.blur(); }}
+    disabled={!ready}
+  >
     {#each BRAIDS_MODELS as m (m.index)}
       <option value={m.index}>{m.code} — {m.name}</option>
     {/each}

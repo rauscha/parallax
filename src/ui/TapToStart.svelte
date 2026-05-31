@@ -1,6 +1,6 @@
 <script lang="ts">
   import { audioEngine } from "../audio/AudioEngine";
-  import { TestToneEngine } from "../audio/engines/TestToneEngine";
+  import { BraidsEngine } from "../audio/engines/BraidsEngine";
   import { audioReadyStore } from "../state/stores";
 
   let starting = $state(false);
@@ -12,10 +12,10 @@
     error = null;
     try {
       await audioEngine.start();
-      await audioEngine.useEngine(new TestToneEngine());
-      // Confirmation beep — short A440 so we know the chain is live end-to-end.
+      await audioEngine.useEngine(new BraidsEngine());
+      // Confirmation strike — short A440 so we know the chain is live end-to-end.
       audioEngine.currentEngine?.noteOn(69, { velocity: 0.5 });
-      setTimeout(() => audioEngine.currentEngine?.noteOff(69), 220);
+      setTimeout(() => audioEngine.currentEngine?.noteOff(69), 260);
       audioReadyStore.set(true);
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);

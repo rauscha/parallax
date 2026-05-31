@@ -8,7 +8,8 @@ npm-debug.log*
 
 # Build outputs
 dsp/build/
-dsp/vendor/eurorack/.git/
+public/braids.wasm
+public/braids.js
 
 # Emscripten cache (if it ends up in-tree)
 .emscripten_cache/

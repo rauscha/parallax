@@ -1,18 +1,14 @@
 <script lang="ts">
   import ThemeSwitcher from "./ui/ThemeSwitcher.svelte";
   import TapToStart from "./ui/TapToStart.svelte";
+  import ModelPicker from "./ui/ModelPicker.svelte";
+  import BasicParamPanel from "./ui/BasicParamPanel.svelte";
+  import KeyboardHarness from "./ui/KeyboardHarness.svelte";
+  import Oscilloscope from "./viz/Oscilloscope.svelte";
   import { audioReadyStore } from "./state/stores";
-  import { audioEngine } from "./audio/AudioEngine";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
-
-  function tapNote(midi: number) {
-    const e = audioEngine.currentEngine;
-    if (!e) return;
-    e.noteOn(midi, { velocity: 0.7 });
-    setTimeout(() => e.noteOff(midi), 280);
-  }
 </script>
 
 {#if !ready}
@@ -23,39 +19,33 @@
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Macroscope</span>
-    <span class="brand-sub">M0 scaffold</span>
+    <span class="brand-sub">M1 — Braids engine</span>
   </div>
   <ThemeSwitcher />
 </header>
 
 <main class="grid">
   <section class="region scope" aria-label="Oscilloscope">
-    <div class="region-label">Scope</div>
-    <div class="placeholder">Waveform appears here (M1)</div>
+    <Oscilloscope />
   </section>
 
   <section class="region controls" aria-label="Synth controls">
     <div class="region-label">Controls</div>
-    <div class="placeholder">
-      <p>Model picker, TIMBRE/COLOR, envelope, lo-fi (M2)</p>
-      <div class="test-buttons">
-        <span class="label">Test:</span>
-        <button class="key" onclick={() => tapNote(60)} disabled={!ready}>C4</button>
-        <button class="key" onclick={() => tapNote(64)} disabled={!ready}>E4</button>
-        <button class="key" onclick={() => tapNote(67)} disabled={!ready}>G4</button>
-        <button class="key" onclick={() => tapNote(69)} disabled={!ready}>A4</button>
-      </div>
-    </div>
+    <ModelPicker />
+    <div class="divider"></div>
+    <BasicParamPanel />
+    <div class="divider"></div>
+    <KeyboardHarness />
   </section>
 
   <section class="region explain" aria-label="Explain panel">
     <div class="region-label">Explain</div>
-    <div class="placeholder">Per-model TIMBRE/COLOR explanation (M4)</div>
+    <div class="placeholder">Per-model TIMBRE/COLOR explanation lands here in M4.</div>
   </section>
 
   <section class="region staff" aria-label="Melody staff">
     <div class="region-label">Staff</div>
-    <div class="placeholder">4-bar / 4-4 click-to-place melody (M3)</div>
+    <div class="placeholder">4-bar / 4-4 click-to-place melody lands here in M3.</div>
   </section>
 </main>
 
@@ -119,8 +109,9 @@
     overflow: auto;
     position: relative;
   }
-  .scope    { grid-area: scope; background: var(--scope-bg); }
-  .controls { grid-area: controls; }
+  .scope    { grid-area: scope; background: var(--scope-bg); padding: 0; overflow: hidden; }
+  .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }
+  .divider  { height: 1px; background: var(--hairline-soft); margin: 4px 0; }
   .explain  { grid-area: explain; }
   .staff    { grid-area: staff; }
 
@@ -140,27 +131,6 @@
     flex-direction: column;
     gap: 12px;
   }
-  .scope .placeholder { color: var(--signal-dim); }
-
-  .test-buttons {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .key {
-    padding: 6px 12px;
-    background: var(--surface);
-    border: var(--hairline-w) solid var(--hairline);
-    border-radius: var(--radius-md);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    color: var(--text);
-    transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
-  }
-  .key:hover:not(:disabled) { border-color: var(--signal); color: var(--signal); }
-  .key:active:not(:disabled) { transform: scale(0.96); }
-  .key:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .transport {
     flex: 0 0 auto;

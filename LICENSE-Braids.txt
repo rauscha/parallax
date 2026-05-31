@@ -1,0 +1,47 @@
+Attribution for vendored DSP code
+==================================
+
+The directories `dsp/vendor/braids/` and `dsp/vendor/stmlib/` contain source
+code from Émilie Gillet's Mutable Instruments firmware, vendored from:
+
+  https://github.com/pichenettes/eurorack
+
+Specifically:
+  - braids/ — the Braids macro-oscillator firmware
+                  (eurorack/braids/, MIT)
+  - stmlib/ — shared DSP utilities used by Braids
+                  (github.com/pichenettes/stmlib, MIT — vendored as a git
+                  submodule of eurorack; we ship only the DSP-relevant subset)
+
+All retained files preserve their original Émilie Gillet copyright headers and
+the MIT license text below applies to every file under `dsp/vendor/`.
+
+This project is not affiliated with or endorsed by Mutable Instruments.
+"Mutable Instruments" and "Braids" are trademarks of Émilie Gillet and are not
+used in the user-facing branding of this project (see CLAUDE.md).
+
+---
+
+The MIT License (MIT)
+
+Copyright (c) 2012-2018 Émilie Gillet (emilie.o.gillet@gmail.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+See http://creativecommons.org/licenses/MIT/ for more information.

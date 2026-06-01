@@ -122,7 +122,7 @@
     font-family: var(--font-mono);
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--signal);
+    color: var(--signal-ink);
     letter-spacing: 0.05em;
   }
   .idx {
@@ -214,7 +214,7 @@
     color: var(--text);
   }
   .item.selected .item-code {
-    color: var(--signal);
+    color: var(--signal-ink);
     font-weight: 600;
   }
   .item.selected .item-code::before {

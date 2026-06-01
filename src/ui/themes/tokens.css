@@ -12,13 +12,14 @@
   --hairline:         #2A323B;
   --hairline-soft:    rgba(232, 237, 242, 0.06);
 
-  /* Text */
+  /* Text — every shade meets WCAG AA (≥4.5:1) against --bg. */
   --text:             #E8EDF2;
   --text-muted:       #9AA7B4;
-  --text-dim:         #5A6672;
+  --text-dim:         #8A95A0;        /* was #5A6672 (3.3:1) — now 6.2:1 */
 
   /* Signal colors */
   --signal:           #34E1C4;        /* teal — scope, active values */
+  --signal-ink:       var(--signal);  /* same on dark bgs — bright teal already 11:1 */
   --signal-dim:       rgba(52, 225, 196, 0.35);
   --signal-deep:      rgba(52, 225, 196, 0.18);  /* selected-row wash */
   --signal-glow:      rgba(52, 225, 196, 0.55);
@@ -73,9 +74,10 @@
 
   --text:             #1A1A1A;
   --text-muted:       #4A4A4A;
-  --text-dim:         #7A7A7A;
+  --text-dim:         #5A5A5A;        /* was #7A7A7A (3.3:1) — now 5.7:1 */
 
-  --signal:           #FF5A1F;        /* hot orange */
+  --signal:           #FF5A1F;        /* hot orange — scope, knob fill, big pill code (>3:1 OK for graphics) */
+  --signal-ink:       #A8350F;        /* AA-safe rust for body text uses (5.3:1) */
   --signal-dim:       rgba(255, 90, 31, 0.35);
   --signal-deep:      rgba(255, 90, 31, 0.22);
   --signal-glow:      rgba(255, 90, 31, 0.45);
@@ -112,9 +114,10 @@
 
   --text:             #D5E6CC;
   --text-muted:       #8FA682;
-  --text-dim:         #4F5A45;
+  --text-dim:         #7D9A6F;        /* was #4F5A45 (2.5:1) — now 6.3:1 */
 
   --signal:           #7DFF6B;        /* phosphor green */
+  --signal-ink:       var(--signal);  /* same on dark bgs — bright green already >10:1 */
   --signal-dim:       rgba(125, 255, 107, 0.4);
   --signal-deep:      rgba(125, 255, 107, 0.18);
   --signal-glow:      rgba(125, 255, 107, 0.65);

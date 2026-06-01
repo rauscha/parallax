@@ -58,7 +58,7 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
   }
   h1 {
-    color: var(--signal);
+    color: var(--signal-ink);
     margin-bottom: 4px;
     font-size: clamp(28px, 1.5rem + 1vw, 36px);
   }

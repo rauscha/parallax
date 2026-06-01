@@ -123,7 +123,7 @@
     color: var(--text-muted);
   }
   .readout strong {
-    color: var(--signal);
+    color: var(--signal-ink);
   }
   kbd {
     font-family: var(--font-mono);

@@ -2,13 +2,12 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-05-31 (desktop).
+Last reconciled: 2026-06-01 (desktop).
 
 ## Now — act on the deep review (the v0.3.0-m2 polish gate)
-Ordered most-important first. **The evening batch (both P0s + two P1s) was browser-verified this session — all good.** Four P1s remain, then a final eyeball + tag.
+Ordered most-important first. **Engine authenticity (§2.5) shipped and ear-verified this session.** Three P1s remain — all UI/CSS — then a final eyeball + tag.
 
 **P1 (remaining):**
-- [ ] Engine authenticity pass (shim): reorder lo-fi chain (crush→waveshape, quadratic SIGN), port + gate the AD envelope, implement/remove DRIFT; rebuild WASM; re-listen. *§2.5 · `braids_shim.cc`*
 - [ ] ModelPicker keyboard nav (arrow/enter/escape) + ≥44px touch targets + interim tappable note strip for phone. *§2.7*
 - [ ] Coalesce the lo-fi slider `postMessage` flood (bits/rate/sign/drift). *§2.9 · `ParamPanel.svelte`*
 - [ ] Make the hero glow: real (gated) scope bloom + breathing idle + boot sweep; subtle grain; fix `--text-dim` + K.O. orange contrast; apply `--t-spring` on model change. *§2.8, §2.10, §5*
@@ -21,7 +20,7 @@ Ordered most-important first. **The evening batch (both P0s + two P1s) was brows
 
 ## Later milestones (per plan file)
 - **M3** — Sequencer + clickable 4-bar/4-4 staff (Tone.Transport/Part, custom SVG notation, snap-to-scale, playhead + loop).
-- **M4** — Explain panel (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep).
+- **M4** — Explain panel (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the new shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Percussion/pluck/bell models need it; sustained tones must stay at 0.
 - **M5** — v1 finish: MIDI file import/export · shareable URL links (lz-string→hash) · presets (idb-keyval) · PWA install/offline · mobile pass · finalize all 3 themes · delight (patch postcard).
 - **M6 (optional)** — 2nd engine (Plaits / Web-MIDI-out) to prove hot-swap.
 
@@ -29,6 +28,8 @@ Ordered most-important first. **The evening batch (both P0s + two P1s) was brows
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-01 (desktop, morning — engine authenticity pass):** Closed §2.5 of the deep review. Rewrote the shim's render loop to mirror `braids.cc:282-292` — BITS at decimation hold instant → smoothed VCA → SIGN waveshape LAST on the crushed signal, with the firmware's quadratic mix taper. DRIFT now drives the vendored `VcoJitterSource` (was a no-op). The AD envelope is plumbed (`Envelope` class, triggered on strike, rendered per block) but all four modulation amounts default to 0 — per-model wiring waits for M4. New shim setters `braids_set_envelope_shape` + `braids_set_ad_amounts` and matching worklet messages are ready. WASM: 100,527 → 101,293 bytes. Ear-verified.
+  - `5c579e3` P1: engine authenticity pass — lo-fi reorder, quadratic SIGN, real DRIFT
 - **2026-05-31 (desktop, evening pt.2 — shipped live):** **Parallax is live → https://andrewrausch.com/parallax/** (GitHub Pages; auto-deploys on every push to `main`). Browser-verified the evening batch this session — picker selection visible, compact knobs, no stuck notes on blur, tab-return audio all good. **Hosting finalized: GitHub Pages, superseding the locked Cloudflare Pages** (domain already lived there; the one Cloudflare-only feature wanted — `_headers` CSP — moves to a `<meta>` tag). CLAUDE.md + plan + project memory updated to match.
   - `4e14c48` fix: load worklet/WASM via `import.meta.env.BASE_URL` so assets resolve under `/parallax/` (Vite `base=/parallax/` on build; dev/Tailscale stay at root)
   - `8f74a0f` ci: GitHub Actions Pages workflow + track prebuilt `public/braids.wasm`+`braids.js` so CI ships them without Emscripten

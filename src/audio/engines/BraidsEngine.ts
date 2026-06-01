@@ -61,7 +61,7 @@ export class BraidsEngine implements ISynthEngine {
   async init(ctx: AudioContext): Promise<void> {
     this.ctx = ctx;
 
-    await ctx.audioWorklet.addModule("/braids-worklet.js");
+    await ctx.audioWorklet.addModule(import.meta.env.BASE_URL + "braids-worklet.js");
 
     // Fetch the wasm binary on the main thread and hand it to the worklet via
     // processorOptions — sidesteps URL resolution quirks inside the worklet.
@@ -70,12 +70,15 @@ export class BraidsEngine implements ISynthEngine {
     const fetchCtl = new AbortController();
     const fetchTimer = setTimeout(() => fetchCtl.abort(), 5000);
     let wasmBinary: ArrayBuffer;
+    // Base-relative so it resolves under a sub-path deploy (e.g. /parallax/) as
+    // well as at the domain root. BASE_URL is "/" in dev, Vite's `base` in build.
+    const wasmUrl = import.meta.env.BASE_URL + "braids.wasm";
     try {
-      const wasmResp = await fetch("/braids.wasm", { signal: fetchCtl.signal });
+      const wasmResp = await fetch(wasmUrl, { signal: fetchCtl.signal });
       if (!wasmResp.ok) throw new Error(`Failed to load braids.wasm: HTTP ${wasmResp.status}`);
       wasmBinary = await wasmResp.arrayBuffer();
     } catch (e) {
-      if ((e as Error).name === "AbortError") throw new Error("Timed out fetching /braids.wasm after 5s. Is the file deployed and reachable?");
+      if ((e as Error).name === "AbortError") throw new Error(`Timed out fetching ${wasmUrl} after 5s. Is the file deployed and reachable?`);
       throw e;
     } finally {
       clearTimeout(fetchTimer);

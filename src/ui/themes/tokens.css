@@ -1,5 +1,5 @@
 /* Theme tokens — shared schema, three palettes.
-   Switch via [data-theme="lab"|"ko"|"phosphor"] on <html>.
+   Switch via [data-theme="lab"|"sandbox"|"phosphor"] on <html>.
    Lab Instrument is the default. */
 
 :root,
@@ -63,8 +63,8 @@
   color-scheme: dark;
 }
 
-/* —— K.O. Console — Teenage Engineering inspired —————————————————— */
-[data-theme="ko"] {
+/* —— Sandbox — Teenage Engineering inspired —————————————————————— */
+[data-theme="sandbox"] {
   --bg:               #E9E5DC;
   --surface:          #DAD4C7;
   --surface-raised:   #C9C2B3;
@@ -94,7 +94,7 @@
 
   --knob-track:       #1A1A1A;
   --knob-fill:        var(--signal);
-  --knob-pointer:     #E9E5DC;
+  --knob-pointer:     #1A1A1A;        /* dark indicator — was the bg colour, invisible on the warm body */
   --knob-tick:        #4A4A4A;
 
   --label-case:       lowercase;       /* TE lowercase aesthetic */

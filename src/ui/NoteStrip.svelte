@@ -12,21 +12,24 @@
    * interim surface; the M3 staff will own the canonical melody/playback state.
    */
 
-  // Pitch class metadata. `accidental` distinguishes black keys for styling
-  // (colour-blind safe: a different background tone + offset, not hue alone).
-  const NOTES: Array<{ name: string; offset: number; accidental: boolean }> = [
-    { name: "C",  offset: 0,  accidental: false },
-    { name: "C♯", offset: 1,  accidental: true  },
-    { name: "D",  offset: 2,  accidental: false },
-    { name: "D♯", offset: 3,  accidental: true  },
-    { name: "E",  offset: 4,  accidental: false },
-    { name: "F",  offset: 5,  accidental: false },
-    { name: "F♯", offset: 6,  accidental: true  },
-    { name: "G",  offset: 7,  accidental: false },
-    { name: "G♯", offset: 8,  accidental: true  },
-    { name: "A",  offset: 9,  accidental: false },
-    { name: "A♯", offset: 10, accidental: true  },
-    { name: "B",  offset: 11, accidental: false },
+  // Two-row piano layout: naturals on the bottom, accidentals floated above
+  // between their adjacent whites. 14-col grid → each white spans 2 cols,
+  // each black straddles the boundary between its neighbours.
+  const NATURALS: Array<{ name: string; offset: number; col: number }> = [
+    { name: "C", offset: 0,  col: 1  },
+    { name: "D", offset: 2,  col: 3  },
+    { name: "E", offset: 4,  col: 5  },
+    { name: "F", offset: 5,  col: 7  },
+    { name: "G", offset: 7,  col: 9  },
+    { name: "A", offset: 9,  col: 11 },
+    { name: "B", offset: 11, col: 13 },
+  ];
+  const ACCIDENTALS: Array<{ name: string; offset: number; col: number }> = [
+    { name: "C♯", offset: 1,  col: 2  },
+    { name: "D♯", offset: 3,  col: 4  },
+    { name: "F♯", offset: 6,  col: 8  },
+    { name: "G♯", offset: 8,  col: 10 },
+    { name: "A♯", offset: 10, col: 12 },
   ];
 
   let ready = $state(false);
@@ -117,13 +120,27 @@
   <div class="oct-label">oct&nbsp;<strong>{octave}</strong></div>
 
   <div class="chips">
-    {#each NOTES as note (note.offset)}
+    {#each ACCIDENTALS as note (note.offset)}
+      {@const midi = midiOf(note.offset)}
+      <button
+        class="chip black"
+        class:held={held.has(midi)}
+        disabled={!ready}
+        style="grid-row: 1; grid-column: {note.col} / span 2;"
+        aria-label="{note.name} octave {octave}"
+        onpointerdown={(e) => onChipDown(e, midi)}
+        onpointerup={onChipUp}
+        onpointercancel={onChipUp}
+        onpointerleave={onChipLeave}
+      >{note.name}</button>
+    {/each}
+    {#each NATURALS as note (note.offset)}
       {@const midi = midiOf(note.offset)}
       <button
         class="chip"
-        class:black={note.accidental}
         class:held={held.has(midi)}
         disabled={!ready}
+        style="grid-row: 2; grid-column: {note.col} / span 2;"
         aria-label="{note.name} octave {octave}"
         onpointerdown={(e) => onChipDown(e, midi)}
         onpointerup={onChipUp}
@@ -158,7 +175,8 @@
   .chips {
     flex: 1 1 auto;
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(14, 1fr);
+    grid-template-rows: 1fr 1fr;
     gap: 3px;
   }
   .chip {

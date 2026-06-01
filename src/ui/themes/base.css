@@ -101,7 +101,7 @@ button {
 /* Subtle grain — a tile of fractal noise overlaid at very low opacity to break
    up the large flat panels (named explicitly in the Lab Instrument design
    brief). `mix-blend-mode: overlay` lifts the grain on dark themes and
-   deepens it on light, so a single neutral tile works for both Lab and K.O.
+   deepens it on light, so a single neutral tile works for both Lab and Sandbox.
    Phosphor opts out — its scanlines are already the texture. */
 body::after {
   content: "";

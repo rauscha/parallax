@@ -8,8 +8,9 @@ npm-debug.log*
 
 # Build outputs
 dsp/build/
-public/braids.wasm
-public/braids.js
+# NOTE: public/braids.wasm + public/braids.js are intentionally TRACKED (not
+# ignored) so the GitHub Pages CI can ship them without an Emscripten toolchain.
+# Re-run `npm run wasm` to rebuild them, then commit the updated binaries.
 
 # Emscripten cache (if it ends up in-tree)
 .emscripten_cache/

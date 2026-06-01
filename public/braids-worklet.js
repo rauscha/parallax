@@ -111,6 +111,18 @@ class BraidsProcessor extends AudioWorkletProcessor {
       case "setDrift":
         if (this.ready) this.module._braids_set_drift(msg.value | 0);
         break;
+      case "setEnvelopeShape":
+        // msg.attack and msg.decay are 0..127 (LUT indices).
+        if (this.ready) this.module._braids_set_envelope_shape(msg.attack | 0, msg.decay | 0);
+        break;
+      case "setAdAmounts":
+        // Each amount is 0..127, matching the firmware setting range.
+        if (this.ready) {
+          this.module._braids_set_ad_amounts(
+            msg.vca | 0, msg.timbre | 0, msg.color | 0, msg.fm | 0
+          );
+        }
+        break;
     }
   }
 

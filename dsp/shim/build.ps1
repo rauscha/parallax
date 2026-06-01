@@ -59,7 +59,7 @@ $em_flags = @(
   "-s", "ASSERTIONS=0",
   "-s", "FILESYSTEM=0",
   "-s", "MALLOC=emmalloc",
-  "-s", "EXPORTED_FUNCTIONS=['_braids_init','_braids_set_shape','_braids_set_pitch','_braids_set_parameters','_braids_strike','_braids_set_bits','_braids_set_sample_rate_khz','_braids_set_signature','_braids_set_drift','_braids_alloc','_braids_free','_braids_render','_malloc','_free']",
+  "-s", "EXPORTED_FUNCTIONS=['_braids_init','_braids_set_shape','_braids_set_pitch','_braids_set_parameters','_braids_strike','_braids_set_bits','_braids_set_sample_rate_khz','_braids_set_signature','_braids_set_drift','_braids_set_envelope_shape','_braids_set_ad_amounts','_braids_alloc','_braids_free','_braids_render','_malloc','_free']",
   "-s", "EXPORTED_RUNTIME_METHODS=['HEAP16','HEAPU8','HEAPF32']"
 )
 

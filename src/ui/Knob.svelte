@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import type { ParameterDescriptor } from '../audio/types';
 
   let { spec, value, onchange }: {
@@ -31,9 +32,32 @@
     const s = Math.round((v - spec.min) / step) * step + spec.min;
     return clamp(+s.toFixed(6));
   }
+
+  // RAF-coalesce onchange so dragging (which fires on every pixel) collapses
+  // to one cross-thread postMessage per animation frame. Without this, the
+  // lo-fi sliders (bits/rate/sign/drift) easily push 30-60+ messages/sec onto
+  // the audio thread — a known click-risk on weak phones. Final value always
+  // flushes on pointerup so the engine never sits a frame behind on release.
+  let pendingValue: number | null = null;
+  let rafHandle = 0;
+  function flush() {
+    rafHandle = 0;
+    if (pendingValue !== null) {
+      const v = pendingValue;
+      pendingValue = null;
+      onchange(v);
+    }
+  }
   function commit(v: number) {
+    pendingValue = snap(v);
+    if (!rafHandle) rafHandle = requestAnimationFrame(flush);
+  }
+  function commitNow(v: number) {
+    if (rafHandle) { cancelAnimationFrame(rafHandle); rafHandle = 0; }
+    pendingValue = null;
     onchange(snap(v));
   }
+  onDestroy(() => { if (rafHandle) cancelAnimationFrame(rafHandle); });
 
   // ── Vertical-drag interaction ──
   function onPointerDown(e: PointerEvent) {
@@ -52,6 +76,8 @@
   function endDrag(e: PointerEvent) {
     if (!dragging) return;
     dragging = false;
+    // Flush any RAF-pending value so the engine sees the exact release point.
+    if (pendingValue !== null) commitNow(pendingValue);
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
   }
 
@@ -106,7 +132,7 @@
   onpointermove={onPointerMove}
   onpointerup={endDrag}
   onpointercancel={endDrag}
-  ondblclick={() => commit(spec.default)}
+  ondblclick={() => commitNow(spec.default)}
   onkeydown={onKeyDown}
 >
   <span class="knob-label">{spec.label}</span>

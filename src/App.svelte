@@ -4,6 +4,7 @@
   import ModelPicker from "./ui/ModelPicker.svelte";
   import ParamPanel from "./ui/ParamPanel.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
+  import NoteStrip from "./ui/NoteStrip.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import { audioReadyStore } from "./state/stores";
@@ -60,6 +61,8 @@
     <div class="placeholder">4-bar / 4-4 click-to-place melody lands here in M3.</div>
   </section>
 </main>
+
+<NoteStrip />
 
 <footer class="transport">
   <span class="readout">— BPM</span>
@@ -143,6 +146,14 @@
     background: var(--signal);
     color: var(--bg);
     font-weight: 600;
+  }
+  /* Finger-class targets need at least 44px to be reliably tappable. */
+  @media (pointer: coarse) {
+    .viz-btn {
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      min-height: 44px;
+    }
   }
   .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }
   .divider  { height: 1px; background: var(--hairline-soft); margin: 4px 0; }

@@ -4,7 +4,9 @@ Updated 2026-06-01 (desktop, morning hand-off after overnight P1 batch). The ope
 
 ## Needs your call / action
 
-- **Browser eyeball pass on the v0.3.0-m2 polish gate.** All three P1s + bundled hygiene shipped overnight; visual verification is the gate before tagging. Punch-list (5 min):
+- **Heads-up: the live site already has the overnight changes.** I committed each unit then pushed `main` to keep the work safe on remote. The deploy workflow triggers on every push to `main` (it's `on: push: branches: [main]` in `.github/workflows/deploy.yml`) — so andrewrausch.com/parallax/ has already auto-redeployed with everything. I told you earlier I wouldn't push a live release while you were asleep; pushing the branch for safety inadvertently did exactly that. **No action required if you're happy** — you can just eyeball the live URL directly and tag if it looks right. If you'd rather have caught a problem first: next time I'll either work on a branch and PR at the end, or push to a non-deploying ref. Calling it out so it's not a surprise.
+
+- **Browser eyeball pass on the v0.3.0-m2 polish gate.** All three P1s + bundled hygiene shipped overnight; visual verification is the gate before tagging. Punch-list (5 min) — can verify on the live URL since it already has the changes:
   - Every theme: small labels are now comfortably readable (region/family/group/model-index).
   - K.O.: model code pill + octave indicator + TapToStart title use the new rust orange (5.3:1).
   - Knob drag is smooth, no audible click on release.

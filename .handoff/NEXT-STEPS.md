@@ -2,21 +2,18 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-01 (desktop).
+Last reconciled: 2026-06-01 (desktop, after overnight P1 batch).
 
 ## Now — act on the deep review (the v0.3.0-m2 polish gate)
-Ordered most-important first. **Engine authenticity (§2.5) shipped and ear-verified this session.** Three P1s remain — all UI/CSS — then a final eyeball + tag.
+**All three P1s + bundled hygiene shipped overnight.** What's left is the final browser eyeball and the tag.
 
-**P1 (remaining):**
-- [ ] ModelPicker keyboard nav (arrow/enter/escape) + ≥44px touch targets + interim tappable note strip for phone. *§2.7*
-- [ ] Coalesce the lo-fi slider `postMessage` flood (bits/rate/sign/drift). *§2.9 · `ParamPanel.svelte`*
-- [ ] Make the hero glow: real (gated) scope bloom + breathing idle + boot sweep; subtle grain; fix `--text-dim` + K.O. orange contrast; apply `--t-spring` on model change. *§2.8, §2.10, §5*
-- [ ] Then re-verify in a browser and tag `v0.3.0-m2`, push.
+- [ ] Browser eyeball pass — see `.handoff/PENDING-DECISIONS.md` for the punch-list.
+- [ ] Tag `v0.3.0-m2` and push (auto-deploys live).
 
 ## Soon (hygiene + smaller catches — deep review §4)
-- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; delete dead `public/icons.svg`; optional git-secrets hook. *(`dist/` already gitignored ✓.)*
+- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
 - [ ] Wire the central stores (`patchStore`/`engineIdStore`) as the first move of M3 so share-URLs/presets/undo "fall out for free."
-- [ ] Smaller bugs: pitch-bend re-baseline, init-failure node/listener leak, scope degenerate-frame clamp, future-note "panic", octave-shift-while-held stranded notes.
+- [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
 
 ## Later milestones (per plan file)
 - **M3** — Sequencer + clickable 4-bar/4-4 staff (Tone.Transport/Part, custom SVG notation, snap-to-scale, playhead + loop).
@@ -28,6 +25,15 @@ Ordered most-important first. **Engine authenticity (§2.5) shipped and ear-veri
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-01 (desktop, overnight — v0.3.0-m2 polish gate):** Cleared all three remaining P1s + bundled hygiene in a single unattended run. Full plain-language write-up at `.handoff/OVERNIGHT-LOG-2026-06-01.md`. Highlights: theme contrast pass with new `--signal-ink` for K.O.; RAF-coalesced knob `onchange` (audio-thread protection); ModelPicker keyboard nav + ≥44px touch + 320 ms spring pulse on model change; new mobile-only `NoteStrip` (12 chips + octave shift); oscilloscope hero finally glows — real `shadowBlur` bloom + breathing idle + L→R boot sweep + DC-clamp; subtle fractal-noise grain on Lab + K.O.; deleted dead `public/icons.svg`; init-failure dispose fix on `useEngine`. Type-check clean throughout (8 commits, 0 errors). Browser eyeball + tag deferred to morning verification.
+  - `efb8a7c` fix: ModelPicker keyboard handler — scope to search + items, guard empty Enter
+  - `557ee4e` hygiene: delete dead icons.svg, dispose half-built engine on init failure
+  - `710501e` P1: subtle grain overlay on Lab + K.O. themes
+  - `0d54a51` P1: Oscilloscope — real bloom, breathing idle, boot sweep, DC clamp
+  - `00286f8` P1: NoteStrip — interim tappable phone surface
+  - `a64663a` P1: ModelPicker — keyboard nav, touch targets, pulse on model change
+  - `f6c0bdf` P1: RAF-coalesce knob onchange — protect the audio thread
+  - `8e844b3` P1: contrast pass — bump --text-dim to AA, add --signal-ink for K.O.
 - **2026-06-01 (desktop, morning — engine authenticity pass):** Closed §2.5 of the deep review. Rewrote the shim's render loop to mirror `braids.cc:282-292` — BITS at decimation hold instant → smoothed VCA → SIGN waveshape LAST on the crushed signal, with the firmware's quadratic mix taper. DRIFT now drives the vendored `VcoJitterSource` (was a no-op). The AD envelope is plumbed (`Envelope` class, triggered on strike, rendered per block) but all four modulation amounts default to 0 — per-model wiring waits for M4. New shim setters `braids_set_envelope_shape` + `braids_set_ad_amounts` and matching worklet messages are ready. WASM: 100,527 → 101,293 bytes. Ear-verified.
   - `5c579e3` P1: engine authenticity pass — lo-fi reorder, quadratic SIGN, real DRIFT
 - **2026-05-31 (desktop, evening pt.2 — shipped live):** **Parallax is live → https://andrewrausch.com/parallax/** (GitHub Pages; auto-deploys on every push to `main`). Browser-verified the evening batch this session — picker selection visible, compact knobs, no stuck notes on blur, tab-return audio all good. **Hosting finalized: GitHub Pages, superseding the locked Cloudflare Pages** (domain already lived there; the one Cloudflare-only feature wanted — `_headers` CSP — moves to a `<meta>` tag). CLAUDE.md + plan + project memory updated to match.

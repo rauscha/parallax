@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
+  import { audioReadyStore } from "../state/stores";
 
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
@@ -9,6 +10,22 @@
 
   // Edge-triggering parameters
   const HYSTERESIS = 0.02;   // must cross 0 by more than ±HYSTERESIS to count
+
+  // Boot sweep: kicked when audioReadyStore flips false→true (TapToStart strike).
+  // The TapToStart confirmation tone is ~260ms; the sweep runs ~700ms so the
+  // visual tail outlasts the audio and the scope "lights up" rather than blips.
+  const BOOT_SWEEP_MS = 700;
+  let bootSweepStart = 0;
+  let prevReady = false;
+  audioReadyStore.subscribe((v) => {
+    if (v && !prevReady) bootSweepStart = performance.now();
+    prevReady = v;
+  });
+
+  // Reduced-motion: read once on mount, refreshed via media-query listener.
+  let reducedMotion = false;
+  let motionMql: MediaQueryList | null = null;
+  const onMotionChange = () => { if (motionMql) reducedMotion = motionMql.matches; };
 
   function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
 
@@ -89,43 +106,57 @@
     ctx2.moveTo(W / 2, 0); ctx2.lineTo(W / 2, H);
     ctx2.stroke();
 
-    // Find a stable trigger so the waveform doesn't slide.
+    // Trigger + silence-detect in a single pass — folded together so we don't
+    // walk the buffer twice every frame.
     let triggerIdx = findTriggerIndex();
-
-    // Detect silence: if peak < tiny epsilon, draw an idle heartbeat sine so
-    // the scope never looks dead.
     let peak = 0;
     for (let i = 0; i < N; ++i) {
       const a = Math.abs(buf[i]);
       if (a > peak) peak = a;
     }
-    let idle = peak < 0.002;
-
+    const idle = peak < 0.002;
     if (triggerIdx < 0) triggerIdx = 0;
 
-    // Sample window: we display ~half the analyser buffer starting at the trigger.
-    const samplesToShow = Math.min(N - Math.ceil(triggerIdx) - 1, Math.floor(N * 0.5));
+    // Sample window: ~half the analyser buffer starting at the trigger. Clamp
+    // ≥1 so a degenerate trigger near the buffer end (very low-freq / DC-ish
+    // signals) doesn't produce a zero-length window and a misleading flat frame.
+    const samplesToShow = Math.max(1, Math.min(N - Math.ceil(triggerIdx) - 1, Math.floor(N * 0.5)));
     const start = Math.floor(triggerIdx);
 
-    // Glow layer (wide stroke, transparent color) then core stroke
     ctx2.lineJoin = "round";
     ctx2.lineCap = "round";
 
+    const now = performance.now();
+
     if (idle) {
-      // Idle: draw a static flat reference line at the zero axis. Earlier
-      // versions animated a "heartbeat" sine here, but a drifting waveform
-      // read as a glitch — a true scope shows a flat baseline when there's
-      // no signal, so we match that.
+      // Breathing baseline — a real scope at rest isn't dead, it pulses softly.
+      // Alpha-only animation (line stays put) so it doesn't read as a glitch.
+      const alpha = reducedMotion
+        ? 0.42
+        : 0.32 + 0.18 * (0.5 + 0.5 * Math.sin(now * 2 * Math.PI / 4000));
       ctx2.strokeStyle = traceColor;
       ctx2.lineWidth = lineW;
-      ctx2.globalAlpha = 0.45;
+      ctx2.globalAlpha = alpha;
       ctx2.beginPath();
       ctx2.moveTo(0, H / 2);
       ctx2.lineTo(W, H / 2);
       ctx2.stroke();
+
+      // Faint beam dot sweeping left→right every ~6s — character without motion-jitter.
+      if (!reducedMotion) {
+        const sweepT = (now % 6000) / 6000;          // 0..1
+        const dotX = sweepT * W;
+        const fade = Math.sin(sweepT * Math.PI);     // 0 at ends, 1 mid-sweep
+        ctx2.fillStyle = traceColor;
+        ctx2.globalAlpha = 0.55 * fade;
+        ctx2.beginPath();
+        ctx2.arc(dotX, H / 2, lineW * 1.6, 0, 2 * Math.PI);
+        ctx2.fill();
+      }
+
       ctx2.globalAlpha = 1;
     } else {
-      // Render twice: glow + core
+      // Body halo (wide low-opacity stroke under the core).
       const drawTrace = () => {
         ctx2.beginPath();
         for (let i = 0; i < W; ++i) {
@@ -143,9 +174,41 @@
       ctx2.strokeStyle = glow;
       ctx2.lineWidth = lineW * 3;
       drawTrace();
+
+      // Core trace + real shadowBlur bloom — gated on amplitude so the
+      // expensive blur stays off at near-silence (single peak read above).
       ctx2.strokeStyle = traceColor;
       ctx2.lineWidth = lineW;
+      if (peak > 0.05) {
+        ctx2.shadowColor = glow;
+        ctx2.shadowBlur = 8 * dpr();
+      }
       drawTrace();
+      ctx2.shadowBlur = 0;   // reset so it doesn't leak into the next frame's grid
+    }
+
+    // Boot sweep — one-shot when audio unlocks. Bright vertical scan crossing
+    // the screen + a glow flare that decays. Synced to the A440 confirmation
+    // strike so the visual energy lines up with the first sound.
+    if (bootSweepStart > 0 && !reducedMotion) {
+      const elapsed = now - bootSweepStart;
+      if (elapsed < BOOT_SWEEP_MS) {
+        const t = elapsed / BOOT_SWEEP_MS;     // 0..1
+        const x = t * W;
+        ctx2.strokeStyle = traceColor;
+        ctx2.lineWidth = 2 * dpr();
+        ctx2.globalAlpha = (1 - t) * 0.9;
+        ctx2.shadowColor = glow;
+        ctx2.shadowBlur = 18 * dpr() * (1 - t * 0.5);
+        ctx2.beginPath();
+        ctx2.moveTo(x, 0);
+        ctx2.lineTo(x, H);
+        ctx2.stroke();
+        ctx2.shadowBlur = 0;
+        ctx2.globalAlpha = 1;
+      } else {
+        bootSweepStart = 0;       // one-shot
+      }
     }
   }
 
@@ -155,12 +218,16 @@
     fit();
     resizeObs = new ResizeObserver(fit);
     resizeObs.observe(wrap);
+    motionMql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reducedMotion = motionMql.matches;
+    motionMql.addEventListener("change", onMotionChange);
     draw();
   });
 
   onDestroy(() => {
     cancelAnimationFrame(raf);
     resizeObs?.disconnect();
+    motionMql?.removeEventListener("change", onMotionChange);
   });
 </script>
 

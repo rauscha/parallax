@@ -59,7 +59,16 @@ export class AudioEngine {
   async useEngine(next: ISynthEngine): Promise<void> {
     if (!this.ctx || !this.masterGain) throw new Error("AudioEngine not started — call start() first.");
 
-    await next.init(this.ctx);
+    try {
+      await next.init(this.ctx);
+    } catch (err) {
+      // A failed init can leave a half-built engine still holding an
+      // AudioWorkletNode and its message-port listener — they outlive the
+      // doomed engine reference otherwise. Dispose so the resources don't
+      // leak, then re-throw so the caller (TapToStart) surfaces the error.
+      try { await next.dispose(); } catch { /* best-effort on a broken engine */ }
+      throw err;
+    }
 
     const prev = this._engine;
     if (prev) prev.allNotesOff();

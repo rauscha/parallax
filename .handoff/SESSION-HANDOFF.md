@@ -1,31 +1,32 @@
-# Session hand-off — 2026-06-01 (machine: desktop, morning)
+# Session hand-off — 2026-06-01 (machine: desktop, after overnight P1 batch)
 
 ## STATE (read this first)
 - **Branch:** `main`, clean, synced with `origin/main`. One worktree (main only) — **nothing stranded.**
-- **Parallax is LIVE → https://andrewrausch.com/parallax/** (auto-redeployed by this session's push). The **engine authenticity pass (§2.5 of the deep review) is DONE and ear-verified** — lo-fi chain now mirrors the firmware order, SIGN follows the quadratic taper, DRIFT is real, and the AD envelope is plumbed (dormant by default — per-model wiring lives with M4). The **v0.3.0-m2 polish gate is now down to three remaining P1s** (ModelPicker keyboard/touch, postMessage coalesce, hero glow) then a final eyeball + tag. Those three are all UI/CSS/Svelte work — a **different domain from this session's DSP work**, so start the next batch fresh.
+- **Polish gate done in code. Live site has it.** All three remaining v0.3.0-m2 P1s + bundled hygiene shipped overnight (9 commits, type-check clean throughout). The only thing left is the **browser-eyeball pass and tagging `v0.3.0-m2`** — both are *your* call. **One heads-up before you open the site:** pushing `main` for safety auto-triggered the deploy workflow, so andrewrausch.com/parallax/ already has the overnight changes. Use the live URL for your eyeball pass and tag once it looks right. *(I'd told you I wouldn't push a live release while you were asleep; the on-push deploy trigger made the safety-push do exactly that. Full note in `.handoff/PENDING-DECISIONS.md`.)*
 
 ## Done this session
-- **Engine authenticity pass (`5c579e3`).** Rewrote the per-block + per-sample render loop in [`dsp/shim/braids_shim.cc`](dsp/shim/braids_shim.cc) to mirror `braids/braids.cc:282-292`:
-  - **Lo-fi order corrected.** BITS now applies at the decimation hold instant; SIGN now runs LAST on the already-crushed signal (was reversed). Audible.
-  - **SIGN is quadratic.** Mix weight is now `amt²` (was linear `>> 8`), matching the firmware's `signature² × 4095`. SIGN at low values is subtle now; the top quarter does the work.
-  - **DRIFT is real.** Drives the vendored `VcoJitterSource` per render block against a cached pitch (was a stored-but-unused no-op).
-  - **AD envelope plumbed.** `Envelope` class included, triggered on strike, rendered per block — but all four modulation amounts (VCA/TIMBRE/COLOR/FM) default to 0. Two new shim setters (`braids_set_envelope_shape`, `braids_set_ad_amounts`) and matching worklet message types (`setEnvelopeShape`, `setAdAmounts`) are ready for per-model wiring in M4.
-  - WASM: 100,527 → 101,293 bytes. `npm run check` clean. Committed `public/braids.{wasm,js}` alongside the shim, so CI ships the new binary.
+- **Engine authenticity pass (earlier today, `5c579e3`).** Lo-fi reorder + quadratic SIGN + real DRIFT + AD envelope plumbed (dormant). Ear-verified.
+- **v0.3.0-m2 polish gate (overnight, 9 commits `8e844b3 → a94d9c2`).** Full plain-language write-up at [.handoff/OVERNIGHT-LOG-2026-06-01.md](.handoff/OVERNIGHT-LOG-2026-06-01.md). The headline list:
+  - **Contrast** — `--text-dim` now AA in all three themes; new `--signal-ink` rust token for K.O. body text (preserves the hot orange for scope/knob fill).
+  - **Audio thread protected** — knob `onchange` is now RAF-coalesced so drag spam (BITS/RATE/SIGN/DRIFT) can't push 60+ messages/sec onto the audio thread; force-flushes on pointerup.
+  - **ModelPicker keyboard** — arrows/Enter/Escape, auto-scroll, ≥44 px targets on coarse pointers, code pill pulses 320 ms (the previously-unused `--t-spring` token) on every model change.
+  - **NoteStrip** — new mobile-only 12-chip surface + octave shift, multitouch-correct, blur/visibility-safe.
+  - **Oscilloscope hero finally glows** — real gated `shadowBlur` bloom + breathing idle + L→R boot sweep synced to the A440 strike + DC clamp + folded silence/trigger into a single buffer pass.
+  - **Subtle grain** on Lab + K.O. via SVG fractal noise.
+  - **Hygiene** — deleted dead `public/icons.svg`; `useEngine` disposes a half-built engine on init failure (closes a leak that compounded the existing P0 hang).
 
 ## Next up
-1. **(Fresh session — UI domain) Remaining polish-gate P1s, all together:**
-   - **ModelPicker** keyboard nav (arrow / Enter / Escape) + ≥44px touch targets + interim tappable note strip for phone. *§2.7*
-   - **Coalesce the lo-fi `postMessage` flood** (bits/rate/sign/drift) — at most one update per animation frame or commit on pointer-up. *§2.9 · `ParamPanel.svelte`*
-   - **Make the hero glow:** real (gated) scope bloom + breathing idle + boot sweep; subtle grain; fix `--text-dim` + K.O. orange contrast; apply `--t-spring` on model change. *§2.8, §2.10, §5*
-2. **Final browser eyeball → tag `v0.3.0-m2` → push** (auto-deploys live).
-3. **Then M3 — sequencer + clickable staff.** Wire the central stores (`patchStore`/`engineIdStore`) as the *first* move so undo/presets/share-URLs "fall out for free."
+1. **Browser eyeball pass on the live URL** (or `npm run preview` locally if you'd rather). Punch-list lives in [.handoff/PENDING-DECISIONS.md](.handoff/PENDING-DECISIONS.md) — ~5 min.
+2. **Tag and push:** `git tag v0.3.0-m2; git push origin v0.3.0-m2`. (The tag is just the version marker — the deploy itself already happened with the overnight push.)
+3. **Then M3 — sequencer + clickable staff.** Recommendation from the deep review still stands: **wire the central stores (`patchStore`/`engineIdStore`) as the first move** so undo/presets/share-URLs "fall out for free."
 
 ## Watch out for
-- **AD envelope is plumbed but DORMANT.** The shim renders the envelope every block, but `g_ad_vca/timbre/color/fm` all default to 0 → no audible effect. To actually use it per-model (percussion, plucks, bells), wire the four amounts in [`src/audio/engines/BraidsEngine.ts`](src/audio/engines/BraidsEngine.ts) — likely at `noteOn`, reading per-model defaults from [`src/data/braids-models.ts`](src/data/braids-models.ts). That belongs with **M4 (explain panel)** since the per-model metadata is needed for both. Don't quietly turn it on for all models — sustained tones would auto-decay to silence and that's wrong.
-- **DSP shim changes still need two steps:** `npm run wasm` AND commit the regenerated `public/braids.wasm` — easy to forget. (Caught it correctly this session.)
-- **Dev server is still running on this desktop on `:5174`** (vite picked it because `:5173` was already taken by yesterday's Tailscale `serve`). Both background processes from the last 24h are alive.
-- **Memories/plan are machine-local and stale on the laptop.** Memory dir still at OLD slug `~/.claude/projects/C--GDrive-Braids-tester/memory/` (not `c--parallax`). Worth migrating at some point. Synced source of truth = in-repo CLAUDE.md + NEXT-STEPS.
-- **`npm run preview` serves at root, not `/parallax/`** (conditional base). For the real production artifact: `npx vite preview --base /parallax/`.
-- **Tag `v0.3.0-m2` is still NOT applied** — gated on the three remaining P1s + a final eyeball.
+- **The on-push auto-deploy.** `.github/workflows/deploy.yml` triggers on every push to `main`. If you want to stage something without it going live next time, work on a branch and merge via PR (or push to a non-deploying ref).
+- **AD envelope is plumbed but DORMANT** (from the morning's authenticity pass). Shim setters `braids_set_envelope_shape` + `braids_set_ad_amounts` + worklet messages are ready, but all four modulation amounts default to 0. Per-model wiring belongs with M4 (needs the explain-panel metadata anyway). Don't auto-enable for all models — sustained tones would auto-decay to silence.
+- **NoteStrip is "interim" on purpose.** It's a stop-gap until the M3 staff editor lands as the real touch surface. Don't polish it further — let it die when M3 ships.
+- **NoteStrip octave is local**, not shared with KeyboardHarness. If you want them to track together, small lift via a shared store. Not urgent.
+- **DSP shim changes still need two steps:** `npm run wasm` AND commit the regenerated `public/braids.wasm`. (Not relevant tonight — no shim changes since this morning.)
+- **Memories/plan are machine-local** — likely stale on the laptop. Synced source of truth = in-repo CLAUDE.md + `.handoff/` directory.
+- **Dev server may still be alive on `:5174`** from earlier today.
 - Deploy logs a non-blocking Node-20-deprecation warning (forced upgrade after 2026-06-16). Bump `actions/*` versions whenever.
 - Prior gotchas still apply: AudioWorklet `import.meta.url` shim, Svelte 5 `$`-reserved store names, mutating a `Set` in `$state` needs a reassign.

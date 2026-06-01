@@ -5,7 +5,7 @@ The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session
 Last reconciled: 2026-05-31 (desktop).
 
 ## Now — act on the deep review (the v0.3.0-m2 polish gate)
-Ordered most-important first. **Both P0s cleared this session; two of the P1s too.** Browser eyeball pending before the tag.
+Ordered most-important first. **The evening batch (both P0s + two P1s) was browser-verified this session — all good.** Four P1s remain, then a final eyeball + tag.
 
 **P1 (remaining):**
 - [ ] Engine authenticity pass (shim): reorder lo-fi chain (crush→waveshape, quadratic SIGN), port + gate the AD envelope, implement/remove DRIFT; rebuild WASM; re-listen. *§2.5 · `braids_shim.cc`*
@@ -15,7 +15,7 @@ Ordered most-important first. **Both P0s cleared this session; two of the P1s to
 - [ ] Then re-verify in a browser and tag `v0.3.0-m2`, push.
 
 ## Soon (hygiene + smaller catches — deep review §4)
-- [ ] Security hardening: CSP `public/_headers`; self-host fonts; delete dead `public/icons.svg`; gitignore `dist/`; optional git-secrets hook.
+- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; delete dead `public/icons.svg`; optional git-secrets hook. *(`dist/` already gitignored ✓.)*
 - [ ] Wire the central stores (`patchStore`/`engineIdStore`) as the first move of M3 so share-URLs/presets/undo "fall out for free."
 - [ ] Smaller bugs: pitch-bend re-baseline, init-failure node/listener leak, scope degenerate-frame clamp, future-note "panic", octave-shift-while-held stranded notes.
 
@@ -29,6 +29,9 @@ Ordered most-important first. **Both P0s cleared this session; two of the P1s to
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-05-31 (desktop, evening pt.2 — shipped live):** **Parallax is live → https://andrewrausch.com/parallax/** (GitHub Pages; auto-deploys on every push to `main`). Browser-verified the evening batch this session — picker selection visible, compact knobs, no stuck notes on blur, tab-return audio all good. **Hosting finalized: GitHub Pages, superseding the locked Cloudflare Pages** (domain already lived there; the one Cloudflare-only feature wanted — `_headers` CSP — moves to a `<meta>` tag). CLAUDE.md + plan + project memory updated to match.
+  - `4e14c48` fix: load worklet/WASM via `import.meta.env.BASE_URL` so assets resolve under `/parallax/` (Vite `base=/parallax/` on build; dev/Tailscale stay at root)
+  - `8f74a0f` ci: GitHub Actions Pages workflow + track prebuilt `public/braids.wasm`+`braids.js` so CI ships them without Emscripten
 - **2026-05-31 (desktop, evening unattended run):** Cleared both deep-review P0s + two P1s in front of dinner. Knobs tightened a second notch (2.5rem dial / 3.6rem wrapper) and model list trimmed (220→160px) for a roomier control column. Browser verification still pending before tag.
   - `a80b95d` UI: compact knobs + shorter model list
   - `d5d3e8c` **P0** WASM-load timeout (5s fetch + 10s ready) — surfaces silent worklet failures via the existing TapToStart error UI

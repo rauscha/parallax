@@ -12,7 +12,7 @@ Personal web synth: real Mutable Instruments **Braids** macro-oscillator in the 
 - **Braids DSP** = Émilie Gillet's MIT C++ (`pichenettes/eurorack` → `braids/` + `stmlib/`) compiled with **Emscripten** to WASM, run in the worklet via a ring buffer (Braids renders 24-sample blocks @ 96 kHz, we resample to context rate).
 - **State:** Nano Stores (`$patch`, `$melody`, `$engineId`). Single source of truth, framework-agnostic.
 - **Notation:** custom SVG (Bravura SMuFL font). **MIDI I/O:** `@tonejs/midi`. **Scales:** `@tonaljs/tonal`. **Share URLs:** `lz-string` → `location.hash`. **Preset library:** `idb-keyval`.
-- **Hosting:** Cloudflare Pages. Single-threaded WASM-in-worklet → **no SharedArrayBuffer / COOP-COEP** needed.
+- **Hosting:** **GitHub Pages — FINAL** (chosen 2026-05-31, superseding Cloudflare Pages). Live at **andrewrausch.com/parallax/** — a project page under `rauscha.github.io`, which carries the custom domain, so it lands at the sub-path automatically. Auto-deploys via `.github/workflows/deploy.yml` on push to `main`; the prebuilt `public/braids.wasm` + `braids.js` are committed (un-gitignored) so CI ships them with no Emscripten toolchain. Single-threaded WASM-in-worklet → **no SharedArrayBuffer / COOP-COEP** needed, so a plain static host is fine. Why not Cloudflare: the domain already lived on GitHub Pages, and the app is purely static — the only Cloudflare-only feature we'd want is a `_headers` CSP, which we do instead via a `<meta http-equiv>` tag. Vite `base` is `/parallax/` for `build`, `/` for dev (so the Tailscale test URL stays at root); runtime asset loads use `import.meta.env.BASE_URL`.
 - **Package manager:** npm. **Node:** LTS (whatever is on PATH).
 
 ## Locked decisions (do not re-litigate)

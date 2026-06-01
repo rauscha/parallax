@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick, onDestroy } from "svelte";
   import { BRAIDS_MODELS, BRAIDS_FAMILIES, type BraidsModel } from "../data/braids-models";
   import { audioEngine } from "../audio/AudioEngine";
   import { audioReadyStore } from "../state/stores";
@@ -7,14 +8,34 @@
   let ready = $state(false);
   let modelIndex = $state(0);
   let query = $state("");
+  // Keyboard cursor through the filtered list (null = no cursor yet).
+  let highlightIdx = $state<number | null>(null);
+  // One-shot animation flag — re-added on every model change so the pill pulses.
+  let pulsing = $state(false);
+  let pulseTimer = 0;
+  let pickerEl: HTMLDivElement | undefined = $state();
+  let listEl: HTMLDivElement | undefined = $state();
   audioReadyStore.subscribe((v) => { ready = v; });
 
   const LAST = BRAIDS_MODELS.length - 1;
 
+  function pulse() {
+    pulsing = false;
+    // Force a reflow gap before re-adding the class so the animation restarts.
+    requestAnimationFrame(() => {
+      pulsing = true;
+      clearTimeout(pulseTimer);
+      pulseTimer = window.setTimeout(() => { pulsing = false; }, 340);
+    });
+  }
+
   function setModel(idx: number) {
-    modelIndex = Math.max(0, Math.min(LAST, idx));
+    const next = Math.max(0, Math.min(LAST, idx));
+    const changed = next !== modelIndex;
+    modelIndex = next;
     const eng = audioEngine.currentEngine as BraidsEngine | null;
     if (eng && "setShape" in eng) eng.setShape(modelIndex);
+    if (changed) pulse();
   }
 
   $effect(() => {
@@ -38,17 +59,77 @@
       .filter((g) => g.models.length > 0);
   });
 
+  // Flat, ordered list of currently-visible models — drives keyboard navigation
+  // through the filter without having to walk the grouped structure.
+  let flatVisible = $derived(grouped.flatMap((g) => g.models));
+
+  // Reset the cursor when the filter changes so it never points past the end.
+  $effect(() => {
+    void query;
+    highlightIdx = null;
+  });
+
   function pick(idx: number) {
     setModel(idx);
     query = "";
+    highlightIdx = null;
     // Hand the keyboard back to note-playing (a focused control swallows keys).
     (document.activeElement as HTMLElement | null)?.blur();
   }
+
+  async function moveHighlight(delta: number) {
+    if (flatVisible.length === 0) return;
+    if (highlightIdx === null) {
+      // First arrow press: start from the current selection if it's still visible,
+      // otherwise from the top — feels like the cursor "remembers" where we are.
+      const currentInList = flatVisible.findIndex((m) => m.index === modelIndex);
+      highlightIdx = currentInList >= 0 ? currentInList : 0;
+    } else {
+      highlightIdx = Math.max(0, Math.min(flatVisible.length - 1, highlightIdx + delta));
+    }
+    await tick();
+    listEl?.querySelector(".item.highlight")?.scrollIntoView({ block: "nearest" });
+  }
+
+  function onKey(e: KeyboardEvent) {
+    if (!ready) return;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault(); e.stopPropagation();
+        moveHighlight(1);
+        return;
+      case "ArrowUp":
+        e.preventDefault(); e.stopPropagation();
+        moveHighlight(-1);
+        return;
+      case "Enter":
+        e.preventDefault(); e.stopPropagation();
+        if (highlightIdx !== null && flatVisible[highlightIdx]) {
+          pick(flatVisible[highlightIdx].index);
+        } else if (flatVisible.length > 0) {
+          // No cursor yet — Enter picks the first visible match (matches the
+          // hint text's "type a vibe, hit Enter" mental model).
+          pick(flatVisible[0].index);
+        }
+        return;
+      case "Escape":
+        e.preventDefault(); e.stopPropagation();
+        query = "";
+        highlightIdx = null;
+        (document.activeElement as HTMLElement | null)?.blur();
+        return;
+    }
+  }
+
+  onDestroy(() => clearTimeout(pulseTimer));
 </script>
 
-<div class="picker">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- The keydown handler intentionally lives on the group: it routes Arrow/Enter/Escape
+     for whichever inner control (search input, list button) currently has focus. -->
+<div class="picker" bind:this={pickerEl} onkeydown={onKey} role="group" aria-label="Synthesis model picker">
   <div class="header">
-    <div class="code-pill">
+    <div class="code-pill" class:pulse={pulsing}>
       <span class="code">{current.code}</span>
       <span class="idx">{String(modelIndex).padStart(2, "0")} / {String(LAST).padStart(2, "0")}</span>
     </div>
@@ -73,14 +154,16 @@
     aria-label="Search synthesis models"
   />
 
-  <div class="list">
+  <div class="list" bind:this={listEl}>
     {#each grouped as group (group.id)}
       <div class="family">
         <div class="family-label">{group.label}</div>
         {#each group.models as m (m.index)}
+          {@const flatI = flatVisible.findIndex((fm) => fm.index === m.index)}
           <button
             class="item"
             class:selected={m.index === modelIndex}
+            class:highlight={flatI === highlightIdx}
             aria-current={m.index === modelIndex ? "true" : undefined}
             onclick={() => pick(m.index)}
             disabled={!ready}
@@ -117,6 +200,20 @@
     background: var(--surface-raised);
     border: var(--hairline-w) solid var(--hairline);
     border-radius: var(--radius-md);
+    transform-origin: center;
+  }
+  /* Small tactile pulse whenever the model changes. The whole point of Braids
+     is cycling through models, so the act of changing one earns a beat. */
+  .code-pill.pulse {
+    animation: pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .code-pill.pulse { animation: none; }
   }
   .code {
     font-family: var(--font-mono);
@@ -208,10 +305,22 @@
     transition: background var(--t-fast), color var(--t-fast);
   }
   .item:hover:not(:disabled) { background: var(--surface-raised); color: var(--text); }
-  /* Selected row: filled bar + bold code + a leading marker — not colour alone. */
+  /* Keyboard cursor — outline-style highlight that doesn't conflict with selection. */
+  .item.highlight {
+    background: var(--surface-raised);
+    color: var(--text);
+    box-shadow: inset 0 0 0 var(--hairline-w) var(--signal-dim);
+  }
+  /* Selected row: fill + bold code + leading marker + redundant left-edge accent
+     so it survives even if the fill wash ever falls through (defence in depth). */
   .item.selected {
     background: var(--signal-deep);
     color: var(--text);
+    box-shadow: inset 3px 0 0 var(--signal);
+  }
+  .item.selected.highlight {
+    /* Combine both accents cleanly. */
+    box-shadow: inset 3px 0 0 var(--signal), inset 0 0 0 var(--hairline-w) var(--signal-dim);
   }
   .item.selected .item-code {
     color: var(--signal-ink);
@@ -235,5 +344,25 @@
     font-family: var(--font-mono);
     font-size: 0.72rem;
     color: var(--text-dim);
+  }
+
+  /* Touch-device sizing: bump targets to ≥44px (WCAG minimum reliable tap).
+     Desktop stays compact — pointer:coarse only fires for finger-class inputs. */
+  @media (pointer: coarse) {
+    .step {
+      width: 44px;
+      height: 44px;
+      font-size: 1rem;
+    }
+    .item {
+      padding: 12px 12px;
+      min-height: 44px;
+    }
+    .search {
+      padding: 12px 12px;
+      font-size: 0.85rem;
+      min-height: 44px;
+    }
+    .list { max-height: 240px; }
   }
 </style>

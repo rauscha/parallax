@@ -93,6 +93,14 @@
 
   function onKey(e: KeyboardEvent) {
     if (!ready) return;
+    // Only act when focus is on the search input or a list item — the steppers
+    // (and any future control inside .picker) get their native button behaviour
+    // for Enter so they aren't hijacked.
+    const t = e.target as HTMLElement | null;
+    const onSearch = t?.tagName === "INPUT";
+    const onItem = t?.classList?.contains("item") ?? false;
+    if (!onSearch && !onItem) return;
+
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault(); e.stopPropagation();
@@ -103,12 +111,16 @@
         moveHighlight(-1);
         return;
       case "Enter":
+        // A focused list item handles Enter via its own onclick — let it fire
+        // so the *focused* item is picked, not the highlight cursor.
+        if (onItem) return;
         e.preventDefault(); e.stopPropagation();
         if (highlightIdx !== null && flatVisible[highlightIdx]) {
           pick(flatVisible[highlightIdx].index);
-        } else if (flatVisible.length > 0) {
-          // No cursor yet — Enter picks the first visible match (matches the
-          // hint text's "type a vibe, hit Enter" mental model).
+        } else if (query.trim() && flatVisible.length > 0) {
+          // Typed-then-Enter without arrows: pick the first match (matches the
+          // hint text's "type a vibe, hit Enter" mental model). Skip when the
+          // query is empty so an accidental Enter doesn't clobber the selection.
           pick(flatVisible[0].index);
         }
         return;

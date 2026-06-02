@@ -1,27 +1,28 @@
 <script lang="ts">
   import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore } from "../state/stores";
+  import { audioReadyStore, patchStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import Knob from "./Knob.svelte";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
 
-  // Controls are auto-generated from the live engine's parameter schema.
+  // Controls are auto-generated from the live engine's parameter schema —
+  // the schema holds non-serializable bits (format, describe) so it lives on
+  // the engine, not the store. *Values* come from patchStore.params, which
+  // is the source of truth: knob → patch → bindings → engine.
   // "model" is excluded — the ModelPicker owns model selection.
   let specs = $state<ParameterDescriptor[]>([]);
-  let values = $state<Record<string, number>>({});
+  let values = $state<Record<string, number>>(patchStore.get().params);
+  patchStore.subscribe((p) => { values = p.params; });
 
-  // When audio comes up, pull the engine's schema and seed from current values.
+  // When audio comes up, pull the engine's schema. Values were already seeded
+  // into patchStore by installBindings() before ready flipped.
   $effect(() => {
     if (!ready) return;
     const eng = audioEngine.currentEngine;
     if (!eng) return;
-    const schema = eng.getParameterSchema().filter((d) => d.id !== "model");
-    const seed: Record<string, number> = {};
-    for (const s of schema) seed[s.id] = eng.getParameter(s.id) ?? s.default;
-    specs = schema;
-    values = seed;
+    specs = eng.getParameterSchema().filter((d) => d.id !== "model");
   });
 
   // Pretty names for the descriptor `group` keys; unknown groups fall back to
@@ -67,8 +68,8 @@
   }
 
   function onChange(id: string, v: number) {
-    values = { ...values, [id]: v };
-    audioEngine.currentEngine?.setParameter(id, v);
+    // Write to the store; the binding pushes to the engine.
+    patchStore.setKey("params", { ...patchStore.get().params, [id]: v });
   }
 </script>
 

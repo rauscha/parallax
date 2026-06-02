@@ -1,7 +1,7 @@
 import { atom, map } from "nanostores";
 
 /** Engine identity (which ISynthEngine is loaded). */
-export const engineIdStore = atom<string>("test-tone");
+export const engineIdStore = atom<string>("braids");
 
 /** Patch = engine + parameters. Versioned so v1 share-URLs migrate cleanly. */
 export interface Patch {
@@ -12,7 +12,7 @@ export interface Patch {
 }
 export const patchStore = map<Patch>({
   version: 1,
-  engineId: "test-tone",
+  engineId: "braids",
   modelId: null,
   params: {},
 });

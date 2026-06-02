@@ -2,6 +2,7 @@
   import { audioEngine } from "../audio/AudioEngine";
   import { BraidsEngine } from "../audio/engines/BraidsEngine";
   import { audioReadyStore } from "../state/stores";
+  import { installBindings } from "../state/bindings";
 
   let starting = $state(false);
   let error = $state<string | null>(null);
@@ -13,6 +14,10 @@
     try {
       await audioEngine.start();
       await audioEngine.useEngine(new BraidsEngine());
+      // Seed the patch store + wire store→engine pushes BEFORE flipping ready,
+      // so subscribers (ModelPicker, ParamPanel) snapshot the seeded values
+      // the instant they react.
+      installBindings(audioEngine);
       // Confirmation strike — short A440 so we know the chain is live end-to-end.
       audioEngine.currentEngine?.noteOn(69, { velocity: 0.5 });
       setTimeout(() => audioEngine.currentEngine?.noteOff(69), 260);

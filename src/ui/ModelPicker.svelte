@@ -1,12 +1,9 @@
 <script lang="ts">
   import { tick, onDestroy } from "svelte";
   import { BRAIDS_MODELS, BRAIDS_FAMILIES, type BraidsModel } from "../data/braids-models";
-  import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore } from "../state/stores";
-  import type { BraidsEngine } from "../audio/engines/BraidsEngine";
+  import { audioReadyStore, patchStore } from "../state/stores";
 
   let ready = $state(false);
-  let modelIndex = $state(0);
   let query = $state("");
   // Keyboard cursor through the filtered list (null = no cursor yet).
   let highlightIdx = $state<number | null>(null);
@@ -17,7 +14,18 @@
   let listEl: HTMLDivElement | undefined = $state();
   audioReadyStore.subscribe((v) => { ready = v; });
 
+  // patchStore is the source of truth — modelIndex is derived from modelId.
+  // Writes flow store → bindings → engine; the picker never touches the engine.
+  let modelId = $state<string | null>(patchStore.get().modelId);
+  patchStore.subscribe((p) => { modelId = p.modelId; });
+
   const LAST = BRAIDS_MODELS.length - 1;
+
+  let modelIndex = $derived.by(() => {
+    if (!modelId) return 0;
+    const i = BRAIDS_MODELS.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
+    return i >= 0 ? i : 0;
+  });
 
   function pulse() {
     pulsing = false;
@@ -31,15 +39,16 @@
 
   function setModel(idx: number) {
     const next = Math.max(0, Math.min(LAST, idx));
-    const changed = next !== modelIndex;
-    modelIndex = next;
-    const eng = audioEngine.currentEngine as BraidsEngine | null;
-    if (eng && "setShape" in eng) eng.setShape(modelIndex);
-    if (changed) pulse();
+    patchStore.setKey("modelId", BRAIDS_MODELS[next].code.toLowerCase());
   }
 
+  // Pulse on every model change — including external ones (share-URL loads,
+  // presets later). Skip the initial run so mount doesn't flash.
+  let pulseSeeded = false;
   $effect(() => {
-    if (ready) setModel(modelIndex);
+    void modelIndex;
+    if (!pulseSeeded) { pulseSeeded = true; return; }
+    pulse();
   });
 
   let current = $derived(BRAIDS_MODELS[modelIndex]);

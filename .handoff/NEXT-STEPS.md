@@ -2,17 +2,19 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-01 (desktop, M3 first slice shipped — sequencer scaffold).
+Last reconciled: 2026-06-03 (desktop, overnight — full M3 closeout).
 
-## Now — continue M3
-**M3 first slice landed.** Store-wiring (`ab1a74d`) + sequencer scaffold (`1bcdecb`) both pushed, both auto-deployed. The demo melody audibly loops end-to-end. Next is the staff editor; this is multi-session — start fresh.
+## Now — eyeball-verify + tag M3
+**M3 is done.** Five commits overnight (`6f4c521` → `0b9ab7f`), all pushed and auto-deployed. The clickable 4-bar/4/4 staff editor is live. See the overnight log for the full play-by-play: [.handoff/OVERNIGHT-LOG-2026-06-02.md](.handoff/OVERNIGHT-LOG-2026-06-02.md).
 
-- [ ] **SVG staff render (read-only first).** Custom SVG, Bravura SMuFL font (needs self-hosting — see Soon list). Draws `melodyStore.events` on a 4-bar / 4/4 treble staff. Target: `src/notation/{StaffEditor.svelte, render.ts}`.
-- [ ] **Click-to-place interaction** in `src/notation/interaction.ts`. Writes back to `melodyStore.setKey("events", …)`; the Part rebuild on events-change is already plumbed, so placed notes play immediately.
-- [ ] **Snap-to-scale** via `@tonaljs/tonal` (already a dep). Home: `src/sequencer/scales.ts` — folds melody's `key` + `scale` fields into a snap helper.
-- [ ] **Playhead animation + loop-region UI.**
-- [ ] **Tear out the scratch buttons** in `App.svelte` (footer Play/Stop + staff-slot Load demo/Clear) when the real staff editor + transport bar take over.
-- [ ] **Wrap-around for noteOff at loop boundary** in `src/sequencer/part.ts` (currently clipped — simple but loses legato across the wrap).
+- [ ] **Eyeball pass on the live URL** — see the checklist in the overnight log (empty hint · tap-to-place · drag-to-extend · long-press + right-click delete · F major shifts B → Bb on the line · play sweeps a playhead across the staff).
+- [ ] **Tag M3:** `git tag v0.4.0-m3 && git push origin v0.4.0-m3`.
+
+## Soon (small follow-ups + hygiene)
+- [ ] **Key signatures on the staff.** Currently every accidental is per-note — F major's Bb shows as a flat on every Bb. Real engraving puts the flat in the key signature once at the start. M4-ish polish.
+- [ ] **"Drag past the end → wrap-around" UI.** Wrap is supported in the data model (`part.ts`), but the drag UI clips at the loop end. A future polish could let users explicitly wrap a long legato across the boundary.
+- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01; Bravura self-hosted ✓ 2026-06-02.)*
+- [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
 
 ## Soon (hygiene + smaller catches — deep review §4)
 - [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts (**Bravura also lands here — M3 will need it self-hosted anyway**); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
@@ -28,6 +30,12 @@ Last reconciled: 2026-06-01 (desktop, M3 first slice shipped — sequencer scaff
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-02 → 2026-06-03 (desktop, overnight — M3 closeout):** The clickable 4-bar/4/4 staff editor is live. Five commits, plain-language write-up at `.handoff/OVERNIGHT-LOG-2026-06-02.md`. Highlights: Bravura SMuFL font self-hosted under OFL · pure-TS staff geometry in `src/notation/render.ts` · pointer-driven tap-to-place + drag-for-duration + long-press/right-click delete · snap-to-scale via `@tonaljs/tonal` with stays-on-position preference and flat-key spelling · `KeyScalePicker` for picking key + scale · RAF-driven playhead during transport playback · wrap-around `noteOff` at the loop boundary · scratch UI in App.svelte replaced with a contextual empty/populated staff footer · brand-sub bumped "M1" → "M3". Type-check clean throughout (8 commits across the session, 0 errors).
+  - `0b9ab7f` M3: tear out scratch UI · contextual staff footer · brand-sub bump
+  - `da54405` M3: playhead — RAF-driven vertical sweep during transport playback
+  - `964c8da` M3: snap-to-scale + key/scale picker + flat-key spelling
+  - `597e68a` M3: staff interaction — tap to place, drag to extend, long-press / right-click to delete
+  - `6f4c521` M3: SVG staff render (read-only) + Bravura self-host
 - **2026-06-01 (desktop, M3 first slice — sequencer scaffold):** `src/sequencer/{transport,part,demo,index}.ts` lands. `installSequencer()` adopts the engine's AudioContext as Tone's context so the scheduler and Braids worklet share one timeline; `installPart()` rebuilds a looping (4 measures) Tone.Part whenever `melodyStore.events` changes, firing `engine.noteOn/noteOff` with noteOff clipped to loop end. Temporary scratch UI in `App.svelte` (Play/Stop footer button, Load demo / Clear in staff slot) — all marked for tear-out when the real staff editor lands. `vite.config.ts` now honors `PORT` env for tooling. Browser-verified end-to-end: tap-to-start → load demo → audibly loops C-major scale → stop, zero console errors. New `.claude/launch.json` checked in for Claude Preview compatibility on any machine.
   - `1bcdecb` M3: sequencer scaffold — Tone.Transport + Part wired to engine
 - **2026-06-01 (desktop, M3 first move — store-wiring):** `patchStore` + `engineIdStore` are now the source of truth. New `src/state/bindings.ts` seeds patch from engine's parameter schema, then subscribes store → engine pushes one-way (engine never writes back). ModelPicker + ParamPanel read from / write to the store; no behavior change in the browser (strict no-regression refactor). Share-URLs / presets / undo will fall out for free in M5.

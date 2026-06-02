@@ -1,25 +1,32 @@
-# Session hand-off — 2026-06-01 (machine: desktop, after v0.3.0-m2 eyeball pass)
+# Session hand-off — 2026-06-01 (machine: desktop, M3 kickoff: store-wiring + sequencer scaffold)
 
 ## STATE (read this first)
 - **Branch:** `main`, clean, synced with `origin/main`. One worktree only — **nothing stranded.**
-- **v0.3.0-m2 polish gate is verified done.** Live URL eyeballed this session, three small follow-ups fixed in `3767b5d`, deployed, and user-confirmed as "looking golden." **Only the version tag is open** — and it's a one-line close-out, not real work.
+- **M3 is open and moving.** Two commits this session: `ab1a74d` (store-wiring — patchStore/engineIdStore are now source of truth) and `1bcdecb` (M3 first slice — sequencer scaffold: Tone.Transport + Part wired to the Braids engine, audibly loops a demo melody end-to-end). Both pushed; both auto-deployed to live.
 
 ## Done this session
-- **Verified the overnight P1 batch on live URL** (andrewrausch.com/parallax/). Three small surface defects caught and fixed in a single bundled commit (`3767b5d`):
-  - **Sandbox `--knob-pointer`** was `#E9E5DC` — identical to `--bg`, so knob needles and hubs were invisible on the warm body (only the orange arc was readable). Flipped to charcoal `#1A1A1A`.
-  - **Theme renamed K.O. Console → Sandbox.** Original name was too close to TE's KO II / OP-1 lineup. Slug `ko` → `sandbox` everywhere; one-line legacy fallthrough in `readInitial()` remaps any pre-rename stored value. Comments in `tokens.css` + `base.css` and the line in `CLAUDE.md` swept too.
-  - **NoteStrip** rebuilt as two-row piano layout on a 14-col grid — naturals on the bottom (each spans 2 cols, ~50 px wide), accidentals on top positioned between their adjacent whites (piano top-down view). Hit targets roughly doubled in width; deliberately still interim until M3 staff lands.
-- Pushed; on-push deploy fired; re-eyeballed live; user confirmed.
+- **Wired the central stores as the M3 first move** (`ab1a74d`). New `src/state/bindings.ts` seeds `patchStore` from the engine's schema, then subscribes store → engine pushes (one-way; the engine never writes back). ModelPicker + ParamPanel now read from / write to the store instead of holding local copies. Engine internal mirror stays internal. Verified zero behavior change in the browser before committing — strict no-regression refactor. Sets up share-URLs / presets / undo to "fall out for free" in M5.
+- **M3 first slice — sequencer scaffold** (`1bcdecb`). New `src/sequencer/{transport,part,demo,index}.ts`:
+  - `installSequencer()` adopts the engine's AudioContext as Tone's context so the scheduler and the Braids worklet share one timeline.
+  - `installPart()` rebuilds a looping (4 measures) `Tone.Part` whenever `melodyStore.events` changes; on/off events fire `engine.noteOn/noteOff`. noteOff is **clipped to the loop end** to avoid stuck notes on wrap (TODO wrap-around for legato when the staff lands).
+  - `loadDemoMelody()` seeds an ascending C-major scale (8 quarter notes, 2 bars notes + 2 bars silence so the loop boundary is audible).
+  - Temporary scratch UI in `App.svelte` (`▶ PLAY / ■ STOP` in the footer, `Load demo / Clear` in the staff slot) — **all marked for tear-out when the real staff editor lands**.
+  - `vite.config.ts` now honors `PORT` env so Claude Preview / CI can pin a chosen port; falls through to Vite defaults when unset.
+  - Browser-verified end-to-end: tap-to-start → load demo → play (loops audibly per the user) → stop → no stuck notes → zero console errors.
+- **Pushed twice; auto-deploy fired twice.** Acknowledged pattern.
 
 ## Next up
-1. **Tag the release:** `git tag v0.3.0-m2; git push origin v0.3.0-m2`. The only open close-out for the polish gate — code + visual verification are already done; the tag just stamps the version marker. (Live deploy already happened.)
-2. **Then M3 — sequencer + clickable 4-bar staff.** Deep-review recommendation still stands: **wire the central stores (`patchStore` / `engineIdStore`) as the very first move** so undo / presets / share-URLs "fall out for free" later. They're defined in `src/state/stores.ts` but unwired — ModelPicker + ParamPanel still keep local copies.
-3. **Recommend a fresh session for M3** — different domain (notation + scheduling) and a multi-session chunk; this session's headspace is still polish-gate.
+1. **Continue M3 — SVG staff render (read-only first).** Custom SVG with Bravura SMuFL font; draws `melodyStore.events` as notes on a 4-bar / 4/4 treble staff. Target: `src/notation/{StaffEditor.svelte, render.ts}`. Bravura needs to be self-hosted (see Soon-list note in NEXT-STEPS).
+2. **Then click-to-place interaction** in `src/notation/interaction.ts` — writes back into `melodyStore.setKey("events", …)`. The store is already plumbed to rebuild the Part on event changes, so notes will play the instant they're placed.
+3. **Then snap-to-scale** via `@tonaljs/tonal` (already a dep). `src/sequencer/scales.ts` is the right home — folds the melody's `key` + `scale` fields into a snap helper.
+4. **Then playhead animation + loop-region UI**, then **tear out the scratch buttons** in `App.svelte`.
+5. **Recommend a fresh session for the staff editor.** Different domain (font loading, SVG geometry, pointer interaction) and a multi-session chunk on its own.
 
 ## Watch out for
-- **The on-push auto-deploy still fires** on every push to `main`. Stage on a branch + PR if you want a checkpoint without going live.
-- **NoteStrip is still interim** (now nicer to use, but still a stop-gap until the M3 staff lands). Don't polish it further.
-- **Sandbox slug migration** has a one-time legacy fallthrough (`stored === "ko"` → `"sandbox"`) in `state/theme.ts`. Safe to leave indefinitely — costs one string compare on init.
-- **AD envelope is plumbed but dormant** — amounts default to 0; per-model wiring belongs with M4 (needs explain-panel metadata anyway).
-- Prior gotchas still apply: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs a reassign · DSP shim changes need `npm run wasm` AND committing the regenerated `public/braids.wasm`.
+- **Scratch UI lives in `App.svelte`** — the `▶ PLAY / ■ STOP` footer button and the `Load demo / Clear` row in the staff slot. Both are throw-away. Delete them when the real staff editor + transport bar land.
+- **noteOff is clipped to loop end** in `src/sequencer/part.ts` (`Math.min(startStep + durationSteps, TOTAL_STEPS)`). Simple and safe; the proper fix when M3 finalizes is to wrap notes around the loop boundary so a legato note bridging the wrap works.
+- **`.claude/launch.json` is now checked in.** Lets Claude Preview start the dev server on any machine without reconfiguration; `autoPort: true` so it doesn't fight zombies.
+- **vite.config now reads `PORT` env** with `strictPort` when set. If you set `PORT=…` manually and that port is busy, Vite will fail to start instead of bumping — by design, so tooling can rely on the port it asked for.
+- **Auto-deploy still fires on every push to `main`.** Stage on a branch + PR if you want a checkpoint without going live.
+- Prior gotchas still apply: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs reassign · DSP shim changes need `npm run wasm` AND committing regenerated `public/braids.wasm`.
 - Memories/plan are machine-local — likely stale on the laptop. Source of truth = in-repo `CLAUDE.md` + `.handoff/`.

@@ -2,17 +2,20 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-01 (desktop, after v0.3.0-m2 eyeball pass).
+Last reconciled: 2026-06-01 (desktop, M3 first slice shipped — sequencer scaffold).
 
-## Now — kick off M3
-**v0.3.0-m2 is closed out** (tag pushed 2026-06-01). Polish gate verified, live, tagged. Next: open M3.
+## Now — continue M3
+**M3 first slice landed.** Store-wiring (`ab1a74d`) + sequencer scaffold (`1bcdecb`) both pushed, both auto-deployed. The demo melody audibly loops end-to-end. Next is the staff editor; this is multi-session — start fresh.
 
-- [ ] **M3 first move — wire `patchStore` / `engineIdStore`.** They're defined in `src/state/stores.ts` but unwired; ModelPicker + ParamPanel still keep local copies. Wiring them now makes share-URLs / presets / undo fall out for free later. Deep-review §3 recommendation.
-- [ ] Then the M3 build proper: Tone.Transport/Part + custom SVG 4-bar/4-4 staff, snap-to-scale, playhead + loop.
+- [ ] **SVG staff render (read-only first).** Custom SVG, Bravura SMuFL font (needs self-hosting — see Soon list). Draws `melodyStore.events` on a 4-bar / 4/4 treble staff. Target: `src/notation/{StaffEditor.svelte, render.ts}`.
+- [ ] **Click-to-place interaction** in `src/notation/interaction.ts`. Writes back to `melodyStore.setKey("events", …)`; the Part rebuild on events-change is already plumbed, so placed notes play immediately.
+- [ ] **Snap-to-scale** via `@tonaljs/tonal` (already a dep). Home: `src/sequencer/scales.ts` — folds melody's `key` + `scale` fields into a snap helper.
+- [ ] **Playhead animation + loop-region UI.**
+- [ ] **Tear out the scratch buttons** in `App.svelte` (footer Play/Stop + staff-slot Load demo/Clear) when the real staff editor + transport bar take over.
+- [ ] **Wrap-around for noteOff at loop boundary** in `src/sequencer/part.ts` (currently clipped — simple but loses legato across the wrap).
 
 ## Soon (hygiene + smaller catches — deep review §4)
-- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
-- [ ] Wire the central stores (`patchStore`/`engineIdStore`) as the first move of M3 so share-URLs/presets/undo "fall out for free."
+- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts (**Bravura also lands here — M3 will need it self-hosted anyway**); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
 - [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
 
 ## Later milestones (per plan file)
@@ -25,6 +28,10 @@ Last reconciled: 2026-06-01 (desktop, after v0.3.0-m2 eyeball pass).
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-01 (desktop, M3 first slice — sequencer scaffold):** `src/sequencer/{transport,part,demo,index}.ts` lands. `installSequencer()` adopts the engine's AudioContext as Tone's context so the scheduler and Braids worklet share one timeline; `installPart()` rebuilds a looping (4 measures) Tone.Part whenever `melodyStore.events` changes, firing `engine.noteOn/noteOff` with noteOff clipped to loop end. Temporary scratch UI in `App.svelte` (Play/Stop footer button, Load demo / Clear in staff slot) — all marked for tear-out when the real staff editor lands. `vite.config.ts` now honors `PORT` env for tooling. Browser-verified end-to-end: tap-to-start → load demo → audibly loops C-major scale → stop, zero console errors. New `.claude/launch.json` checked in for Claude Preview compatibility on any machine.
+  - `1bcdecb` M3: sequencer scaffold — Tone.Transport + Part wired to engine
+- **2026-06-01 (desktop, M3 first move — store-wiring):** `patchStore` + `engineIdStore` are now the source of truth. New `src/state/bindings.ts` seeds patch from engine's parameter schema, then subscribes store → engine pushes one-way (engine never writes back). ModelPicker + ParamPanel read from / write to the store; no behavior change in the browser (strict no-regression refactor). Share-URLs / presets / undo will fall out for free in M5.
+  - `ab1a74d` M3: wire patchStore + engineIdStore as source of truth
 - **2026-06-01 (desktop, post-pickup):** Tagged `v0.3.0-m2` and pushed. Polish gate fully closed out.
 - **2026-06-01 (desktop, evening — v0.3.0-m2 eyeball-pass follow-ups):** Verified the overnight batch on the live URL. Three small follow-ups caught and shipped in one bundled commit, deployed, and user-confirmed.
   - `3767b5d` polish: Sandbox rename · dark knob indicator · NoteStrip piano-style two-row layout

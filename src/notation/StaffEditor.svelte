@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { melodyStore, type MelodyEvent } from "../state/stores";
+  import { onMount, onDestroy } from "svelte";
+  import * as Tone from "tone";
+  import { melodyStore, isPlayingStore, type MelodyEvent } from "../state/stores";
   import { loadBravura } from "./font";
   import { GLYPH } from "./glyphs";
   import {
@@ -237,6 +238,39 @@
       deleteAt(hit);
     }
   }
+
+  /* —— Playhead ——————————————————————————————————————————————————— */
+
+  // Loop length in steps = TOTAL_STEPS (= 4 bars × 16). Convert seconds to
+  // steps via the current tempo so a BPM change updates the sweep in lockstep.
+  let playheadStep = $state<number | null>(null);
+  let raf = 0;
+  function tickPlayhead(): void {
+    const transport = Tone.getTransport();
+    if (transport.state !== "started") {
+      playheadStep = null;
+      raf = 0;
+      return;
+    }
+    const bpm = transport.bpm.value;
+    const loopSec = (60 / bpm) * 16;          // 16 beats per loop in 4/4
+    const sec = transport.seconds;
+    const within = ((sec % loopSec) + loopSec) % loopSec;
+    playheadStep = (within / loopSec) * TOTAL_STEPS;
+    raf = requestAnimationFrame(tickPlayhead);
+  }
+  isPlayingStore.subscribe((playing) => {
+    if (playing && !raf) {
+      raf = requestAnimationFrame(tickPlayhead);
+    } else if (!playing) {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      playheadStep = null;
+    }
+  });
+  onDestroy(() => {
+    if (raf) cancelAnimationFrame(raf);
+  });
 </script>
 
 <div class="staff-editor">
@@ -313,6 +347,20 @@
         {/if}
       {/each}
     </g>
+
+    <!-- Playhead (during playback) -->
+    {#if playheadStep !== null}
+      <line
+        class="playhead"
+        x1={stepToX(playheadStep, m)}
+        y1={TOP - 0.5}
+        x2={stepToX(playheadStep, m)}
+        y2={TOP + 4.5}
+        stroke="var(--signal)"
+        stroke-width="0.18"
+        stroke-linecap="round"
+      />
+    {/if}
 
     <!-- Drag preview (translucent) -->
     {#if dragPreview}

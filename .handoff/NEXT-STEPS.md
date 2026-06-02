@@ -2,13 +2,12 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-01 (desktop, after overnight P1 batch).
+Last reconciled: 2026-06-01 (desktop, after v0.3.0-m2 eyeball pass).
 
-## Now — act on the deep review (the v0.3.0-m2 polish gate)
-**All three P1s + bundled hygiene shipped overnight.** What's left is the final browser eyeball and the tag.
+## Now — close out v0.3.0-m2
+**Polish gate is verified done.** Live URL eyeballed; the three follow-ups it surfaced are fixed, deployed, and re-confirmed. Only the version tag remains.
 
-- [ ] Browser eyeball pass — see `.handoff/PENDING-DECISIONS.md` for the punch-list.
-- [ ] Tag `v0.3.0-m2` and push (auto-deploys live).
+- [ ] Tag `v0.3.0-m2` and push (`git tag v0.3.0-m2; git push origin v0.3.0-m2`). Live deploy already happened — this just stamps the marker.
 
 ## Soon (hygiene + smaller catches — deep review §4)
 - [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
@@ -25,6 +24,11 @@ Last reconciled: 2026-06-01 (desktop, after overnight P1 batch).
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-01 (desktop, evening — v0.3.0-m2 eyeball-pass follow-ups):** Verified the overnight batch on the live URL. Three small follow-ups caught and shipped in one bundled commit, deployed, and user-confirmed.
+  - `3767b5d` polish: Sandbox rename · dark knob indicator · NoteStrip piano-style two-row layout
+    - K.O. Console → **Sandbox** (was too close to TE's KO II / OP-1). Slug `ko` → `sandbox` with a legacy fallthrough in `readInitial()` for any pre-rename stored value. Comments + CLAUDE.md swept.
+    - Sandbox `--knob-pointer` was `#E9E5DC` (= `--bg`) → flipped to `#1A1A1A` so needles + hubs read on the warm body.
+    - NoteStrip: 14-col grid with naturals (2-col span ~50 px) on the bottom and accidentals positioned between adjacent whites on the top — piano top-down view. Still interim until M3 staff.
 - **2026-06-01 (desktop, overnight — v0.3.0-m2 polish gate):** Cleared all three remaining P1s + bundled hygiene in a single unattended run. Full plain-language write-up at `.handoff/OVERNIGHT-LOG-2026-06-01.md`. Highlights: theme contrast pass with new `--signal-ink` for K.O.; RAF-coalesced knob `onchange` (audio-thread protection); ModelPicker keyboard nav + ≥44px touch + 320 ms spring pulse on model change; new mobile-only `NoteStrip` (12 chips + octave shift); oscilloscope hero finally glows — real `shadowBlur` bloom + breathing idle + L→R boot sweep + DC-clamp; subtle fractal-noise grain on Lab + K.O.; deleted dead `public/icons.svg`; init-failure dispose fix on `useEngine`. Type-check clean throughout (8 commits, 0 errors). Browser eyeball + tag deferred to morning verification.
   - `efb8a7c` fix: ModelPicker keyboard handler — scope to search + items, guard empty Enter
   - `557ee4e` hygiene: delete dead icons.svg, dispose half-built engine on init failure

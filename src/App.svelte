@@ -16,8 +16,6 @@
   audioReadyStore.subscribe((v) => { ready = v; });
   let viz = $state<"scope" | "spectrum">("scope");
 
-  // M3 first-slice scratch UI — Play/Stop + Load demo. Replaced when the
-  // real staff editor lands.
   let playing = $state(false);
   isPlayingStore.subscribe((v) => { playing = v; });
   let tempo = $state(melodyStore.get().tempo);
@@ -38,7 +36,7 @@
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Parallax</span>
-    <span class="brand-sub">M1 — Braids engine</span>
+    <span class="brand-sub">M3 — sequencer + staff</span>
   </div>
   <ThemeSwitcher />
 </header>
@@ -80,16 +78,14 @@
     <div class="staff-frame">
       <StaffEditor />
     </div>
-    <div class="staff-scratch">
-      <div class="scratch-row">
-        <button class="scratch-btn" onclick={loadDemoMelody} disabled={!ready}>
-          Load demo melody
-        </button>
-        <button class="scratch-btn" onclick={clearMelody} disabled={!ready || eventCount === 0}>
-          Clear
-        </button>
-        <span class="scratch-meta">{eventCount} note{eventCount === 1 ? "" : "s"}</span>
-      </div>
+    <div class="staff-footer">
+      {#if eventCount === 0}
+        <p class="hint">Tap to place a note · drag right to extend · long-press to delete</p>
+        <button class="ghost-btn" onclick={loadDemoMelody} disabled={!ready}>Load demo</button>
+      {:else}
+        <span class="count">{eventCount} note{eventCount === 1 ? "" : "s"}</span>
+        <button class="ghost-btn" onclick={clearMelody}>Clear</button>
+      {/if}
     </div>
   </section>
 </main>
@@ -271,35 +267,41 @@
     justify-content: center;
     padding: 4px 0 8px;
   }
-  .staff-scratch {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 0 0 auto;
-  }
-  .scratch-row {
+  .staff-footer {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
     flex-wrap: wrap;
+    flex: 0 0 auto;
+    min-height: 28px;
   }
-  .scratch-btn {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    padding: 6px 12px;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: var(--hairline-w) solid var(--hairline);
-    border-radius: var(--radius-sm);
-    transition: filter var(--t-fast);
-  }
-  .scratch-btn:hover:not(:disabled) { filter: brightness(1.1); }
-  .scratch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .scratch-meta {
+  .staff-footer .hint {
     font-family: var(--font-mono);
     font-size: 0.7rem;
     color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .staff-footer .count {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+  .ghost-btn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    color: var(--text-muted);
+    background: transparent;
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    transition: color var(--t-fast), border-color var(--t-fast);
+  }
+  .ghost-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+  .ghost-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media (pointer: coarse) {
+    .ghost-btn { padding: 8px 14px; min-height: 36px; }
   }
   /* Status uses shape + text-case + weight, not color alone — ready/idle is
      readable in greyscale and remains accessible for colorblind users. */

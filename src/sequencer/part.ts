@@ -29,10 +29,15 @@ function expand(events: MelodyEvent[]): PartEvent[] {
   for (const e of events) {
     if (e.startStep < 0 || e.startStep >= TOTAL_STEPS) continue;
     out.push({ time: stepToBBS(e.startStep), kind: "on", midi: e.midi, velocity: 0.8 });
-    // Clip the noteOff to loop end so we don't leak a stuck note across the wrap.
-    // A future TODO is to wrap-around for legato; for M3-first-slice, clip is safe.
-    const off = Math.min(e.startStep + e.durationSteps, TOTAL_STEPS);
-    out.push({ time: stepToBBS(off), kind: "off", midi: e.midi });
+    // Wrap the noteOff around the loop boundary so legato bridges the wrap.
+    // Cap duration at TOTAL_STEPS - 1 to avoid the degenerate on==off-at-same-time
+    // race (would otherwise produce zero-length rings depending on event order).
+    // For start=60, duration=8 (endStep=68): off fires at step 4 of the NEXT loop
+    // iteration. Tone.Part fires both the on and the wrapped-off on every iteration;
+    // the unmatched off on the first iteration is a no-op against an inactive note.
+    const dur = Math.min(e.durationSteps, TOTAL_STEPS - 1);
+    const offStep = (e.startStep + dur) % TOTAL_STEPS;
+    out.push({ time: stepToBBS(offStep), kind: "off", midi: e.midi });
   }
   return out;
 }

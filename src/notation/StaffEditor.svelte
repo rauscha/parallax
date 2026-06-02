@@ -11,6 +11,7 @@
     TOTAL_STEPS, BARS, STEPS_PER_BAR,
   } from "./render";
   import { pointerToSP, hitTestNote } from "./interaction";
+  import { snapAtPosition, preferFlats } from "../sequencer/scales";
 
   const STAFF_WIDTH_SP = 100;
   const m = makeMetrics(STAFF_WIDTH_SP);
@@ -27,7 +28,14 @@
   const BARLINE_XS = Array.from({ length: BARS + 1 }, (_, i) => stepToX(i * STEPS_PER_BAR, m));
 
   let events = $state<MelodyEvent[]>(melodyStore.get().events);
-  melodyStore.subscribe((mel) => { events = mel.events; });
+  let key = $state(melodyStore.get().key);
+  let scale = $state(melodyStore.get().scale);
+  melodyStore.subscribe((mel) => {
+    events = mel.events;
+    key = mel.key;
+    scale = mel.scale;
+  });
+  let useFlats = $derived(preferFlats(key, scale));
 
   let fontReady = $state(false);
   let svgEl: SVGSVGElement;
@@ -65,7 +73,7 @@
   const ACC_OFFSET = -1.1;
 
   function visualFor(ev: MelodyEvent): NoteVisual {
-    const { position, accidental } = midiToPlacement(ev.midi);
+    const { position, accidental } = midiToPlacement(ev.midi, useFlats);
     const dv = durationToVisual(ev.durationSteps);
     const x = stepToX(ev.startStep, m);
     const y = positionToY(position, m);
@@ -157,10 +165,12 @@
       return;
     }
 
-    // Empty space — begin placement
+    // Empty space — begin placement (snap pitch to the active scale,
+    // preferring candidates that stay on the clicked staff position).
     const step = xToStep(sp.x, m);
     const position = yToPosition(sp.y, m);
-    const midi = clampMidi(positionToMidi(position));
+    const rawMidi = clampMidi(positionToMidi(position));
+    const midi = clampMidi(snapAtPosition(rawMidi, key, scale));
     dragState = {
       startStep: step,
       midi,

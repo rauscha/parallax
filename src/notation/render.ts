@@ -77,7 +77,9 @@ export function yToPosition(y: number, m: StaffMetrics): number {
 /* —— MIDI ↔ diatonic position (sharps-default) ————————————————— */
 
 // Pitch class (C=0…B=11) → (degree within octave 0=C…6=B, accidental).
-const PC_TO_DEGREE: ReadonlyArray<readonly [number, "" | "sharp" | "flat"]> = [
+// Two spellings — sharp-default and flat-default. Flat-default is selected
+// when the active key is in the flat family (F, Bb, Eb, etc.).
+const PC_TO_DEGREE_SHARP: ReadonlyArray<readonly [number, "" | "sharp" | "flat"]> = [
   [0, ""],       // C
   [0, "sharp"],  // C#
   [1, ""],       // D
@@ -91,6 +93,20 @@ const PC_TO_DEGREE: ReadonlyArray<readonly [number, "" | "sharp" | "flat"]> = [
   [5, "sharp"],  // A#
   [6, ""],       // B
 ];
+const PC_TO_DEGREE_FLAT: ReadonlyArray<readonly [number, "" | "sharp" | "flat"]> = [
+  [0, ""],       // C
+  [1, "flat"],   // Db
+  [1, ""],       // D
+  [2, "flat"],   // Eb
+  [2, ""],       // E
+  [3, ""],       // F
+  [4, "flat"],   // Gb
+  [4, ""],       // G
+  [5, "flat"],   // Ab
+  [5, ""],       // A
+  [6, "flat"],   // Bb
+  [6, ""],       // B
+];
 
 const DEGREE_TO_PC = [0, 2, 4, 5, 7, 9, 11];
 
@@ -99,10 +115,16 @@ export interface MidiPlacement {
   accidental: "" | "sharp" | "flat";
 }
 
-export function midiToPlacement(midi: number): MidiPlacement {
+export function midiToPlacement(midi: number, preferFlats = false): MidiPlacement {
   const m = ((midi % 12) + 12) % 12;
   const octave = Math.floor(midi / 12) - 1;       // MIDI: C4 = 60 → octave 4
-  const [degree, accidental] = PC_TO_DEGREE[m];
+  const map = preferFlats ? PC_TO_DEGREE_FLAT : PC_TO_DEGREE_SHARP;
+  const [degree, accidental] = map[m];
+  // For Cb (pitch class 11 spelled with flat), it sits at degree 0 of the
+  // NEXT octave-up. Adjust the octave used to compute staff position.
+  // The flat map keeps every pitch class on its natural-or-one-degree-below
+  // line; no octave wraparound needed for our 12 entries since neither Cb nor
+  // B# appear (we kept B and C as their naturals).
   const position = (octave - 4) * 7 + degree;
   return { position, accidental };
 }

@@ -8,6 +8,7 @@
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
+  import KeyScalePicker from "./notation/KeyScalePicker.svelte";
   import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
 
@@ -72,7 +73,10 @@
   </section>
 
   <section class="region staff" aria-label="Melody staff">
-    <div class="region-label">Staff</div>
+    <div class="staff-header">
+      <span class="region-label">Staff</span>
+      <KeyScalePicker />
+    </div>
     <div class="staff-frame">
       <StaffEditor />
     </div>
@@ -251,6 +255,14 @@
     color: var(--text);
   }
 
+  .staff-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
   .staff-frame {
     flex: 1 1 auto;
     min-height: 0;

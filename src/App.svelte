@@ -7,11 +7,25 @@
   import NoteStrip from "./ui/NoteStrip.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
-  import { audioReadyStore } from "./state/stores";
+  import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
+  import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
   let viz = $state<"scope" | "spectrum">("scope");
+
+  // M3 first-slice scratch UI — Play/Stop + Load demo. Replaced when the
+  // real staff editor lands.
+  let playing = $state(false);
+  isPlayingStore.subscribe((v) => { playing = v; });
+  let tempo = $state(melodyStore.get().tempo);
+  let eventCount = $state(melodyStore.get().events.length);
+  melodyStore.subscribe((m) => { tempo = m.tempo; eventCount = m.events.length; });
+
+  function toggleTransport() {
+    if (playing) stopTransport();
+    else playTransport();
+  }
 </script>
 
 {#if !ready}
@@ -58,14 +72,34 @@
 
   <section class="region staff" aria-label="Melody staff">
     <div class="region-label">Staff</div>
-    <div class="placeholder">4-bar / 4-4 click-to-place melody lands here in M3.</div>
+    <div class="staff-scratch">
+      <p class="hint">
+        Click-to-place staff lands soon. Meanwhile: load a demo melody and hit play
+        to confirm the scheduler is wired.
+      </p>
+      <div class="scratch-row">
+        <button class="scratch-btn" onclick={loadDemoMelody} disabled={!ready}>
+          Load demo melody
+        </button>
+        <button class="scratch-btn" onclick={clearMelody} disabled={!ready || eventCount === 0}>
+          Clear
+        </button>
+        <span class="scratch-meta">{eventCount} note{eventCount === 1 ? "" : "s"}</span>
+      </div>
+    </div>
   </section>
 </main>
 
 <NoteStrip />
 
 <footer class="transport">
-  <span class="readout">— BPM</span>
+  <div class="transport-left">
+    <button class="play-btn" onclick={toggleTransport} disabled={!ready || eventCount === 0}
+      aria-pressed={playing} aria-label={playing ? "Stop" : "Play"}>
+      {playing ? "■ STOP" : "▶ PLAY"}
+    </button>
+    <span class="readout">{tempo} BPM</span>
+  </div>
   <span class="status">audio <span class="dot" aria-hidden="true">{ready ? "●" : "○"}</span> <strong>{ready ? "READY" : "idle"}</strong></span>
 </footer>
 
@@ -188,6 +222,69 @@
     font-family: var(--font-mono);
     font-size: 0.75rem;
     color: var(--text-muted);
+  }
+  .transport-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .play-btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    padding: 5px 12px;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    transition: filter var(--t-fast), background var(--t-fast);
+  }
+  .play-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .play-btn[aria-pressed="true"] {
+    background: var(--signal);
+    color: var(--bg);
+    border-color: var(--signal);
+  }
+  .play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .readout {
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+
+  .staff-scratch {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .staff-scratch .hint {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .scratch-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .scratch-btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    padding: 6px 12px;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    transition: filter var(--t-fast);
+  }
+  .scratch-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .scratch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .scratch-meta {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
   }
   /* Status uses shape + text-case + weight, not color alone — ready/idle is
      readable in greyscale and remains accessible for colorblind users. */

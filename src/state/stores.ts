@@ -41,3 +41,6 @@ export const audioReadyStore = atom<boolean>(false);
 
 /** Which MIDI notes are currently sounding (UI lights, scope phase-lock hint). */
 export const activeNotesStore = atom<Set<number>>(new Set());
+
+/** Sequencer transport state. True while Tone.Transport is running. */
+export const isPlayingStore = atom<boolean>(false);

@@ -11,6 +11,10 @@ export default defineConfig(({ command }) => ({
   plugins: [svelte()],
   server: {
     host: true, // bind 0.0.0.0 so the dev server is reachable over Tailscale / LAN
+    // Honor PORT env var so tooling (Claude Preview, CI) can pin a chosen port;
+    // falls through to Vite's default (5173, then 5174, ...) when unset.
+    port: process.env.PORT ? Number(process.env.PORT) : undefined,
+    strictPort: !!process.env.PORT,
     // Allow Tailscale MagicDNS hostnames (<node>.<tailnet>.ts.net) when fronted by
     // `tailscale serve` for HTTPS — required for the AudioWorklet's secure context.
     allowedHosts: ['.ts.net'],

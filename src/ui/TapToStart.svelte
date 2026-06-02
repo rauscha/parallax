@@ -3,6 +3,7 @@
   import { BraidsEngine } from "../audio/engines/BraidsEngine";
   import { audioReadyStore } from "../state/stores";
   import { installBindings } from "../state/bindings";
+  import { installSequencer, installPart } from "../sequencer";
 
   let starting = $state(false);
   let error = $state<string | null>(null);
@@ -18,6 +19,10 @@
       // so subscribers (ModelPicker, ParamPanel) snapshot the seeded values
       // the instant they react.
       installBindings(audioEngine);
+      // Sequencer adopts the engine's AudioContext so Tone's scheduler shares
+      // a timeline with the Braids worklet.
+      installSequencer();
+      installPart();
       // Confirmation strike — short A440 so we know the chain is live end-to-end.
       audioEngine.currentEngine?.noteOn(69, { velocity: 0.5 });
       setTimeout(() => audioEngine.currentEngine?.noteOff(69), 260);

@@ -7,6 +7,7 @@
   import NoteStrip from "./ui/NoteStrip.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
+  import StaffEditor from "./notation/StaffEditor.svelte";
   import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
 
@@ -72,11 +73,10 @@
 
   <section class="region staff" aria-label="Melody staff">
     <div class="region-label">Staff</div>
+    <div class="staff-frame">
+      <StaffEditor />
+    </div>
     <div class="staff-scratch">
-      <p class="hint">
-        Click-to-place staff lands soon. Meanwhile: load a demo melody and hit play
-        to confirm the scheduler is wired.
-      </p>
       <div class="scratch-row">
         <button class="scratch-btn" onclick={loadDemoMelody} disabled={!ready}>
           Load demo melody
@@ -192,7 +192,7 @@
   .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }
   .divider  { height: 1px; background: var(--hairline-soft); margin: 4px 0; }
   .explain  { grid-area: explain; }
-  .staff    { grid-area: staff; }
+  .staff    { grid-area: staff; display: flex; flex-direction: column; }
 
   .region-label {
     font-family: var(--font-mono);
@@ -251,16 +251,19 @@
     color: var(--text);
   }
 
+  .staff-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0 8px;
+  }
   .staff-scratch {
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-  .staff-scratch .hint {
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    line-height: 1.5;
+    flex: 0 0 auto;
   }
   .scratch-row {
     display: flex;

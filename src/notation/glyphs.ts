@@ -7,6 +7,8 @@
  */
 export const GLYPH = {
   gClef:               "",
+  gClef8vb:            "",
+  gClef8va:            "",
   noteheadWhole:       "",
   noteheadHalf:        "",
   noteheadBlack:       "",

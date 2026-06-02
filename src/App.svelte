@@ -9,6 +9,7 @@
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
   import KeyScalePicker from "./notation/KeyScalePicker.svelte";
+  import StaffToolbar from "./notation/StaffToolbar.svelte";
   import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
 
@@ -73,7 +74,10 @@
   <section class="region staff" aria-label="Melody staff">
     <div class="staff-header">
       <span class="region-label">Staff</span>
-      <KeyScalePicker />
+      <div class="staff-controls">
+        <KeyScalePicker />
+        <StaffToolbar />
+      </div>
     </div>
     <div class="staff-frame">
       <StaffEditor />
@@ -98,7 +102,19 @@
       aria-pressed={playing} aria-label={playing ? "Stop" : "Play"}>
       {playing ? "■ STOP" : "▶ PLAY"}
     </button>
-    <span class="readout">{tempo} BPM</span>
+    <label class="tempo-field">
+      <input
+        class="tempo-input"
+        type="number"
+        min="40"
+        max="240"
+        step="1"
+        value={tempo}
+        onchange={(e) => { const v = Math.max(40, Math.min(240, Math.round(+e.currentTarget.value) || 120)); melodyStore.setKey("tempo", v); e.currentTarget.value = String(v); }}
+        aria-label="Tempo (BPM)"
+      />
+      <span class="bpm-unit">BPM</span>
+    </label>
   </div>
   <span class="status">audio <span class="dot" aria-hidden="true">{ready ? "●" : "○"}</span> <strong>{ready ? "READY" : "idle"}</strong></span>
 </footer>
@@ -246,9 +262,41 @@
     border-color: var(--signal);
   }
   .play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .readout {
-    font-family: var(--font-mono);
+  .tempo-field {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
     color: var(--text);
+    font-family: var(--font-mono);
+  }
+  .tempo-input {
+    width: 3em;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: inherit;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
+  }
+  .tempo-input:focus { outline: 2px solid var(--signal); outline-offset: 1px; }
+  /* Hide spinner arrows — they take space and look out of place at this size */
+  .tempo-input::-webkit-outer-spin-button,
+  .tempo-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .tempo-input { -moz-appearance: textfield; appearance: textfield; }
+  .bpm-unit {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: var(--label-case);
+    letter-spacing: var(--label-tracking);
+  }
+  @media (pointer: coarse) {
+    .tempo-input { padding: 6px 8px; min-height: 32px; width: 3.5em; }
   }
 
   .staff-header {
@@ -258,6 +306,12 @@
     gap: 12px;
     flex-wrap: wrap;
     margin-bottom: 4px;
+  }
+  .staff-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
   }
   .staff-frame {
     flex: 1 1 auto;

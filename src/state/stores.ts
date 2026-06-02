@@ -22,6 +22,13 @@ export interface MelodyEvent {
   startStep: number;        // 0..63 (16th-note grid, 4 bars × 16 steps)
   durationSteps: number;
   midi: number;
+  /** Optional explicit staff position (absolute, C4=0). When set, the renderer
+   *  uses this instead of deriving from midi — needed to spell things like Bb
+   *  on the B-line vs A# on the A-space, or to force a C natural in F major. */
+  position?: number;
+  /** Optional explicit accidental glyph. When set, renderer draws this sign
+   *  next to the notehead regardless of what the key would suggest. */
+  accidental?: "sharp" | "flat" | "natural";
 }
 export interface Melody {
   tempo: number;            // BPM

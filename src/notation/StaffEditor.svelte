@@ -9,10 +9,12 @@
     positionToY, stepToX, xToStep, yToPosition,
     midiToPlacement, durationToVisual,
     positionToMidi, stemUp, ledgersFor,
+    silentGaps, fillRestGap, type RestKind,
     TOTAL_STEPS, BARS, STEPS_PER_BAR,
   } from "./render";
   import { pointerToSP, hitTestNote } from "./interaction";
   import { snapAtPosition, preferFlats } from "../sequencer/scales";
+  import { octaveShiftStore, editorToolStore, type EditorTool } from "./editorMode";
 
   const STAFF_WIDTH_SP = 100;
   const m = makeMetrics(STAFF_WIDTH_SP);
@@ -38,6 +40,15 @@
   });
   let useFlats = $derived(preferFlats(key, scale));
 
+  // Octave shift + active tool live in shared stores so the toolbar
+  // component can read/write them. octaveShift persists across reloads.
+  let octaveShift = $state(octaveShiftStore.get());
+  octaveShiftStore.subscribe((v) => { octaveShift = v; });
+  let activeTool = $state<EditorTool>(editorToolStore.get());
+  editorToolStore.subscribe((v) => { activeTool = v; });
+
+  let clefGlyph = $derived(octaveShift === -1 ? GLYPH.gClef8vb : GLYPH.gClef);
+
   let fontReady = $state(false);
   let svgEl: SVGSVGElement;
   onMount(() => {
@@ -48,7 +59,7 @@
 
   interface NoteVisual {
     x: number; y: number; position: number;
-    accidental: "" | "sharp" | "flat";
+    accidental: "" | "sharp" | "flat" | "natural";
     glyph: string;
     stemUp: boolean; stem: boolean;
     stemX1: number; stemY1: number; stemX2: number; stemY2: number;
@@ -74,7 +85,21 @@
   const ACC_OFFSET = -1.1;
 
   function visualFor(ev: MelodyEvent): NoteVisual {
-    const { position, accidental } = midiToPlacement(ev.midi, useFlats);
+    // The octave shift moves the *visual* pitch up by |shift| octaves while
+    // the underlying MIDI stays the same. shift = -1 means midi 48 (C3)
+    // shows at midi 60 (C4)'s staff position.
+    // Stored position is absolute (C4 = 0); subtract 7*shift for display.
+    let position: number;
+    let accidental: "" | "sharp" | "flat" | "natural";
+    if (ev.position !== undefined) {
+      position = ev.position - 7 * octaveShift;
+      accidental = ev.accidental ?? "";
+    } else {
+      const displayMidi = ev.midi - 12 * octaveShift;
+      const placement = midiToPlacement(displayMidi, useFlats);
+      position = placement.position;
+      accidental = ev.accidental ?? placement.accidental;
+    }
     const dv = durationToVisual(ev.durationSteps);
     const x = stepToX(ev.startStep, m);
     const y = positionToY(position, m);
@@ -101,32 +126,108 @@
     };
   }
 
-  let visuals = $derived(events.map(visualFor));
+  /* —— Interaction (monophonic, tool-aware) ————————————————————————
 
-  /* —— Interaction ——————————————————————————————————————————————— */
+     The model: every tap on the staff places a note (or, in rest mode,
+     a rest = trim only). Monophonic invariant — when a tap lands inside
+     an existing note's duration, that note is trimmed to end at the tap.
+     Drag-extend clamps to the next note's start so durations never overlap.
+
+     Delete paths: long-press (~500 ms hold without movement) OR right-click
+     on an existing note. Both work over any part of the note's range. */
 
   const DEFAULT_DURATION = 4;       // quarter — applied if user didn't drag
   const LONG_PRESS_MS = 500;
   const MIN_DRAG_SP = 0.5;
-  const MIDI_MIN = 36;              // C2 — clamp; staff handles ledger lines well below this but UX gets silly
-  const MIDI_MAX = 96;              // C7
+  const MIDI_MIN = 24;              // C1 — wide range; octave shift extends low end further
+  const MIDI_MAX = 108;             // C8
 
+  type DragMode = "place" | "rest";
   let dragState = $state<null | {
+    mode: DragMode;
     startStep: number;
+    endStep: number;                // for rest mode (= drag-extended)
     midi: number;
+    position?: number;
+    accidental?: "sharp" | "flat" | "natural";
     durationSteps: number;
+    maxDur: number;
     pointerId: number;
     userDragged: boolean;
   }>(null);
   let longPress: { idx: number; pointerId: number; startX: number; startY: number; timer: number } | null = null;
 
-  let dragPreview = $derived(
-    dragState
-      ? visualFor({ startStep: dragState.startStep, durationSteps: dragState.durationSteps, midi: dragState.midi })
-      : null,
-  );
-
   function clampMidi(n: number): number { return Math.max(MIDI_MIN, Math.min(MIDI_MAX, n)); }
+
+  /** Apply the dragState's trim + new-note overlay to the committed events.
+   *  This is what the renderer draws — so the user sees the trim happen the
+   *  moment they tap, without modifying the store until pointerup. */
+  let previewEvents = $derived.by((): MelodyEvent[] => {
+    if (!dragState) return events;
+    const out: MelodyEvent[] = [];
+    for (const e of events) {
+      // Trim a covering note so its duration ends at dragState.startStep.
+      if (e.startStep < dragState.startStep && dragState.startStep < e.startStep + e.durationSteps) {
+        const newDur = dragState.startStep - e.startStep;
+        if (newDur > 0) out.push({ ...e, durationSteps: newDur });
+        continue;
+      }
+      // For rest mode, also drop forward notes inside the rest range.
+      if (dragState.mode === "rest" && e.startStep >= dragState.startStep && e.startStep < dragState.endStep) {
+        continue;
+      }
+      // Replace the note at exactly the same startStep (place mode only).
+      if (dragState.mode === "place" && e.startStep === dragState.startStep) continue;
+      out.push(e);
+    }
+    if (dragState.mode === "place") {
+      out.push({
+        startStep: dragState.startStep,
+        durationSteps: dragState.durationSteps,
+        midi: dragState.midi,
+        position: dragState.position,
+        accidental: dragState.accidental,
+      });
+    }
+    out.sort((a, b) => a.startStep - b.startStep);
+    return out;
+  });
+
+  let visuals = $derived(previewEvents.map(visualFor));
+
+  /* —— Rests (auto-rendered in gaps) ——————————————————————————— */
+  // Compute the rest decomposition of every silent gap in the previewed
+  // melody. Renders rest glyphs so the staff always shows a full 4-bar
+  // metric structure, even when notes are sparse.
+  interface RestVisual {
+    x: number; y: number; glyph: string;
+  }
+  const REST_GLYPH: Record<RestKind, string> = {
+    whole:   GLYPH.restWhole,
+    half:    GLYPH.restHalf,
+    quarter: GLYPH.restQuarter,
+    "8th":   GLYPH.rest8th,
+    "16th":  GLYPH.rest16th,
+  };
+  function restY(kind: RestKind): number {
+    // Whole rest hangs from the D5 (4th-from-bottom) line; the rest sit on/around
+    // the middle line.
+    return kind === "whole" ? TOP + 1 : TOP + 2;
+  }
+  let restVisuals = $derived.by((): RestVisual[] => {
+    const gaps = silentGaps(previewEvents);
+    const out: RestVisual[] = [];
+    for (const [a, b] of gaps) {
+      for (const r of fillRestGap(a, b)) {
+        out.push({
+          x: stepToX(r.step, m),
+          y: restY(r.kind),
+          glyph: REST_GLYPH[r.kind],
+        });
+      }
+    }
+    return out;
+  });
 
   function eventVisualX(i: number): number { return visuals[i].x; }
   function eventVisualY(i: number): number { return visuals[i].y; }
@@ -134,16 +235,65 @@
     return hitTestNote(events, m, spX, spY, eventVisualX, eventVisualY);
   }
 
-  function commitPlacement(startStep: number, durationSteps: number, midi: number): void {
-    const clamped = Math.min(durationSteps, TOTAL_STEPS - startStep);
-    melodyStore.setKey("events", [
-      ...events,
-      { startStep, durationSteps: clamped, midi },
-    ]);
+  /** The next note whose startStep > step, or null. */
+  function nextNoteAfter(step: number): MelodyEvent | null {
+    let best: MelodyEvent | null = null;
+    for (const e of events) {
+      if (e.startStep > step && (!best || e.startStep < best.startStep)) best = e;
+    }
+    return best;
   }
 
   function deleteAt(idx: number): void {
     melodyStore.setKey("events", events.filter((_, i) => i !== idx));
+  }
+
+  function commitFromDragState(): void {
+    if (!dragState) return;
+    const out: MelodyEvent[] = [];
+    for (const e of events) {
+      if (e.startStep < dragState.startStep && dragState.startStep < e.startStep + e.durationSteps) {
+        const newDur = dragState.startStep - e.startStep;
+        if (newDur > 0) out.push({ ...e, durationSteps: newDur });
+        continue;
+      }
+      if (dragState.mode === "rest" && e.startStep >= dragState.startStep && e.startStep < dragState.endStep) {
+        continue;
+      }
+      if (dragState.mode === "place" && e.startStep === dragState.startStep) continue;
+      out.push(e);
+    }
+    if (dragState.mode === "place") {
+      out.push({
+        startStep: dragState.startStep,
+        durationSteps: dragState.durationSteps,
+        midi: dragState.midi,
+        position: dragState.position,
+        accidental: dragState.accidental,
+      });
+    }
+    out.sort((a, b) => a.startStep - b.startStep);
+    melodyStore.setKey("events", out);
+  }
+
+  /** Compute the note's parameters from the click position + active tool. */
+  function paramsFor(displayPos: number): {
+    midi: number;
+    position?: number;
+    accidental?: "sharp" | "flat" | "natural";
+  } {
+    const absPos = displayPos + 7 * octaveShift;
+    const natural = clampMidi(positionToMidi(absPos));
+    switch (activeTool) {
+      case "sharp":
+        return { midi: clampMidi(natural + 1), position: absPos, accidental: "sharp" };
+      case "flat":
+        return { midi: clampMidi(natural - 1), position: absPos, accidental: "flat" };
+      case "natural":
+        return { midi: natural, position: absPos, accidental: "natural" };
+      default: // "normal" — snap to scale
+        return { midi: clampMidi(snapAtPosition(natural, key, scale)) };
+    }
   }
 
   function onPointerDown(evt: PointerEvent): void {
@@ -152,30 +302,57 @@
     if (sp.x < m.marginLeft) return;       // skip clef/time-sig column
     if (sp.x > STAFF_WIDTH_SP - m.marginRight) return;
 
+    // Arm long-press: if the press lands on any existing note (notehead or
+    // tail) AND the user holds without moving for LONG_PRESS_MS, delete it.
+    // Quick-tap (release before timer fires) falls through to placement.
     const hit = noteAt(sp.x, sp.y);
     if (hit !== null) {
-      // Long-press → delete
       const idx = hit;
       const timer = window.setTimeout(() => {
         if (longPress && longPress.idx === idx) {
+          // Cancel any pending placement so we don't both delete AND place.
+          dragState = null;
           deleteAt(idx);
           longPress = null;
         }
       }, LONG_PRESS_MS);
       longPress = { idx, pointerId: evt.pointerId, startX: sp.x, startY: sp.y, timer };
+    }
+
+    const step = xToStep(sp.x, m);
+
+    if (activeTool === "rest") {
+      // Rest mode: tap inserts silence. No new event — just trim the
+      // covering note (and any forward notes within the drag range).
+      dragState = {
+        mode: "rest",
+        startStep: step,
+        endStep: step + 1,
+        midi: 0,
+        durationSteps: 0,
+        maxDur: 0,
+        pointerId: evt.pointerId,
+        userDragged: false,
+      };
+      svgEl.setPointerCapture(evt.pointerId);
       return;
     }
 
-    // Empty space — begin placement (snap pitch to the active scale,
-    // preferring candidates that stay on the clicked staff position).
-    const step = xToStep(sp.x, m);
-    const position = yToPosition(sp.y, m);
-    const rawMidi = clampMidi(positionToMidi(position));
-    const midi = clampMidi(snapAtPosition(rawMidi, key, scale));
+    const displayPos = yToPosition(sp.y, m);
+    const p = paramsFor(displayPos);
+    const next = nextNoteAfter(step);
+    const maxDur = next ? Math.max(1, next.startStep - step) : TOTAL_STEPS - step;
+    const defaultDur = Math.min(DEFAULT_DURATION, maxDur);
+
     dragState = {
+      mode: "place",
       startStep: step,
-      midi,
-      durationSteps: DEFAULT_DURATION,
+      endStep: step + defaultDur,
+      midi: p.midi,
+      position: p.position,
+      accidental: p.accidental,
+      durationSteps: defaultDur,
+      maxDur,
       pointerId: evt.pointerId,
       userDragged: false,
     };
@@ -192,19 +369,21 @@
       }
     }
 
-    // Drag-to-extend
-    if (dragState && evt.pointerId === dragState.pointerId) {
-      const sp = pointerToSP(svgEl, evt.clientX, evt.clientY);
-      const startX = stepToX(dragState.startStep, m);
-      const dragged = sp.x - startX > MIN_DRAG_SP;
-      if (dragged) {
-        const endStep = xToStep(sp.x, m);
-        const span = Math.max(1, endStep - dragState.startStep + 1);
-        dragState = { ...dragState, durationSteps: span, userDragged: true };
-      } else if (!dragState.userDragged) {
-        // Still hovering on/near the start step — keep default quarter.
-        dragState = { ...dragState, durationSteps: DEFAULT_DURATION };
-      }
+    if (!dragState || evt.pointerId !== dragState.pointerId) return;
+    const sp = pointerToSP(svgEl, evt.clientX, evt.clientY);
+    const startX = stepToX(dragState.startStep, m);
+    const dragged = sp.x - startX > MIN_DRAG_SP;
+    if (!dragged && !dragState.userDragged) return;
+
+    if (dragState.mode === "place") {
+      const endStep = xToStep(sp.x, m);
+      const span = Math.max(1, endStep - dragState.startStep + 1);
+      const clampedSpan = Math.min(span, dragState.maxDur);
+      dragState = { ...dragState, durationSteps: clampedSpan, endStep: dragState.startStep + clampedSpan, userDragged: true };
+    } else {
+      // rest mode: drag extends the silence
+      const endStep = Math.max(dragState.startStep + 1, xToStep(sp.x, m) + 1);
+      dragState = { ...dragState, endStep: Math.min(endStep, TOTAL_STEPS), userDragged: true };
     }
   }
 
@@ -215,7 +394,7 @@
     }
     if (dragState && evt.pointerId === dragState.pointerId) {
       try { svgEl.releasePointerCapture(evt.pointerId); } catch { /* may have been released */ }
-      commitPlacement(dragState.startStep, dragState.durationSteps, dragState.midi);
+      commitFromDragState();
       dragState = null;
     }
   }
@@ -303,11 +482,16 @@
       {/each}
     </g>
 
-    <!-- Clef + time signature -->
+    <!-- Clef + time signature. Bravura's time-sig digits have their design
+         baseline at the *center* of the glyph (bbox [-1, +1] SP), so the
+         baseline-y in SVG sits at the digit's vertical center. Top digit
+         center at TOP+1 (middle of upper half) and bottom at TOP+3 (middle
+         of lower half) gives a properly-stacked 4/4. gClef swaps to
+         gClef8vb when octaveShift is -1. -->
     <g class="clef-and-time" font-family="Bravura" font-size="4" fill="currentColor">
-      <text x="1.5" y={TOP + 3}>{GLYPH.gClef}</text>
-      <text x="4.6" y={TOP + 2}>{GLYPH.timeSig4}</text>
-      <text x="4.6" y={TOP + 4}>{GLYPH.timeSig4}</text>
+      <text x="1.5" y={TOP + 3}>{clefGlyph}</text>
+      <text x="4.8" y={TOP + 1}>{GLYPH.timeSig4}</text>
+      <text x="4.8" y={TOP + 3}>{GLYPH.timeSig4}</text>
     </g>
 
     <!-- Ledger lines per note -->
@@ -333,6 +517,13 @@
       {/each}
     </g>
 
+    <!-- Rests (auto-rendered in silence gaps) -->
+    <g class="rests" font-family="Bravura" font-size="4" fill="currentColor" opacity="0.55">
+      {#each restVisuals as r}
+        <text x={r.x} y={r.y}>{r.glyph}</text>
+      {/each}
+    </g>
+
     <!-- Noteheads + accidentals + flags -->
     <g class="noteheads" font-family="Bravura" font-size="4" fill="currentColor">
       {#each visuals as v}
@@ -340,6 +531,8 @@
           <text x={v.x + ACC_OFFSET} y={v.y}>{GLYPH.accidentalSharp}</text>
         {:else if v.accidental === "flat"}
           <text x={v.x + ACC_OFFSET} y={v.y}>{GLYPH.accidentalFlat}</text>
+        {:else if v.accidental === "natural"}
+          <text x={v.x + ACC_OFFSET} y={v.y}>{GLYPH.accidentalNatural}</text>
         {/if}
         <text x={v.x} y={v.y}>{v.glyph}</text>
         {#if v.flag > 0}
@@ -362,51 +555,19 @@
       />
     {/if}
 
-    <!-- Drag preview (translucent) -->
-    {#if dragPreview}
-      <g class="preview" opacity="0.45">
-        {#each dragPreview.ledgerYs as ly}
-          <line
-            x1={dragPreview.x + W_NOTEHEAD_BLACK / 2 - LEDGER_HALF}
-            y1={ly}
-            x2={dragPreview.x + W_NOTEHEAD_BLACK / 2 + LEDGER_HALF}
-            y2={ly}
-            stroke="currentColor"
-            stroke-width={T_LEDGER}
-          />
-        {/each}
-        {#if dragPreview.stem}
-          <line
-            x1={dragPreview.stemX1}
-            y1={dragPreview.stemY1}
-            x2={dragPreview.stemX2}
-            y2={dragPreview.stemY2}
-            stroke="currentColor"
-            stroke-width={T_STEM}
-          />
-        {/if}
-        <text x={dragPreview.x} y={dragPreview.y}
-              font-family="Bravura" font-size="4" fill="currentColor">{dragPreview.glyph}</text>
-        {#if dragPreview.flag > 0}
-          <text x={dragPreview.flagX} y={dragPreview.flagY}
-                font-family="Bravura" font-size="4" fill="currentColor">{dragPreview.flagGlyph}</text>
-        {/if}
-        {#if dragPreview.accidental === "sharp"}
-          <text x={dragPreview.x + ACC_OFFSET} y={dragPreview.y}
-                font-family="Bravura" font-size="4" fill="currentColor">{GLYPH.accidentalSharp}</text>
-        {/if}
-        <!-- Duration tail: thin line marking the note's sounding span. Makes
-             "I'm holding a long note" legible during the drag. -->
-        <line
-          x1={dragPreview.x + W_NOTEHEAD_BLACK}
-          y1={dragPreview.y}
-          x2={dragPreview.x + Math.max(dragPreview.durationSpan, W_NOTEHEAD_BLACK)}
-          y2={dragPreview.y}
-          stroke="currentColor"
-          stroke-width={T_STEM}
-          stroke-dasharray="0.4 0.3"
-        />
-      </g>
+    <!-- Drag indicator: when actively placing/extending, draw a small marker
+         at the current end of the drag range to make the duration legible. -->
+    {#if dragState}
+      <line
+        class="drag-end"
+        x1={stepToX(dragState.endStep, m)}
+        y1={TOP - 0.3}
+        x2={stepToX(dragState.endStep, m)}
+        y2={TOP + 4.3}
+        stroke={dragState.mode === "rest" ? "var(--accent)" : "var(--signal-dim)"}
+        stroke-width="0.1"
+        stroke-dasharray="0.3 0.3"
+      />
     {/if}
   </svg>
 </div>

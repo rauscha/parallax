@@ -176,3 +176,60 @@ export function ledgersFor(position: number): number[] {
   }
   return out;
 }
+
+/* —— Rest decomposition ———————————————————————————————————————— */
+
+export type RestKind = "whole" | "half" | "quarter" | "8th" | "16th";
+export interface RestSpan {
+  step: number;
+  durationSteps: number;
+  kind: RestKind;
+}
+
+/** Greedy aligned-rest decomposition. Splits a [start, end) gap into rests
+ *  that respect classical alignment (half rests don't cross a bar's middle;
+ *  whole rests fill an entire bar; smaller rests align with their power-of-2). */
+export function fillRestGap(start: number, end: number): RestSpan[] {
+  const out: RestSpan[] = [];
+  let s = Math.max(0, start);
+  const e = Math.min(TOTAL_STEPS, end);
+  while (s < e) {
+    let placed = false;
+    for (const [dur, kind] of [
+      [16, "whole" as const],
+      [8,  "half"  as const],
+      [4,  "quarter" as const],
+      [2,  "8th"   as const],
+      [1,  "16th"  as const],
+    ] as const) {
+      if (s + dur > e) continue;
+      if (s % dur !== 0) continue;
+      // Whole rest: must be a full bar — s already % 16 === 0 implies bar boundary.
+      // Half rest: must not cross a bar's middle (16-step bar split at step 8).
+      if (dur === 8 && s % 16 !== 0 && s % 16 !== 8) continue;
+      out.push({ step: s, durationSteps: dur, kind });
+      s += dur;
+      placed = true;
+      break;
+    }
+    if (!placed) {
+      // Shouldn't happen — 16th covers any single step — but guard anyway.
+      out.push({ step: s, durationSteps: 1, kind: "16th" });
+      s += 1;
+    }
+  }
+  return out;
+}
+
+/** Given an ordered note list, return all silent-step gaps as [start, end) ranges. */
+export function silentGaps(events: ReadonlyArray<{ startStep: number; durationSteps: number }>): Array<[number, number]> {
+  const sorted = [...events].sort((a, b) => a.startStep - b.startStep);
+  const gaps: Array<[number, number]> = [];
+  let cursor = 0;
+  for (const e of sorted) {
+    if (e.startStep > cursor) gaps.push([cursor, e.startStep]);
+    cursor = Math.max(cursor, e.startStep + e.durationSteps);
+  }
+  if (cursor < TOTAL_STEPS) gaps.push([cursor, TOTAL_STEPS]);
+  return gaps;
+}

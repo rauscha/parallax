@@ -4,10 +4,11 @@ The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session
 
 Last reconciled: 2026-06-01 (desktop, after v0.3.0-m2 eyeball pass).
 
-## Now — close out v0.3.0-m2
-**Polish gate is verified done.** Live URL eyeballed; the three follow-ups it surfaced are fixed, deployed, and re-confirmed. Only the version tag remains.
+## Now — kick off M3
+**v0.3.0-m2 is closed out** (tag pushed 2026-06-01). Polish gate verified, live, tagged. Next: open M3.
 
-- [ ] Tag `v0.3.0-m2` and push (`git tag v0.3.0-m2; git push origin v0.3.0-m2`). Live deploy already happened — this just stamps the marker.
+- [ ] **M3 first move — wire `patchStore` / `engineIdStore`.** They're defined in `src/state/stores.ts` but unwired; ModelPicker + ParamPanel still keep local copies. Wiring them now makes share-URLs / presets / undo fall out for free later. Deep-review §3 recommendation.
+- [ ] Then the M3 build proper: Tone.Transport/Part + custom SVG 4-bar/4-4 staff, snap-to-scale, playhead + loop.
 
 ## Soon (hygiene + smaller catches — deep review §4)
 - [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts; optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
@@ -24,6 +25,7 @@ Last reconciled: 2026-06-01 (desktop, after v0.3.0-m2 eyeball pass).
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-01 (desktop, post-pickup):** Tagged `v0.3.0-m2` and pushed. Polish gate fully closed out.
 - **2026-06-01 (desktop, evening — v0.3.0-m2 eyeball-pass follow-ups):** Verified the overnight batch on the live URL. Three small follow-ups caught and shipped in one bundled commit, deployed, and user-confirmed.
   - `3767b5d` polish: Sandbox rename · dark knob indicator · NoteStrip piano-style two-row layout
     - K.O. Console → **Sandbox** (was too close to TE's KO II / OP-1). Slug `ko` → `sandbox` with a legacy fallthrough in `readInitial()` for any pre-rename stored value. Comments + CLAUDE.md swept.

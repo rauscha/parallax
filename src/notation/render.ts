@@ -63,10 +63,20 @@ export function stepToX(step: number, m: StaffMetrics): number {
   return m.marginLeft + step * m.stepWidth;
 }
 
-/** Inverse of stepToX: snap an X coordinate (in SP) to the nearest 16th-step. */
+/** Inverse of stepToX: floor an X coordinate (in SP) into its 16th-cell.
+ *
+ * Cell semantics ("snap by cell" in FL Studio terms): a click anywhere
+ * inside step N's visual rectangle [N*stepWidth, (N+1)*stepWidth) lands
+ * at step N. Never pushes the cursor forward into the next cell — so a
+ * click slightly past the bar start never strands a 16th-rest at step 0.
+ *
+ * This is the right semantic for a step sequencer: each cell IS a step,
+ * the way it is in classic trackers (FastTracker, OpenMPT, Renoise).
+ * Round-to-nearest is a piano-roll convention for capturing fluid timing,
+ * not for writing into discrete rhythm cells. */
 export function xToStep(x: number, m: StaffMetrics): number {
   const raw = (x - m.marginLeft) / m.stepWidth;
-  return Math.max(0, Math.min(TOTAL_STEPS - 1, Math.round(raw)));
+  return Math.max(0, Math.min(TOTAL_STEPS - 1, Math.floor(raw)));
 }
 
 /** Inverse of positionToY: snap a Y coordinate (in SP) to the nearest diatonic position. */

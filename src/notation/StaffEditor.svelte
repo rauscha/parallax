@@ -157,6 +157,11 @@
   }>(null);
   let longPress: { idx: number; pointerId: number; startX: number; startY: number; timer: number } | null = null;
 
+  /* Hover-ghost preview: a translucent shape under the cursor showing what
+     a tap would place. Mouse-only in practice — touch pointermove only
+     fires during press, and the drag preview covers that case. */
+  let hoverState = $state<null | { step: number; displayPos: number }>(null);
+
   function clampMidi(n: number): number { return Math.max(MIDI_MIN, Math.min(MIDI_MAX, n)); }
 
   /** Apply the dragState's trim + new-note overlay to the committed events.
@@ -194,6 +199,31 @@
   });
 
   let visuals = $derived(previewEvents.map(visualFor));
+
+  /* Hover-ghost visual derived from hoverState + the active tool. Returns
+     either a synthesized note visual or a rest-glyph placeholder. */
+  type GhostShape =
+    | { kind: "note"; visual: NoteVisual }
+    | { kind: "rest"; x: number };
+  let ghostShape = $derived.by((): GhostShape | null => {
+    if (!hoverState || dragState) return null;
+    const { step, displayPos } = hoverState;
+    if (activeTool === "rest") {
+      return { kind: "rest", x: stepToX(step, m) };
+    }
+    const p = paramsFor(displayPos);
+    const next = nextNoteAfter(step);
+    const maxDur = next ? Math.max(1, next.startStep - step) : TOTAL_STEPS - step;
+    const dur = Math.max(1, Math.min(DEFAULT_DURATION, maxDur));
+    const ev: MelodyEvent = {
+      startStep: step,
+      durationSteps: dur,
+      midi: p.midi,
+      position: p.position,
+      accidental: p.accidental,
+    };
+    return { kind: "note", visual: visualFor(ev) };
+  });
 
   /* —— Rests (auto-rendered in gaps) ——————————————————————————— */
   // Compute the rest decomposition of every silent gap in the previewed
@@ -369,22 +399,40 @@
       }
     }
 
-    if (!dragState || evt.pointerId !== dragState.pointerId) return;
-    const sp = pointerToSP(svgEl, evt.clientX, evt.clientY);
-    const startX = stepToX(dragState.startStep, m);
-    const dragged = sp.x - startX > MIN_DRAG_SP;
-    if (!dragged && !dragState.userDragged) return;
-
-    if (dragState.mode === "place") {
-      const endStep = xToStep(sp.x, m);
-      const span = Math.max(1, endStep - dragState.startStep + 1);
-      const clampedSpan = Math.min(span, dragState.maxDur);
-      dragState = { ...dragState, durationSteps: clampedSpan, endStep: dragState.startStep + clampedSpan, userDragged: true };
-    } else {
-      // rest mode: drag extends the silence
-      const endStep = Math.max(dragState.startStep + 1, xToStep(sp.x, m) + 1);
-      dragState = { ...dragState, endStep: Math.min(endStep, TOTAL_STEPS), userDragged: true };
+    // Drag-extend takes precedence over hover tracking.
+    if (dragState && evt.pointerId === dragState.pointerId) {
+      const sp = pointerToSP(svgEl, evt.clientX, evt.clientY);
+      const startX = stepToX(dragState.startStep, m);
+      const dragged = sp.x - startX > MIN_DRAG_SP;
+      if (!dragged && !dragState.userDragged) return;
+      if (dragState.mode === "place") {
+        const endStep = xToStep(sp.x, m);
+        const span = Math.max(1, endStep - dragState.startStep + 1);
+        const clampedSpan = Math.min(span, dragState.maxDur);
+        dragState = { ...dragState, durationSteps: clampedSpan, endStep: dragState.startStep + clampedSpan, userDragged: true };
+      } else {
+        // rest mode: drag extends the silence
+        const endStep = Math.max(dragState.startStep + 1, xToStep(sp.x, m) + 1);
+        dragState = { ...dragState, endStep: Math.min(endStep, TOTAL_STEPS), userDragged: true };
+      }
+      return;
     }
+
+    // No active drag → update the hover ghost.
+    const sp = pointerToSP(svgEl, evt.clientX, evt.clientY);
+    if (sp.x < m.marginLeft || sp.x > STAFF_WIDTH_SP - m.marginRight) {
+      hoverState = null;
+      return;
+    }
+    const step = xToStep(sp.x, m);
+    const displayPos = yToPosition(sp.y, m);
+    if (!hoverState || hoverState.step !== step || hoverState.displayPos !== displayPos) {
+      hoverState = { step, displayPos };
+    }
+  }
+
+  function onPointerLeave(): void {
+    hoverState = null;
   }
 
   function onPointerUp(evt: PointerEvent): void {
@@ -466,6 +514,7 @@
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}
     onpointercancel={onPointerCancel}
+    onpointerleave={onPointerLeave}
     oncontextmenu={onContextMenu}
   >
     <!-- Staff lines -->
@@ -540,6 +589,56 @@
         {/if}
       {/each}
     </g>
+
+    <!-- Hover ghost: shows where a tap would land before commit. Mouse-only
+         in practice (touch pointermove fires only during press, which is
+         already the drag state). Translucent + muted so it reads as preview. -->
+    {#if ghostShape}
+      {#if ghostShape.kind === "rest"}
+        <text
+          class="ghost-rest"
+          x={ghostShape.x}
+          y={TOP + 2}
+          font-family="Bravura"
+          font-size="4"
+          fill="var(--text-dim)"
+          opacity="0.5"
+        >{GLYPH.restQuarter}</text>
+      {:else}
+        {@const g = ghostShape.visual}
+        <g class="ghost-note" opacity="0.4" fill="var(--text-dim)">
+          {#each g.ledgerYs as ly}
+            <line
+              x1={g.x + W_NOTEHEAD_BLACK / 2 - LEDGER_HALF}
+              y1={ly}
+              x2={g.x + W_NOTEHEAD_BLACK / 2 + LEDGER_HALF}
+              y2={ly}
+              stroke="var(--text-dim)"
+              stroke-width={T_LEDGER}
+            />
+          {/each}
+          {#if g.stem}
+            <line
+              x1={g.stemX1} y1={g.stemY1}
+              x2={g.stemX2} y2={g.stemY2}
+              stroke="var(--text-dim)"
+              stroke-width={T_STEM}
+            />
+          {/if}
+          {#if g.accidental === "sharp"}
+            <text x={g.x + ACC_OFFSET} y={g.y} font-family="Bravura" font-size="4">{GLYPH.accidentalSharp}</text>
+          {:else if g.accidental === "flat"}
+            <text x={g.x + ACC_OFFSET} y={g.y} font-family="Bravura" font-size="4">{GLYPH.accidentalFlat}</text>
+          {:else if g.accidental === "natural"}
+            <text x={g.x + ACC_OFFSET} y={g.y} font-family="Bravura" font-size="4">{GLYPH.accidentalNatural}</text>
+          {/if}
+          <text x={g.x} y={g.y} font-family="Bravura" font-size="4">{g.glyph}</text>
+          {#if g.flag > 0}
+            <text x={g.flagX} y={g.flagY} font-family="Bravura" font-size="4">{g.flagGlyph}</text>
+          {/if}
+        </g>
+      {/if}
+    {/if}
 
     <!-- Playhead (during playback) -->
     {#if playheadStep !== null}

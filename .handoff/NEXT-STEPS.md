@@ -2,22 +2,18 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-03 (desktop, overnight — full M3 closeout).
+Last reconciled: 2026-06-03 (desktop, evening — M3 polish round + cell-semantic placement fix).
 
 ## Now — eyeball-verify + tag M3
-**M3 is done.** Five commits overnight (`6f4c521` → `0b9ab7f`), all pushed and auto-deployed. The clickable 4-bar/4/4 staff editor is live. See the overnight log for the full play-by-play: [.handoff/OVERNIGHT-LOG-2026-06-02.md](.handoff/OVERNIGHT-LOG-2026-06-02.md).
+**M3 is done done.** Seven commits across the M3 arc, capped by today's polish round (`59afb68`) addressing your "the staff is kinda garbage" feedback and the deep-research-driven placement fix (`bbd7c4f`). All pushed and auto-deployed. Full play-by-play in [.handoff/SESSION-HANDOFF.md](SESSION-HANDOFF.md).
 
-- [ ] **Eyeball pass on the live URL** — see the checklist in the overnight log (empty hint · tap-to-place · drag-to-extend · long-press + right-click delete · F major shifts B → Bb on the line · play sweeps a playhead across the staff).
+- [ ] **Eyeball pass on the live URL** — empty staff shows 4 whole rests · time-sig 4/4 stacks correctly · hover ghost tracks cursor · tap at very start of bar 1 → no leading 16th-rest · monophonic trim on overlap · F major B-line → Bb on the line · ♯ toolbar forces sharp · rest tool inserts silence · octave −8va swaps clef glyph · tempo input live re-tempos · play sweeps playhead.
 - [ ] **Tag M3:** `git tag v0.4.0-m3 && git push origin v0.4.0-m3`.
 
 ## Soon (small follow-ups + hygiene)
 - [ ] **Key signatures on the staff.** Currently every accidental is per-note — F major's Bb shows as a flat on every Bb. Real engraving puts the flat in the key signature once at the start. M4-ish polish.
 - [ ] **"Drag past the end → wrap-around" UI.** Wrap is supported in the data model (`part.ts`), but the drag UI clips at the loop end. A future polish could let users explicitly wrap a long legato across the boundary.
 - [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01; Bravura self-hosted ✓ 2026-06-02.)*
-- [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
-
-## Soon (hygiene + smaller catches — deep review §4)
-- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); self-host fonts (**Bravura also lands here — M3 will need it self-hosted anyway**); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01.)*
 - [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
 
 ## Later milestones (per plan file)
@@ -30,6 +26,11 @@ Last reconciled: 2026-06-03 (desktop, overnight — full M3 closeout).
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-03 (desktop, evening — M3 polish round + click-placement fix):** Closed out two rounds of user-feedback on M3.
+  - **Polish round (`59afb68`)** — fixed the staff after "kinda garbage" feedback: time-sig glyph alignment (Bravura digits have centered baselines, not bottom — was 1 SP too low); actual monophonic 4/4 placement with trim-previous-on-overlap and drag-extend clamped to next note's start; accidentals + rest tool (sticky toolbar ♮/♯/♭/𝄽); auto-rendered rests in silent gaps (classically aligned — whole rests on bar boundaries, half rests on bar halves, etc.); octave shift toggle (0 / −8va) with gClef8vb swap and localStorage persistence; editable tempo input (40-240 BPM) replacing the static "120 BPM" readout. Added optional `position` + `accidental` to `MelodyEvent` so spelling intent survives a key change.
+  - **Click-placement fix (`bbd7c4f`)** — addressed your complaint that imprecise clicks at the bar start stranded a 16th-rest. Ran the deep-research workflow on click-to-place patterns across notation editors and DAWs; the verified finding was that hard `Math.round` is the hobbyist tutorial pattern and the cause, while every serious tool uses either magnetic snap or cell semantics. You chose cell semantics (matches your tracker mental model). Shipped: `xToStep` switched from `Math.round` → `Math.floor` so a click anywhere inside step N's cell lands at step N (never pushes forward); plus a hover ghost preview that paints a translucent note/rest at the cursor's cell on `pointermove` before commit, reflecting active accidental mode + snap-to-scale + octave.
+  - `bbd7c4f` M3 polish: cell-semantic floor placement + hover ghost preview
+  - `59afb68` M3 polish: monophonic 4/4, accidentals + rest toolbar, octave shift, tempo input, time-sig fix
 - **2026-06-02 → 2026-06-03 (desktop, overnight — M3 closeout):** The clickable 4-bar/4/4 staff editor is live. Five commits, plain-language write-up at `.handoff/OVERNIGHT-LOG-2026-06-02.md`. Highlights: Bravura SMuFL font self-hosted under OFL · pure-TS staff geometry in `src/notation/render.ts` · pointer-driven tap-to-place + drag-for-duration + long-press/right-click delete · snap-to-scale via `@tonaljs/tonal` with stays-on-position preference and flat-key spelling · `KeyScalePicker` for picking key + scale · RAF-driven playhead during transport playback · wrap-around `noteOff` at the loop boundary · scratch UI in App.svelte replaced with a contextual empty/populated staff footer · brand-sub bumped "M1" → "M3". Type-check clean throughout (8 commits across the session, 0 errors).
   - `0b9ab7f` M3: tear out scratch UI · contextual staff footer · brand-sub bump
   - `da54405` M3: playhead — RAF-driven vertical sweep during transport playback

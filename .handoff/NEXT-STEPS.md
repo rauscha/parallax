@@ -2,7 +2,7 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-04 (desktop — Grid G0–G4 shipped ✓).
+Last reconciled: 2026-06-05 (desktop — overnight batch: grid polish + key-sigs + CSP + audio fixes + M4 text layer, all ✓).
 
 ## Now — Polish + M4
 

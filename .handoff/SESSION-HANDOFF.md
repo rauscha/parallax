@@ -1,9 +1,10 @@
-# Session hand-off — 2026-06-04 (overnight run · desktop · crane-desk)
+# Session hand-off — 2026-06-05 (desktop · crane-desk)
 
 ## STATE (read this first)
 - **Branch:** `main`, clean, synced with `origin/main`. One worktree only — nothing stranded.
-- **Overnight "go big" run shipped 8 tasks** (6 commits, all pushed). Grid polish + staff key-signatures + production CSP + three audio bug fixes + M4 Explain-panel groundwork. Latest commit `f9f06df`.
+- **Overnight "go big" run shipped 8 tasks** (6 commits, all pushed). Grid polish + staff key-signatures + production CSP + three audio bug fixes + M4 Explain-panel groundwork. Latest commit `13a492c` (docs).
 - **3 decisions are waiting** in `.handoff/PENDING-DECISIONS.md` — these likely come first.
+- *(This session: pick-up + pre-flight + launched the overnight run. No new code added today.)*
 
 ## Done this run (2026-06-04 overnight)
 Full plain-language write-up: `.handoff/OVERNIGHT-LOG-2026-06-04.md`.

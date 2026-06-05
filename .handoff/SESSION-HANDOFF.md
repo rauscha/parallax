@@ -2,24 +2,24 @@
 
 ## STATE (read this first)
 - **Branch:** `main`, clean, synced with `origin/main`. One worktree only — **nothing stranded.**
-- **M3 is closed and tagged** (`v0.4.0-m3`, pushed). The big outcome this session: we resolved the staff-vs-grid question. **Next work is a new grid sequencer surface, planned but not yet built.** Full spec lives in `docs/grid-sequencer-plan.md`; the backlog (`.handoff/NEXT-STEPS.md`) now opens on it with a G0–G4 checklist.
-- No code was written this session beyond docs — this was a tag + planning session, done in Opus. Build happens next, in Sonnet.
+- **Grid G0–G4 is shipped** (`5f35124`). The pitch-row × step-column grid sequencer surface is live behind a Staff/Grid toggle in the Sequencer section. Both surfaces coexist and share `melodyStore`.
+- No pending decisions. Next work is grid polish (keyboard nav, swipe) and then M4.
 
 ## Done this session
-- **Tagged M3.** `git tag v0.4.0-m3` + pushed. M3 (clickable 4-bar/4/4 staff) is officially complete. The live eyeball pass surfaced one cosmetic nit (logged, see below) but nothing blocking.
-- **Resolved the staff-vs-grid fork** (`845f0d7`). You flagged that the staff might not be the right long-term surface vs. a Synthstrom-Deluge-style step/grid board, especially for mobile. Ran two research streams (codebase reuse map + a survey of hardware/web sequencers) and produced a full design + build plan: **`docs/grid-sequencer-plan.md`**.
-  - **Decision 1 — coexist behind a toggle.** The grid is a *new* surface alongside the staff; a view switch picks between them. Both write the same `melodyStore` (the melody core is surface-agnostic), so we can A/B them in real use before deleting anything. Cheap insurance against committing to the wrong surface.
-  - **Decision 2 — first build scope is G0–G4** (lean MVP + the delight layer). Per-step expression (G5: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability) is deferred and pairs naturally with M4's modulation wiring.
-  - The chosen layout: **pitch-row × time-column grid** (Chrome Music Lab "Song Maker" style) — rows = scale degrees (fold-to-scale, no wrong notes), columns = steps, one cell per column = monophony for free.
-- **Logged a cosmetic bug:** the beat-1 note sits too tight against the opening bar line (needs a small left-pad). It's in NEXT-STEPS under "Soon" — low priority, not blocking.
+- **Built grid sequencer G0–G4 in one Sonnet session** (`5f35124`).
+  - **G0** — `surfaceStore`/`gridBaseOctaveStore`/`foldToScaleStore` in `editorMode.ts`; `GridEditor.svelte` mounted behind Staff/Grid toggle in `App.svelte`.
+  - **G1** — `src/notation/grid.ts`: `buildRowMidis` (fold-to-scale / chromatic), `colToStep`, `isRoot`, `pitchName`. Grid renders 15 rows × 16 cols (C major default, 2-octave range); root row tinted; bar tabs 1–4; pitch-class labels on left.
+  - **G2** — Pointer delegation on grid div: tap empty cell → place note (monophonic trim on overlap); tap note-start → delete; drag right → extend duration; hover-ghost on mouse/pen. `previewEvents` derived pattern mirrors `StaffEditor`.
+  - **G3** — RAF playhead sweeping columns; auto-follows active bar page during playback. ≥44px targets on toolbar controls.
+  - **G4** — Key/scale change remaps melody by degree (degree-3 stays degree-3 across key changes) when grid is active. In-Key ↔ Chromatic fold toggle. Octave shift ±1 (C2–C7 range, default C3–C5). "Randomize" button: in-scale quarter-note melody with ~30% beat gaps.
+  - Type-check: 0 errors. Browser-verified: cells light, bar nav works, Chromatic gives 25 rows vs 15 in In-Key.
 
 ## Next up
-1. **Build the grid sequencer, phases G0–G4** (hand to a Sonnet session, point it at `docs/grid-sequencer-plan.md`). Start with **G0** — a `surface` store + `GridEditor.svelte` mounted behind a staff/grid toggle. It's the cleanest, lowest-risk entry point. Then G1 (render) → G2 (interaction) → G3 (playhead/responsive) → G4 (scale magic + "randomize in scale").
-2. **Then M4** — Explain panel + wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts (shim setters landed 2026-06-01; amounts default to 0 today). Pairs with grid G5.
+1. **Grid polish (small, quick-wins):** keyboard arrow nav + Space toggle; touch swipe between bars; desktop 2-bar view.
+2. **M4** — Explain panel + wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts (shim setters ready since 2026-06-01). Pairs with G5 per-step expression.
 
 ## Watch out for
-- **The grid is a UI surface, not a data-model change (for G0–G4).** It writes the exact same `MelodyEvent[]` the staff does. Don't extend `MelodyEvent` until G5 — that's where per-step params come in, and it should land with M4.
-- **Keep the staff working.** We chose coexistence, so don't delete `StaffEditor.svelte` / `render.ts` geometry / `interaction.ts` / Bravura font. They stay behind the toggle. The reuse map in the plan doc lists exactly what's shared vs. staff-only vs. new.
-- **Reuse, don't rebuild:** `scales.ts` (snap-to-scale), `part.ts` (Part rebuild), `transport.ts`, `KeyScalePicker.svelte`, and `positionToMidi`/`midiToPlacement` in `render.ts` are all surface-agnostic and reusable. The MIDI clamp (C1..C8) currently lives in `StaffEditor.svelte` and should be pulled into shared/grid logic.
-- **The credit/quota context:** you noted you were over quota at tag time. M4 and the grid build are both deferred until you've got headroom — no rush implied.
-- Prior gotchas still apply: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs reassign · DSP shim changes need `npm run wasm` AND committing regenerated `public/braids.wasm` · MIDI clamp is C1..C8.
+- **Don't extend `MelodyEvent`** until G5 (the per-step expression milestone with M4). The current grid is a pure UI surface on top of the existing data model.
+- **Keep both surfaces working.** Staff is still behind the toggle — `StaffEditor.svelte`, `render.ts`, `interaction.ts`, Bravura font are all untouched.
+- **Degree-remap is grid-only.** It only runs when `GridEditor` is mounted (i.e., `surface === 'grid'`). Staff users see notes stay at MIDI values on key change — existing behavior preserved.
+- Prior gotchas: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs reassign · MIDI clamp C1..C8 · DSP shim changes need `npm run wasm` + commit regenerated WASM.

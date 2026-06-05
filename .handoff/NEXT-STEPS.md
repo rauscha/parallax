@@ -2,18 +2,23 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-03 (desktop, evening — M3 tagged `v0.4.0-m3` ✓).
+Last reconciled: 2026-06-04 (desktop — Grid G0–G4 shipped ✓).
 
-## Now — Grid sequencer build (G0–G4)
+## Now — Polish + M4
 
-**M3 is closed** (`v0.4.0-m3`). The staff-vs-grid question is resolved: **build a pitch-row × time-column grid surface that coexists with the staff behind a view toggle** (the melody core is surface-agnostic, so both write the same `melodyStore`). Full spec — design principles, methods survey, reuse map, phased plan — in **[docs/grid-sequencer-plan.md](../docs/grid-sequencer-plan.md)**. Locked scope for this round: **G0–G4** (lean MVP + delight). Planned with Opus 2026-06-04; enact with Sonnet.
+**Grid G0–G4 is shipped** (`5f35124`, 2026-06-04). Pitch-row × step-column grid surface lives behind a Staff/Grid toggle in the Sequencer section. Both surfaces write the same `melodyStore`. Next priorities:
 
-- [ ] **G0** — `surface` store + `GridEditor.svelte` mounted behind a staff/grid toggle.
-- [ ] **G1** — read-only grid render (`grid.ts` geometry, scale-degree rows, root anchor, bar tabs, octave control).
-- [ ] **G2** — interaction (tap place/replace, monophonic trim, drag for length, hover-ghost).
-- [ ] **G3** — playhead follow + responsive (≥44px, swipe, keyboard).
-- [ ] **G4** — scale magic (re-map by degree, In-Key/Chromatic toggle) + "randomize in scale".
-- [ ] *(deferred → G5, pairs with M4)* per-step expression: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability.
+### Grid follow-up polish (small)
+- [ ] **Keyboard nav in grid** — arrow keys move a selection cursor, Space = toggle cell. Not done in G3 (only ≥44px coarse targets + auto-follow landed). Quick win.
+- [ ] **Swipe between bars** — touch swipe left/right to navigate bar pages. Current: tap bar tabs only.
+- [ ] **Desktop shows 2 bars** — when viewport is wide enough, show bars 1+2 or 3+4 side-by-side for a richer overview. Currently always 1 bar.
+
+### G5 — Per-step expression (pairs with M4)
+Extend `MelodyEvent` with optional per-step params: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability. Long-press (mobile) / modifier-click (desktop) → contextual sheet. Wire into M4's `AD_VCA/TIMBRE/COLOR/FM` amounts. **Do not extend MelodyEvent before this milestone.**
+
+## Later — M4
+
+**Explain panel** (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Natural pairing with grid G5 (per-step macro locks).
 
 ## Later — M4
 

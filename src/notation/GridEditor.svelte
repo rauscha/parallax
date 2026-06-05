@@ -3,7 +3,7 @@
   import * as Tone from "tone";
   import { melodyStore, isPlayingStore, type MelodyEvent } from "../state/stores";
   import {
-    buildRowMidis, colToStep, isRoot, isInScale, remapByDegree, randomizeMelody,
+    buildRowMidis, isRoot, isInScale, remapByDegree, randomizeMelody,
     pitchName, COLS_PER_BAR, BARS, TOTAL_STEPS, MIDI_MIN, MIDI_MAX,
   } from "./grid";
   import { preferFlats } from "../sequencer/scales";
@@ -60,9 +60,19 @@
   let useFlats   = $derived(preferFlats(key, scale));
   let rowMidis   = $derived(buildRowMidis(key, scale, baseOctave, foldToScale));
 
-  /* ——— Bar page (which of the 4 bars is visible) ————————————— */
+  /* ——— Bar page + responsive view ————————————————————————————————
+     barPage (0..3) is the "active" bar — what the playhead/cursor sit on and
+     what the tabs highlight. On a wide enough panel the grid shows TWO bars
+     side-by-side, so the visible window is *derived* from barPage rather than
+     equal to it (it snaps to a bar-pair). On a narrow panel it's one bar. */
 
   let barPage = $state(0);
+  let editorWidth = $state(0);
+
+  let colsPerView   = $derived(editorWidth >= 560 ? COLS_PER_BAR * 2 : COLS_PER_BAR);
+  let barsPerView   = $derived(colsPerView / COLS_PER_BAR);                      // 1 or 2
+  let viewStartBar  = $derived(barsPerView === 2 ? barPage - (barPage % 2) : barPage);
+  let viewStartStep = $derived(viewStartBar * COLS_PER_BAR);
 
   /* ——— Interaction constants ——————————————————————————————————— */
 
@@ -177,10 +187,10 @@
     const rect = gridEl.getBoundingClientRect();
     const relX = evt.clientX - rect.left;
     const relY = evt.clientY - rect.top;
-    const col = Math.floor((relX / rect.width)  * COLS_PER_BAR);
+    const col = Math.floor((relX / rect.width)  * colsPerView);
     // rowMidis is low→high; display is high→low (top = last midi)
     const rowIdx = Math.floor((relY / rect.height) * rowMidis.length);
-    if (col < 0 || col >= COLS_PER_BAR) return null;
+    if (col < 0 || col >= colsPerView) return null;
     if (rowIdx < 0 || rowIdx >= rowMidis.length) return null;
     // invert: display row 0 = highest midi = rowMidis[rowMidis.length - 1]
     const midiIdx = rowMidis.length - 1 - rowIdx;
@@ -194,7 +204,7 @@
 
     const { col, midiIdx } = coords;
     const midi = rowMidis[midiIdx];
-    const step = colToStep(col, barPage);
+    const step = viewStartStep + col;
     const existing = cellMap.get(`${midi}-${step}`);
 
     gridEl.setPointerCapture(evt.pointerId);
@@ -242,7 +252,7 @@
 
     if (dragState.mode === "toggle") {
       // Detect drag: if pointer moved to a different column, upgrade to place mode
-      const startCol = dragState.startStep % COLS_PER_BAR;
+      const startCol = dragState.startStep - viewStartStep;
       if (col !== startCol) {
         const next   = nextNoteAfterStep(dragState.startStep);
         const maxDur = next ? Math.max(1, next.startStep - dragState.startStep) : TOTAL_STEPS - dragState.startStep;
@@ -261,7 +271,7 @@
     }
 
     // Place mode: extend duration
-    const startCol = dragState.startStep % COLS_PER_BAR;
+    const startCol = dragState.startStep - viewStartStep;
     const span     = Math.max(1, col - startCol + 1);
     const clamped  = Math.min(span, dragState.maxDur);
     if (clamped !== dragState.durationSteps) {
@@ -316,7 +326,10 @@
     // Auto-follow the active bar
     if (currentBar !== barPage) barPage = currentBar;
 
-    playheadCol = step - currentBar * COLS_PER_BAR;
+    // Position within the (possibly 2-bar) visible window — computed from
+    // currentBar directly so it stays consistent regardless of derived timing.
+    const startBar = barsPerView === 2 ? currentBar - (currentBar % 2) : currentBar;
+    playheadCol = step - startBar * COLS_PER_BAR;
     raf = requestAnimationFrame(tickPlayhead);
   }
 
@@ -353,7 +366,7 @@
     if (cursor && rowMidis.includes(cursor.midi)) return;
     const rootIdx = rowMidis.findIndex(m => isRoot(m, key));
     const idx = rootIdx >= 0 ? rootIdx : Math.floor(rowMidis.length / 2);
-    cursor = { midi: rowMidis[idx] ?? MIDI_MIN, step: colToStep(0, barPage) };
+    cursor = { midi: rowMidis[idx] ?? MIDI_MIN, step: viewStartStep };
   }
 
   function moveCursor(dRow: number, dStep: number): void {
@@ -400,16 +413,56 @@
       }
     }
   }
+
+  /* ——— Swipe between bars — on the tab strip + label gutter ————————
+     The grid cells own horizontal drag (note-extend), so bar swipe lives on
+     the non-cell zones. Pointer capture lets a swipe track even off the narrow
+     gutter; a swipe that fires swallows the trailing click on a tab button. */
+
+  const SWIPE_THRESHOLD = 36;   // px of horizontal travel to flip a bar
+  let swipeStart: null | { x: number; y: number; id: number } = null;
+  let swipeHandled = false;     // true right after a swipe → eats the next tab click
+
+  function onSwipeDown(evt: PointerEvent): void {
+    swipeStart = { x: evt.clientX, y: evt.clientY, id: evt.pointerId };
+    swipeHandled = false;
+    try { (evt.currentTarget as HTMLElement).setPointerCapture(evt.pointerId); } catch {}
+  }
+
+  function onSwipeUp(evt: PointerEvent): void {
+    if (!swipeStart || swipeStart.id !== evt.pointerId) return;
+    const dx = evt.clientX - swipeStart.x;
+    const dy = evt.clientY - swipeStart.y;
+    try { (evt.currentTarget as HTMLElement).releasePointerCapture?.(evt.pointerId); } catch {}
+    swipeStart = null;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      // swipe left → next page, swipe right → previous page (a page = 1 or 2 bars)
+      barPage = Math.max(0, Math.min(BARS - 1, barPage + (dx < 0 ? 1 : -1) * barsPerView));
+      swipeHandled = true;
+    }
+  }
+
+  function selectBar(bar: number): void {
+    if (swipeHandled) { swipeHandled = false; return; }   // was a swipe, not a tap
+    barPage = bar;
+  }
 </script>
 
 <!-- ─── Bar tabs ─────────────────────────────────────────────────────── -->
-<div class="grid-editor">
-  <div class="bar-tabs" role="group" aria-label="Bar navigation">
+<div class="grid-editor" bind:clientWidth={editorWidth}>
+  <div
+    class="bar-tabs"
+    role="group"
+    aria-label="Bar navigation — tap a bar, or swipe left/right to move between bars"
+    onpointerdown={onSwipeDown}
+    onpointerup={onSwipeUp}
+  >
     {#each Array.from({ length: BARS }, (_, i) => i) as bar}
       <button
         class="bar-tab"
         class:active={barPage === bar}
-        onclick={() => { barPage = bar; }}
+        class:in-view={barsPerView === 2 && bar >= viewStartBar && bar < viewStartBar + barsPerView && bar !== barPage}
+        onclick={() => selectBar(bar)}
         aria-pressed={barPage === bar}
       >Bar {bar + 1}</button>
     {/each}
@@ -417,8 +470,14 @@
 
   <!-- ─── Main grid (row labels + cells) ───────────────────────── -->
   <div class="grid-main">
-    <!-- Row labels (right-aligned pitch names) -->
-    <div class="row-labels" aria-hidden="true">
+    <!-- Row labels (right-aligned pitch names) — also a swipe zone for bars -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="row-labels"
+      aria-hidden="true"
+      onpointerdown={onSwipeDown}
+      onpointerup={onSwipeUp}
+    >
       {#each rowMidis.toReversed() as midi}
         <div
           class="row-label"
@@ -435,6 +494,7 @@
     <div
       class="grid-surface"
       style:--row-count={rowMidis.length}
+      style:--cols={colsPerView}
       bind:this={gridEl}
       role="application"
       tabindex="0"
@@ -447,11 +507,12 @@
       onkeydown={onKeyDown}
     >
       {#each rowMidis.toReversed() as midi}
-        {#each Array.from({ length: COLS_PER_BAR }, (_, col) => col) as col}
-          {@const step = colToStep(col, barPage)}
+        {#each Array.from({ length: colsPerView }, (_, col) => col) as col}
+          {@const step = viewStartStep + col}
           {@const entry = cellMap.get(`${midi}-${step}`)}
           {@const isGhost = !dragState && hoverCell?.midi === midi && hoverCell?.col === col}
           {@const isBeat  = col % 4 === 0}
+          {@const isBarStart = col > 0 && col % COLS_PER_BAR === 0}
           {@const isCursor = cursor?.midi === midi && cursor?.step === step}
           <div
             class="cell"
@@ -462,6 +523,7 @@
             class:root-row={isRoot(midi, key)}
             class:off-key={!foldToScale && !isInScale(midi, key, scale)}
             class:beat-start={isBeat}
+            class:bar-start={isBarStart}
             data-midi={midi}
             data-col={col}
           ></div>
@@ -472,7 +534,7 @@
       {#if playheadCol !== null}
         <div
           class="playhead"
-          style:left={`${(playheadCol / COLS_PER_BAR) * 100}%`}
+          style:left={`${(playheadCol / colsPerView) * 100}%`}
         ></div>
       {/if}
     </div>
@@ -535,6 +597,7 @@
     display: flex;
     gap: 2px;
     flex: 0 0 auto;
+    touch-action: pan-y;   /* capture horizontal swipe; keep vertical scroll */
   }
   .bar-tab {
     flex: 1;
@@ -556,6 +619,11 @@
     color: var(--text);
     border-color: var(--text-dim);
   }
+  /* The other bar in a visible 2-bar pair — shown as present, not selected */
+  .bar-tab.in-view {
+    background: color-mix(in srgb, var(--surface-raised) 50%, var(--surface-sunken));
+    color: var(--text);
+  }
 
   /* ─── Main grid layout ──────────────────────────────────────── */
   .grid-main {
@@ -570,6 +638,7 @@
     width: 24px;
     display: flex;
     flex-direction: column;
+    touch-action: pan-y;   /* swipe zone for bar navigation */
     /* rows align with grid-surface rows */
   }
   .row-label {
@@ -591,7 +660,7 @@
     flex: 1 1 auto;
     min-height: 0;
     display: grid;
-    grid-template-columns: repeat(16, 1fr);
+    grid-template-columns: repeat(var(--cols, 16), 1fr);
     grid-template-rows: repeat(var(--row-count), 1fr);
     gap: 1px;
     background: var(--hairline);
@@ -613,9 +682,13 @@
     transition: background var(--t-fast);
     position: relative;
   }
-  /* Subtle beat-start left border to show bars within the bar page */
+  /* Subtle beat-start left border to show beats within the bar page */
   .cell.beat-start {
     border-left: 1px solid color-mix(in srgb, var(--hairline) 200%, transparent);
+  }
+  /* Stronger divider where the second bar begins (2-bar desktop view) */
+  .cell.bar-start {
+    border-left: 2px solid var(--text-dim);
   }
   /* Root row: faint home-base tint */
   .cell.root-row {

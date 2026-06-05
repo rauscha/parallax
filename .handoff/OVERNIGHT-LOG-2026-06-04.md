@@ -18,7 +18,10 @@ Decisions locked before the run:
 ---
 
 ## Done overnight
-_(filled as work lands)_
+
+### 1. Grid keyboard navigation ✓ (`930b3c8`, pushed)
+Arrow keys move a highlighted selection cursor on the grid; Space/Enter place or remove a note there; Delete/Backspace removes one. The cursor follows the active bar page across bar boundaries and stays in sync with the last pointer tap, so tapping and typing share one position. Also refactored the place/delete event mutation into shared `placeNote()`/`deleteNoteAt()` helpers (used by both the pointer and keyboard paths). Type-check + a11y clean (0/0).
+**Why it matters:** lets you build patterns from the keyboard without the mouse — faster entry, and accessible.
 
 ---
 

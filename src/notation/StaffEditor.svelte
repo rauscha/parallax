@@ -6,9 +6,10 @@
   import { GLYPH } from "./glyphs";
   import {
     makeMetrics, totalHeight, staffTopY,
-    positionToY, stepToX, xToStep, yToPosition,
+    positionToY, stepToX, noteX, xToStep, yToPosition,
     midiToPlacement, durationToVisual,
     positionToMidi, stemUp, ledgersFor,
+    keySignatureFor, accidentalUnderKey,
     silentGaps, fillRestGap, type RestKind,
     TOTAL_STEPS, BARS, STEPS_PER_BAR,
   } from "./render";
@@ -17,9 +18,11 @@
   import { octaveShiftStore, editorToolStore, type EditorTool } from "./editorMode";
 
   const STAFF_WIDTH_SP = 100;
-  const m = makeMetrics(STAFF_WIDTH_SP);
-  const VBH = totalHeight(m);
-  const TOP = staffTopY(m);
+  // Vertical metrics (height, top line, staff lines) are key-signature-
+  // independent, so derive them once from a base metrics.
+  const baseM = makeMetrics(STAFF_WIDTH_SP, 0);
+  const VBH = totalHeight(baseM);
+  const TOP = staffTopY(baseM);
 
   // Engraving weights from bravura_metadata.json's engravingDefaults.
   const T_STAFF = 0.13;
@@ -28,7 +31,6 @@
   const T_LEDGER = 0.16;
 
   const LINE_YS = [0, 1, 2, 3, 4].map((i) => TOP + i);
-  const BARLINE_XS = Array.from({ length: BARS + 1 }, (_, i) => stepToX(i * STEPS_PER_BAR, m));
 
   let events = $state<MelodyEvent[]>(melodyStore.get().events);
   let key = $state(melodyStore.get().key);
@@ -39,6 +41,12 @@
     scale = mel.scale;
   });
   let useFlats = $derived(preferFlats(key, scale));
+
+  // Key signature drives the header width: more accidentals → music starts
+  // further right. `m` (and the barlines) therefore react to key/scale.
+  let keySig = $derived(keySignatureFor(key, scale));
+  let m = $derived(makeMetrics(STAFF_WIDTH_SP, keySig.positions.length));
+  let BARLINE_XS = $derived(Array.from({ length: BARS + 1 }, (_, i) => stepToX(i * STEPS_PER_BAR, m)));
 
   // Octave shift + active tool live in shared stores so the toolbar
   // component can read/write them. octaveShift persists across reloads.
@@ -100,8 +108,11 @@
       position = placement.position;
       accidental = ev.accidental ?? placement.accidental;
     }
+    // Suppress accidentals the key signature already implies; add a natural
+    // where a note contradicts it.
+    accidental = accidentalUnderKey(position, accidental, keySig);
     const dv = durationToVisual(ev.durationSteps);
-    const x = stepToX(ev.startStep, m);
+    const x = noteX(ev.startStep, m);
     const y = positionToY(position, m);
     const up = stemUp(position);
     const headW = dv.notehead === "whole" ? W_NOTEHEAD_WHOLE : W_NOTEHEAD_BLACK;
@@ -209,7 +220,7 @@
     if (!hoverState || dragState) return null;
     const { step, displayPos } = hoverState;
     if (activeTool === "rest") {
-      return { kind: "rest", x: stepToX(step, m) };
+      return { kind: "rest", x: noteX(step, m) };
     }
     const p = paramsFor(displayPos);
     const next = nextNoteAfter(step);
@@ -250,7 +261,7 @@
     for (const [a, b] of gaps) {
       for (const r of fillRestGap(a, b)) {
         out.push({
-          x: stepToX(r.step, m),
+          x: noteX(r.step, m),
           y: restY(r.kind),
           glyph: REST_GLYPH[r.kind],
         });
@@ -517,10 +528,11 @@
     onpointerleave={onPointerLeave}
     oncontextmenu={onContextMenu}
   >
-    <!-- Staff lines -->
+    <!-- Staff lines — run from the left edge (under the clef / key sig / time
+         sig) to the closing barline, so the header sits ON the staff. -->
     <g class="staff-lines" stroke="currentColor" stroke-width={T_STAFF}>
       {#each LINE_YS as y}
-        <line x1={m.marginLeft} y1={y} x2={STAFF_WIDTH_SP - m.marginRight} y2={y} />
+        <line x1={0.5} y1={y} x2={stepToX(TOTAL_STEPS, m)} y2={y} />
       {/each}
     </g>
 
@@ -531,16 +543,21 @@
       {/each}
     </g>
 
-    <!-- Clef + time signature. Bravura's time-sig digits have their design
-         baseline at the *center* of the glyph (bbox [-1, +1] SP), so the
-         baseline-y in SVG sits at the digit's vertical center. Top digit
-         center at TOP+1 (middle of upper half) and bottom at TOP+3 (middle
-         of lower half) gives a properly-stacked 4/4. gClef swaps to
-         gClef8vb when octaveShift is -1. -->
+    <!-- Clef + key signature + time signature. Bravura's time-sig digits have
+         their design baseline at the *center* of the glyph (bbox [-1, +1] SP),
+         so the baseline-y sits at the digit's vertical center: TOP+1 (upper
+         half) and TOP+3 (lower half) gives a stacked 4/4. The key signature's
+         accidentals sit at fixed treble positions between clef and time sig and
+         widen the header (m.timeSigX shifts right with the count). gClef swaps
+         to gClef8vb when octaveShift is -1. -->
     <g class="clef-and-time" font-family="Bravura" font-size="4" fill="currentColor">
-      <text x="1.5" y={TOP + 3}>{clefGlyph}</text>
-      <text x="4.8" y={TOP + 1}>{GLYPH.timeSig4}</text>
-      <text x="4.8" y={TOP + 3}>{GLYPH.timeSig4}</text>
+      <text x={m.clefX} y={TOP + 3}>{clefGlyph}</text>
+      {#each keySig.positions as pos, i}
+        <text x={m.keySigX0 + i * m.keySigDx} y={positionToY(pos, m)}
+        >{keySig.type === "sharp" ? GLYPH.accidentalSharp : GLYPH.accidentalFlat}</text>
+      {/each}
+      <text x={m.timeSigX} y={TOP + 1}>{GLYPH.timeSig4}</text>
+      <text x={m.timeSigX} y={TOP + 3}>{GLYPH.timeSig4}</text>
     </g>
 
     <!-- Ledger lines per note -->

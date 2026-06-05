@@ -18,6 +18,8 @@
  *   E4 (bot)    y = 4     position  2
  */
 
+import { Key } from "@tonaljs/tonal";
+
 export const STEPS_PER_BAR = 16;
 export const BARS = 4;
 export const TOTAL_STEPS = STEPS_PER_BAR * BARS;
@@ -28,21 +30,39 @@ export const MIDDLE_LINE_POS = 6;   // B4 — stem-flip pivot
 
 /** Layout knobs in SP. The component chooses an SVG viewBox that contains all of these. */
 export interface StaffMetrics {
-  marginLeft: number;     // SP — room for clef + time sig
+  marginLeft: number;     // SP — room for clef + key sig + time sig (key-sig-dependent)
   marginRight: number;    // SP — trailing whitespace
   staffWidth: number;     // SP — full SVG width
   topPad: number;         // SP above top line — ledger headroom
   bottomPad: number;      // SP below bottom line — ledger headroom
   stepWidth: number;      // SP per 16th-step (derived)
+  noteLeadIn: number;     // SP — noteheads sit this far right of their barline (breathing room)
+  clefX: number;          // SP — clef glyph baseline-x
+  keySigX0: number;       // SP — first key-signature accidental x
+  keySigDx: number;       // SP — spacing between key-signature accidentals
+  timeSigX: number;       // SP — time-signature digit x (shifts right with key-sig width)
 }
 
-export function makeMetrics(staffWidth: number): StaffMetrics {
-  const marginLeft = 7;     // clef (~3 SP) + time sig (~3 SP) + breathing room
+/**
+ * Build layout metrics. `keySigCount` is the number of key-signature
+ * accidentals (0..7) — the header (clef + key sig + time sig) widens to fit
+ * them, pushing the music start (`marginLeft`) further right, exactly as in
+ * real engraving. C major (count 0) keeps the original spacing untouched.
+ */
+export function makeMetrics(staffWidth: number, keySigCount = 0): StaffMetrics {
+  const clefX = 1.5;
+  const keySigX0 = 3.7;       // first key-sig accidental, just right of the clef
+  const keySigDx = 1.0;       // per-accidental advance
+  const timeSigW = 2.6;
+  const musicGap = 0.7;       // breathing room between time sig and first note
+  const timeSigX = keySigCount > 0 ? keySigX0 + keySigCount * keySigDx + 0.6 : 4.8;
+  const marginLeft = keySigCount > 0 ? timeSigX + timeSigW + musicGap : 7;
   const marginRight = 1.5;
   const topPad = 6;
   const bottomPad = 6;
-  const stepWidth = (staffWidth - marginLeft - marginRight) / TOTAL_STEPS;
-  return { marginLeft, marginRight, staffWidth, topPad, bottomPad, stepWidth };
+  const noteLeadIn = 0.5;
+  const stepWidth = (staffWidth - marginLeft - marginRight - noteLeadIn) / TOTAL_STEPS;
+  return { marginLeft, marginRight, staffWidth, topPad, bottomPad, stepWidth, noteLeadIn, clefX, keySigX0, keySigDx, timeSigX };
 }
 
 /** Total SVG viewBox height in SP, including top/bottom padding. */
@@ -61,6 +81,14 @@ export function positionToY(position: number, m: StaffMetrics): number {
 
 export function stepToX(step: number, m: StaffMetrics): number {
   return m.marginLeft + step * m.stepWidth;
+}
+
+/** X (in SP) where a notehead/rest is *drawn* — its metric step position plus
+ *  a small lead-in so the glyph has breathing room from the preceding barline
+ *  (noteheads never sit exactly on a barline). Hit-testing uses the visual x,
+ *  so this stays consistent with `xToStep` (which maps to the metric grid). */
+export function noteX(step: number, m: StaffMetrics): number {
+  return stepToX(step, m) + m.noteLeadIn;
 }
 
 /** Inverse of stepToX: floor an X coordinate (in SP) into its 16th-cell.
@@ -145,6 +173,69 @@ export function positionToMidi(position: number): number {
   const degree = ((position % 7) + 7) % 7;
   const pc = DEGREE_TO_PC[degree];
   return (octave + 1) * 12 + pc;
+}
+
+/* —— Key signatures ————————————————————————————————————————————————
+
+   Treble-clef key-signature accidentals appear at fixed staff positions in a
+   fixed order (sharps F-C-G-D-A-E-B, flats B-E-A-D-G-C-F). We expose both the
+   positions to draw and the set of diatonic *degrees* the signature alters, so
+   the note renderer can suppress a per-note accidental the signature already
+   implies (and add a natural when a note contradicts it). */
+
+// Standard treble positions (our convention: C4 = 0, each step = +1).
+const SHARP_ORDER_POS = [10, 7, 11, 8, 5, 9, 6];   // F5 C5 G5 D5 A4 E5 B4
+const FLAT_ORDER_POS  = [6, 9, 5, 8, 4, 7, 3];     // B4 E5 A4 D5 G4 C5 F4
+const SHARP_DEGREES   = [3, 0, 4, 1, 5, 2, 6];     // F  C  G  D  A  E  B
+const FLAT_DEGREES    = [6, 2, 5, 1, 4, 0, 3];     // B  E  A  D  G  C  F
+
+export type Alteration = "sharp" | "flat";
+export interface KeySig {
+  type: "sharp" | "flat" | "none";
+  positions: number[];                        // staff positions to draw, in order
+  alteredDegrees: Map<number, Alteration>;    // diatonic degree (0=C..6=B) → alteration
+}
+
+const NO_KEY_SIG: KeySig = { type: "none", positions: [], alteredDegrees: new Map() };
+
+/** Key signature for a key + scale. Major/minor use their circle-of-fifths
+ *  alteration; major-pentatonic borrows its parent major's signature;
+ *  chromatic has none (every accidental stays per-note). */
+export function keySignatureFor(key: string, scale: string): KeySig {
+  if (scale === "chromatic") return NO_KEY_SIG;
+  let alt = 0;
+  try {
+    alt = scale === "minor" ? Key.minorKey(key).alteration : Key.majorKey(key).alteration;
+  } catch {
+    return NO_KEY_SIG;
+  }
+  if (!alt || Number.isNaN(alt)) return NO_KEY_SIG;
+  const sharp = alt > 0;
+  const count = Math.min(7, Math.abs(alt));
+  const positions = (sharp ? SHARP_ORDER_POS : FLAT_ORDER_POS).slice(0, count);
+  const degrees = (sharp ? SHARP_DEGREES : FLAT_DEGREES).slice(0, count);
+  const alteredDegrees = new Map<number, Alteration>();
+  for (const d of degrees) alteredDegrees.set(d, sharp ? "sharp" : "flat");
+  return { type: sharp ? "sharp" : "flat", positions, alteredDegrees };
+}
+
+/** Given a note's diatonic position + intended accidental, decide which
+ *  accidental glyph (if any) to actually draw under a key signature. */
+export function accidentalUnderKey(
+  position: number,
+  accidental: "" | "sharp" | "flat" | "natural" | undefined,
+  keySig: KeySig,
+): "" | "sharp" | "flat" | "natural" {
+  const degree = ((position % 7) + 7) % 7;
+  const keyAlt = keySig.alteredDegrees.get(degree);   // sharp | flat | undefined
+  const acc = accidental ?? "";
+  if (acc === "") {
+    // Natural pitch on this line: cancel with a natural only if the signature alters it.
+    return keyAlt ? "natural" : "";
+  }
+  if (acc === keyAlt) return "";                       // signature already applies this
+  if (acc === "natural" && !keyAlt) return "";         // redundant natural on an unaltered line
+  return acc;                                          // deviates from the signature → show it
 }
 
 /* —— Duration → glyph + flag ——————————————————————————————————————— */

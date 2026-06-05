@@ -1,0 +1,659 @@
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import * as Tone from "tone";
+  import { melodyStore, isPlayingStore, type MelodyEvent } from "../state/stores";
+  import {
+    buildRowMidis, colToStep, isRoot, isInScale, remapByDegree, randomizeMelody,
+    pitchName, COLS_PER_BAR, BARS, TOTAL_STEPS, MIDI_MIN, MIDI_MAX,
+  } from "./grid";
+  import { preferFlats } from "../sequencer/scales";
+  import {
+    gridBaseOctaveStore, setGridBaseOctave,
+    foldToScaleStore, setFoldToScale,
+  } from "./editorMode";
+
+  /* ——— Store subscriptions ——————————————————————————————————————— */
+
+  let events    = $state<MelodyEvent[]>(melodyStore.get().events);
+  let key       = $state(melodyStore.get().key);
+  let scale     = $state(melodyStore.get().scale);
+  let baseOctave = $state(gridBaseOctaveStore.get());
+  let foldToScale = $state(foldToScaleStore.get());
+
+  // Track previous key/scale so we can remap by degree on change (G4).
+  let prevKey   = melodyStore.get().key;
+  let prevScale = melodyStore.get().scale;
+  let remapping = false;   // guard against re-entrant store write
+
+  melodyStore.subscribe((mel) => {
+    if (remapping) { events = mel.events; return; }
+
+    const keyChanged   = mel.key   !== prevKey;
+    const scaleChanged = mel.scale !== prevScale;
+
+    if ((keyChanged || scaleChanged) && foldToScale && mel.scale !== "chromatic") {
+      const remapped = remapByDegree(events, prevKey, prevScale, mel.key, mel.scale);
+      prevKey   = mel.key;
+      prevScale = mel.scale;
+      events    = remapped;
+      key       = mel.key;
+      scale     = mel.scale;
+      // Write remapped events back — triggers recursion, guarded by `remapping`.
+      remapping = true;
+      melodyStore.setKey("events", remapped);
+      remapping = false;
+      return;
+    }
+
+    prevKey   = mel.key;
+    prevScale = mel.scale;
+    events    = mel.events;
+    key       = mel.key;
+    scale     = mel.scale;
+  });
+
+  gridBaseOctaveStore.subscribe(v => { baseOctave   = v; });
+  foldToScaleStore.subscribe(   v => { foldToScale  = v; });
+
+  /* ——— Derived geometry ———————————————————————————————————————— */
+
+  let useFlats   = $derived(preferFlats(key, scale));
+  let rowMidis   = $derived(buildRowMidis(key, scale, baseOctave, foldToScale));
+
+  /* ——— Bar page (which of the 4 bars is visible) ————————————— */
+
+  let barPage = $state(0);
+
+  /* ——— Interaction constants ——————————————————————————————————— */
+
+  const DEFAULT_DURATION = 4;   // quarter note
+
+  function clampMidi(n: number): number {
+    return Math.max(MIDI_MIN, Math.min(MIDI_MAX, n));
+  }
+
+  /* ——— Drag state ——————————————————————————————————————————————— */
+
+  let dragState = $state<null | {
+    mode: "place" | "toggle";   // toggle = potential delete (becomes place if dragged)
+    startStep: number;
+    midi: number;
+    durationSteps: number;
+    maxDur: number;
+    pointerId: number;
+    userDragged: boolean;
+  }>(null);
+
+  /* ——— Hover ghost ————————————————————————————————————————————— */
+
+  let hoverCell = $state<null | { midi: number; col: number }>(null);
+
+  /* ——— Preview events (overlay drag state, same pattern as staff) */
+
+  let previewEvents = $derived.by((): MelodyEvent[] => {
+    if (!dragState || dragState.mode === "toggle") return events;
+    const out: MelodyEvent[] = [];
+    for (const e of events) {
+      // Trim a note whose duration covers the drag start
+      if (e.startStep < dragState.startStep &&
+          dragState.startStep < e.startStep + e.durationSteps) {
+        const newDur = dragState.startStep - e.startStep;
+        if (newDur > 0) out.push({ ...e, durationSteps: newDur });
+        continue;
+      }
+      // Remove the note that exactly starts here (will be replaced)
+      if (e.startStep === dragState.startStep) continue;
+      out.push(e);
+    }
+    out.push({
+      startStep: dragState.startStep,
+      durationSteps: dragState.durationSteps,
+      midi: dragState.midi,
+    });
+    out.sort((a, b) => a.startStep - b.startStep);
+    return out;
+  });
+
+  /* ——— Cell map: "midi-step" → { event, isStart } for O(1) lookup */
+
+  type CellEntry = { event: MelodyEvent; isStart: boolean };
+
+  let cellMap = $derived.by((): Map<string, CellEntry> => {
+    const m = new Map<string, CellEntry>();
+    for (const e of previewEvents) {
+      for (let s = e.startStep; s < e.startStep + e.durationSteps && s < TOTAL_STEPS; s++) {
+        m.set(`${e.midi}-${s}`, { event: e, isStart: s === e.startStep });
+      }
+    }
+    return m;
+  });
+
+  /* ——— Helpers ————————————————————————————————————————————————— */
+
+  /** First note whose startStep > step, or null. */
+  function nextNoteAfterStep(step: number): MelodyEvent | null {
+    let best: MelodyEvent | null = null;
+    for (const e of events) {
+      if (e.startStep > step && (!best || e.startStep < best.startStep)) best = e;
+    }
+    return best;
+  }
+
+  function commitFromDragState(): void {
+    if (!dragState || dragState.mode !== "place") return;
+    const out: MelodyEvent[] = [];
+    for (const e of events) {
+      if (e.startStep < dragState.startStep &&
+          dragState.startStep < e.startStep + e.durationSteps) {
+        const newDur = dragState.startStep - e.startStep;
+        if (newDur > 0) out.push({ ...e, durationSteps: newDur });
+        continue;
+      }
+      if (e.startStep === dragState.startStep) continue;
+      out.push(e);
+    }
+    out.push({
+      startStep: dragState.startStep,
+      durationSteps: dragState.durationSteps,
+      midi: clampMidi(dragState.midi),
+    });
+    out.sort((a, b) => a.startStep - b.startStep);
+    melodyStore.setKey("events", out);
+  }
+
+  /* ——— Pointer handling (delegation on grid surface div) ————————— */
+
+  let gridEl: HTMLDivElement;
+
+  function coordsFromEvent(evt: PointerEvent): { col: number; midiIdx: number } | null {
+    const rect = gridEl.getBoundingClientRect();
+    const relX = evt.clientX - rect.left;
+    const relY = evt.clientY - rect.top;
+    const col = Math.floor((relX / rect.width)  * COLS_PER_BAR);
+    // rowMidis is low→high; display is high→low (top = last midi)
+    const rowIdx = Math.floor((relY / rect.height) * rowMidis.length);
+    if (col < 0 || col >= COLS_PER_BAR) return null;
+    if (rowIdx < 0 || rowIdx >= rowMidis.length) return null;
+    // invert: display row 0 = highest midi = rowMidis[rowMidis.length - 1]
+    const midiIdx = rowMidis.length - 1 - rowIdx;
+    return { col, midiIdx };
+  }
+
+  function onPointerDown(evt: PointerEvent): void {
+    if (evt.button !== 0) return;
+    const coords = coordsFromEvent(evt);
+    if (!coords) return;
+
+    const { col, midiIdx } = coords;
+    const midi = rowMidis[midiIdx];
+    const step = colToStep(col, barPage);
+    const existing = cellMap.get(`${midi}-${step}`);
+
+    gridEl.setPointerCapture(evt.pointerId);
+
+    if (existing?.isStart) {
+      // Tap on start of note → potential delete (becomes re-place if dragged)
+      dragState = {
+        mode: "toggle",
+        startStep: step, midi,
+        durationSteps: existing.event.durationSteps,
+        maxDur: 0, pointerId: evt.pointerId, userDragged: false,
+      };
+      return;
+    }
+
+    const next    = nextNoteAfterStep(step);
+    const maxDur  = next ? Math.max(1, next.startStep - step) : TOTAL_STEPS - step;
+    const defDur  = Math.min(DEFAULT_DURATION, maxDur);
+
+    dragState = {
+      mode: "place",
+      startStep: step, midi,
+      durationSteps: defDur,
+      maxDur, pointerId: evt.pointerId, userDragged: false,
+    };
+  }
+
+  function onPointerMove(evt: PointerEvent): void {
+    if (!dragState || evt.pointerId !== dragState.pointerId) {
+      // No active drag → update hover ghost (mouse/pen only)
+      const coords = coordsFromEvent(evt);
+      if (coords) {
+        const midi = rowMidis[coords.midiIdx];
+        hoverCell = { midi, col: coords.col };
+      } else {
+        hoverCell = null;
+      }
+      return;
+    }
+
+    const coords = coordsFromEvent(evt);
+    if (!coords) return;
+    const col = coords.col;
+
+    if (dragState.mode === "toggle") {
+      // Detect drag: if pointer moved to a different column, upgrade to place mode
+      const startCol = dragState.startStep % COLS_PER_BAR;
+      if (col !== startCol) {
+        const next   = nextNoteAfterStep(dragState.startStep);
+        const maxDur = next ? Math.max(1, next.startStep - dragState.startStep) : TOTAL_STEPS - dragState.startStep;
+        const span   = Math.max(1, col - startCol + 1);
+        dragState = {
+          mode: "place",
+          startStep: dragState.startStep,
+          midi: dragState.midi,
+          durationSteps: Math.min(span, maxDur),
+          maxDur,
+          pointerId: dragState.pointerId,
+          userDragged: true,
+        };
+      }
+      return;
+    }
+
+    // Place mode: extend duration
+    const startCol = dragState.startStep % COLS_PER_BAR;
+    const span     = Math.max(1, col - startCol + 1);
+    const clamped  = Math.min(span, dragState.maxDur);
+    if (clamped !== dragState.durationSteps) {
+      dragState = { ...dragState, durationSteps: clamped, userDragged: true };
+    }
+  }
+
+  function onPointerUp(evt: PointerEvent): void {
+    if (!dragState || evt.pointerId !== dragState.pointerId) return;
+    try { gridEl.releasePointerCapture(evt.pointerId); } catch {}
+
+    if (dragState.mode === "toggle" && !dragState.userDragged) {
+      // Pure tap on note start → delete it
+      melodyStore.setKey("events",
+        events.filter(e => !(e.startStep === dragState!.startStep && e.midi === dragState!.midi)));
+    } else {
+      commitFromDragState();
+    }
+    dragState = null;
+    hoverCell = null;
+  }
+
+  function onPointerCancel(evt: PointerEvent): void {
+    if (dragState?.pointerId === evt.pointerId) {
+      dragState = null;
+      hoverCell = null;
+    }
+  }
+
+  function onPointerLeave(): void {
+    if (!dragState) hoverCell = null;
+  }
+
+  /* ——— Playhead (G3) — RAF sweep, auto-follows bar page ————————— */
+
+  let playheadCol = $state<number | null>(null);  // column within current bar page
+  let raf = 0;
+
+  function tickPlayhead(): void {
+    const transport = Tone.getTransport();
+    if (transport.state !== "started") {
+      playheadCol = null;
+      raf = 0;
+      return;
+    }
+    const bpm      = transport.bpm.value;
+    const loopSec  = (60 / bpm) * 16;         // 4 bars × 4 beats
+    const within   = ((transport.seconds % loopSec) + loopSec) % loopSec;
+    const step     = (within / loopSec) * TOTAL_STEPS;
+    const stepInt  = Math.floor(step);
+    const currentBar = Math.floor(stepInt / COLS_PER_BAR);
+
+    // Auto-follow the active bar
+    if (currentBar !== barPage) barPage = currentBar;
+
+    playheadCol = step - currentBar * COLS_PER_BAR;
+    raf = requestAnimationFrame(tickPlayhead);
+  }
+
+  isPlayingStore.subscribe((playing) => {
+    if (playing && !raf) {
+      raf = requestAnimationFrame(tickPlayhead);
+    } else if (!playing) {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      playheadCol = null;
+    }
+  });
+
+  onDestroy(() => {
+    if (raf) cancelAnimationFrame(raf);
+  });
+
+  /* ——— G4: Randomize ————————————————————————————————————————————— */
+
+  function handleRandomize(): void {
+    const evs = randomizeMelody(key, scale, baseOctave);
+    melodyStore.setKey("events", evs);
+  }
+</script>
+
+<!-- ─── Bar tabs ─────────────────────────────────────────────────────── -->
+<div class="grid-editor">
+  <div class="bar-tabs" role="group" aria-label="Bar navigation">
+    {#each Array.from({ length: BARS }, (_, i) => i) as bar}
+      <button
+        class="bar-tab"
+        class:active={barPage === bar}
+        onclick={() => { barPage = bar; }}
+        aria-pressed={barPage === bar}
+      >Bar {bar + 1}</button>
+    {/each}
+  </div>
+
+  <!-- ─── Main grid (row labels + cells) ───────────────────────── -->
+  <div class="grid-main">
+    <!-- Row labels (right-aligned pitch names) -->
+    <div class="row-labels" aria-hidden="true">
+      {#each rowMidis.toReversed() as midi}
+        <div
+          class="row-label"
+          class:root={isRoot(midi, key)}
+          class:in-scale={!foldToScale && isInScale(midi, key, scale)}
+        >{pitchName(midi, useFlats)}</div>
+      {/each}
+    </div>
+
+    <!-- Cell grid -->
+    <div
+      class="grid-surface"
+      style:--row-count={rowMidis.length}
+      bind:this={gridEl}
+      role="application"
+      aria-label="Step sequencer grid — tap to place a note, drag right to extend, tap again to delete"
+      onpointerdown={onPointerDown}
+      onpointermove={onPointerMove}
+      onpointerup={onPointerUp}
+      onpointercancel={onPointerCancel}
+      onpointerleave={onPointerLeave}
+    >
+      {#each rowMidis.toReversed() as midi}
+        {#each Array.from({ length: COLS_PER_BAR }, (_, col) => col) as col}
+          {@const step = colToStep(col, barPage)}
+          {@const entry = cellMap.get(`${midi}-${step}`)}
+          {@const isGhost = !dragState && hoverCell?.midi === midi && hoverCell?.col === col}
+          {@const isBeat  = col % 4 === 0}
+          <div
+            class="cell"
+            class:note-start={entry?.isStart}
+            class:note-tail={entry && !entry.isStart}
+            class:ghost={isGhost}
+            class:root-row={isRoot(midi, key)}
+            class:off-key={!foldToScale && !isInScale(midi, key, scale)}
+            class:beat-start={isBeat}
+            data-midi={midi}
+            data-col={col}
+          ></div>
+        {/each}
+      {/each}
+
+      <!-- Playhead overlay — positioned with inline style -->
+      {#if playheadCol !== null}
+        <div
+          class="playhead"
+          style:left={`${(playheadCol / COLS_PER_BAR) * 100}%`}
+        ></div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- ─── Bottom toolbar (G3/G4 controls) ─────────────────────── -->
+  <div class="grid-toolbar">
+    <div class="octave-ctrl" role="group" aria-label="Octave range">
+      <button
+        class="oct-btn"
+        onclick={() => setGridBaseOctave(baseOctave - 1)}
+        disabled={baseOctave <= 2}
+        aria-label="Shift pitch range down"
+        title="Shift pitch range down"
+      >−8va</button>
+      <span class="oct-label">C{baseOctave}–C{baseOctave + 2}</span>
+      <button
+        class="oct-btn"
+        onclick={() => setGridBaseOctave(baseOctave + 1)}
+        disabled={baseOctave >= 5}
+        aria-label="Shift pitch range up"
+        title="Shift pitch range up"
+      >+8va</button>
+    </div>
+
+    <div class="fold-toggle" role="group" aria-label="Scale mode">
+      <button
+        class="fold-btn"
+        class:active={foldToScale}
+        onclick={() => setFoldToScale(true)}
+        aria-pressed={foldToScale}
+      >In Key</button>
+      <button
+        class="fold-btn"
+        class:active={!foldToScale}
+        onclick={() => setFoldToScale(false)}
+        aria-pressed={!foldToScale}
+      >Chromatic</button>
+    </div>
+
+    <button class="randomize-btn" onclick={handleRandomize}>
+      ⚄ Randomize
+    </button>
+  </div>
+</div>
+
+<style>
+  .grid-editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  /* ─── Bar tabs ──────────────────────────────────────────────── */
+  .bar-tabs {
+    display: flex;
+    gap: 2px;
+    flex: 0 0 auto;
+  }
+  .bar-tab {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: var(--label-case);
+    padding: 4px 0;
+    color: var(--text-dim);
+    background: var(--surface-sunken);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--t-fast), background var(--t-fast);
+  }
+  .bar-tab:hover:not(.active) { color: var(--text); }
+  .bar-tab.active {
+    background: var(--surface-raised);
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+
+  /* ─── Main grid layout ──────────────────────────────────────── */
+  .grid-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 4px;
+  }
+
+  .row-labels {
+    flex: 0 0 auto;
+    width: 24px;
+    display: flex;
+    flex-direction: column;
+    /* rows align with grid-surface rows */
+  }
+  .row-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    line-height: 1;
+    padding-right: 2px;
+    user-select: none;
+  }
+  .row-label.root { color: var(--signal); font-weight: 600; }
+  .row-label.in-scale { color: var(--text); }
+
+  /* ─── Cell grid ─────────────────────────────────────────────── */
+  .grid-surface {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(var(--row-count), 1fr);
+    gap: 1px;
+    background: var(--hairline);
+    position: relative;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .cell {
+    background: var(--surface-sunken);
+    transition: background var(--t-fast);
+    position: relative;
+  }
+  /* Subtle beat-start left border to show bars within the bar page */
+  .cell.beat-start {
+    border-left: 1px solid color-mix(in srgb, var(--hairline) 200%, transparent);
+  }
+  /* Root row: faint home-base tint */
+  .cell.root-row {
+    background: color-mix(in srgb, var(--signal) 7%, var(--surface-sunken));
+  }
+  /* Off-key rows in chromatic mode: slightly dimmer */
+  .cell.off-key {
+    background: color-mix(in srgb, var(--bg) 60%, var(--surface-sunken));
+  }
+  /* Active note — start cell */
+  .cell.note-start {
+    background: var(--signal);
+    border-radius: 3px 0 0 3px;
+  }
+  /* Active note — tail cells */
+  .cell.note-tail {
+    background: color-mix(in srgb, var(--signal) 50%, var(--surface-sunken));
+  }
+  /* Hover ghost (mouse/pen preview) */
+  .cell.ghost {
+    background: color-mix(in srgb, var(--signal) 28%, var(--surface-sunken));
+  }
+  /* Chromatic off-key + root override */
+  .cell.root-row.note-start { background: var(--signal); }
+
+  /* Playhead: absolute vertical bar */
+  .playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--signal);
+    opacity: 0.9;
+    pointer-events: none;
+    transform: translateX(-1px);
+    box-shadow: 0 0 6px var(--signal);
+  }
+
+  /* ─── Bottom toolbar ────────────────────────────────────────── */
+  .grid-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .octave-ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .oct-btn {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    padding: 3px 6px;
+    color: var(--text-dim);
+    background: var(--surface-sunken);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--t-fast);
+  }
+  .oct-btn:hover:not(:disabled) { color: var(--text); }
+  .oct-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .oct-label {
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    min-width: 5em;
+    text-align: center;
+  }
+
+  .fold-toggle {
+    display: inline-flex;
+    background: var(--surface-sunken);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+  }
+  .fold-btn {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    cursor: pointer;
+    transition: color var(--t-fast), background var(--t-fast);
+  }
+  .fold-btn:hover:not(.active) { color: var(--text); }
+  .fold-btn.active {
+    background: var(--signal);
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .randomize-btn {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    color: var(--text-dim);
+    background: transparent;
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--t-fast), border-color var(--t-fast);
+  }
+  .randomize-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+  @media (pointer: coarse) {
+    .bar-tab    { padding: 8px 0; min-height: 36px; }
+    .oct-btn    { padding: 7px 10px; min-height: 36px; }
+    .fold-btn   { padding: 7px 12px; min-height: 36px; }
+    .randomize-btn { padding: 7px 14px; min-height: 36px; }
+  }
+</style>

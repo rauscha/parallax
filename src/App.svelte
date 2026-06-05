@@ -8,14 +8,18 @@
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
+  import GridEditor from "./notation/GridEditor.svelte";
   import KeyScalePicker from "./notation/KeyScalePicker.svelte";
   import StaffToolbar from "./notation/StaffToolbar.svelte";
   import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
+  import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
   let viz = $state<"scope" | "spectrum">("scope");
+  let surface = $state<Surface>(surfaceStore.get());
+  surfaceStore.subscribe((v) => { surface = v; });
 
   let playing = $state(false);
   isPlayingStore.subscribe((v) => { playing = v; });
@@ -37,7 +41,7 @@
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Parallax</span>
-    <span class="brand-sub">M3 — sequencer + staff</span>
+    <span class="brand-sub">M3 → Grid</span>
   </div>
   <ThemeSwitcher />
 </header>
@@ -71,20 +75,42 @@
     <div class="placeholder">Per-model TIMBRE/COLOR explanation lands here in M4.</div>
   </section>
 
-  <section class="region staff" aria-label="Melody staff">
+  <section class="region staff" aria-label="Melody sequencer">
     <div class="staff-header">
-      <span class="region-label">Staff</span>
+      <div class="staff-header-left">
+        <span class="region-label">Sequencer</span>
+        <div class="surface-toggle" role="group" aria-label="Sequencer surface">
+          <button
+            class="surf-btn"
+            class:active={surface === "staff"}
+            onclick={() => setSurface("staff")}
+            aria-pressed={surface === "staff"}
+          >Staff</button>
+          <button
+            class="surf-btn"
+            class:active={surface === "grid"}
+            onclick={() => setSurface("grid")}
+            aria-pressed={surface === "grid"}
+          >Grid</button>
+        </div>
+      </div>
       <div class="staff-controls">
         <KeyScalePicker />
-        <StaffToolbar />
+        {#if surface === "staff"}
+          <StaffToolbar />
+        {/if}
       </div>
     </div>
     <div class="staff-frame">
-      <StaffEditor />
+      {#if surface === "staff"}
+        <StaffEditor />
+      {:else}
+        <GridEditor />
+      {/if}
     </div>
     <div class="staff-footer">
       {#if eventCount === 0}
-        <p class="hint">Tap to place a note · drag right to extend · long-press to delete</p>
+        <p class="hint">{surface === "staff" ? "Tap to place a note · drag right to extend · long-press to delete" : "Tap a cell to place a note · drag right to extend · tap again to delete"}</p>
         <button class="ghost-btn" onclick={loadDemoMelody} disabled={!ready}>Load demo</button>
       {:else}
         <span class="count">{eventCount} note{eventCount === 1 ? "" : "s"}</span>
@@ -306,6 +332,40 @@
     gap: 12px;
     flex-wrap: wrap;
     margin-bottom: 4px;
+  }
+  .staff-header-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .surface-toggle {
+    display: inline-flex;
+    background: var(--surface-sunken);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+  }
+  .surf-btn {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    cursor: pointer;
+    transition: color var(--t-fast), background var(--t-fast);
+  }
+  .surf-btn:hover:not(.active) { color: var(--text); }
+  .surf-btn.active {
+    background: var(--signal);
+    color: var(--bg);
+    font-weight: 600;
+  }
+  @media (pointer: coarse) {
+    .surf-btn { padding: 8px 12px; min-height: 36px; }
   }
   .staff-controls {
     display: inline-flex;

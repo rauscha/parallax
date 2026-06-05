@@ -1,22 +1,17 @@
 # Waiting on you
 
-Updated 2026-06-03 (desktop, evening — after M3 polish + click-placement fix).
+Updated 2026-06-04 (desktop · crane-desk — M3 tag + grid sequencer planning).
 
 ## Nothing currently waiting on your input
 
-Today's session closed out two rounds of M3 feedback. See [.handoff/SESSION-HANDOFF.md](SESSION-HANDOFF.md) for the full per-session digest. The only open thread is the **eyeball verification** at the top of `NEXT-STEPS.md` — that's a verification pass, not a decision.
-
-Recommended after eyeball: `git tag v0.4.0-m3 && git push origin v0.4.0-m3`.
+This session tagged M3 (`v0.4.0-m3`) and resolved the staff-vs-grid question into a concrete build plan. No decisions are pending. The next move is purely execution: build the grid sequencer (G0–G4) per `docs/grid-sequencer-plan.md`. See [.handoff/SESSION-HANDOFF.md](SESSION-HANDOFF.md) for the digest and [.handoff/NEXT-STEPS.md](NEXT-STEPS.md) for the checklist.
 
 ## Resolved this session (the design decisions you made)
 
-- ✓ **Monophonic semantics on overlap** — picked "trim previous, place new" (classic paint-over) out of three options. Drag-extend clamps to the next note's start so durations can't overlap.
-- ✓ **Accidental placement UX** — picked "toolbar mode toggle ♮ ♯ ♭" (sticky, mutually exclusive) out of three options. Active mode bypasses snap-to-scale and forces that sign on the clicked position.
-- ✓ **Octave shift scope** — picked "0 / −8va toggle" out of three options. Treble clef stays; gClef8vb swaps in for the lower-octave reading. Persists in localStorage.
-- ✓ **Explicit rests** — picked "auto-render in gaps PLUS a rest tool" out of three options. Rest tool taps insert silence by trimming previous + deleting forward notes in the drag range.
-- ✓ **Click-to-place mapping** — picked Pattern C (pure `Math.floor` cell semantics) plus Pattern D (hover ghost) out of four patterns surfaced by the deep-research workflow on click-placement UX. Matches your tracker mental model; ghost preview added independently as the highest-value universal UX upgrade.
+- ✓ **Staff vs. grid surface** — picked **coexist behind a toggle** (out of: coexist / replace staff / grid-now-decide-later). The grid is a new surface alongside the staff; both write the same `melodyStore`. Lets you A/B before deleting anything.
+- ✓ **First grid build scope** — picked **G0–G4** (lean MVP + delight), out of (lean MVP only / MVP+delight / full incl. per-step expression). Per-step expression (G5) deferred to pair with M4.
+- ✓ **Grid layout** — pitch-row × time-column ("Song Maker" style), fold-to-scale rows. Locked in the plan doc as the recommended layout; not re-litigated.
 
-## Resolved overnight (the design decisions you made before bed on 2026-06-02)
+## Resolved earlier (carried forward, for reference)
 
-- ✓ **Initial placement model** — picked "tap to place + drag right for duration; long-press OR right-click to delete".
-- ✓ **Loop region scope for M3** — fixed 4-bar loop, bar marks + playhead only. No draggable boundaries (deferred to M5 polish).
+- ✓ M3 design decisions (monophonic overlap = trim-previous; accidental toolbar; octave 0/−8va; auto-rests + rest tool; click-to-place = Math.floor cell semantics + hover ghost) — all shipped in M3, tagged `v0.4.0-m3`.

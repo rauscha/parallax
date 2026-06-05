@@ -20,6 +20,11 @@
   let ready = $state(false);
   let held = $state<Set<number>>(new Set());
 
+  // Which midi each physical key actually started. Key-up releases *this* note,
+  // not one recomputed from the current octave — otherwise shifting octave
+  // while a key is held would noteOff the wrong midi and strand the original.
+  const codeToMidi = new Map<string, number>();
+
   audioReadyStore.subscribe((v) => { ready = v; });
 
   function midiFor(code: string): number | null {
@@ -48,6 +53,7 @@
     const eng = audioEngine.currentEngine;
     if (!eng) return;
     eng.noteOn(midi, { velocity: 0.85 });
+    codeToMidi.set(e.code, midi);
     // Svelte 5 runes don't track Set mutation — reassign with a fresh Set.
     held = new Set(held).add(midi);
     activeNotesStore.set(held);
@@ -55,11 +61,10 @@
   }
 
   function onKeyUp(e: KeyboardEvent) {
-    const midi = midiFor(e.code);
-    if (midi === null) return;
-    const eng = audioEngine.currentEngine;
-    if (!eng) return;
-    eng.noteOff(midi);
+    const midi = codeToMidi.get(e.code);
+    if (midi === undefined) return;     // this key wasn't holding a note
+    codeToMidi.delete(e.code);
+    audioEngine.currentEngine?.noteOff(midi);
     const next = new Set(held);
     next.delete(midi);
     held = next;
@@ -71,12 +76,13 @@
   // we never see the keyup — without this, notes get stranded "held" and
   // play indefinitely. Release every held note and let the engine know.
   function releaseAllHeld() {
-    if (held.size === 0) return;
+    if (held.size === 0 && codeToMidi.size === 0) return;
     const eng = audioEngine.currentEngine;
     if (eng) {
       for (const midi of held) eng.noteOff(midi);
       eng.allNotesOff();   // defence in depth — also clears the gain ramp
     }
+    codeToMidi.clear();
     held = new Set();
     activeNotesStore.set(held);
   }

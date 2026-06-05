@@ -45,6 +45,7 @@ export class BraidsEngine implements ISynthEngine {
   private node: AudioWorkletNode | null = null;
   private gainNode: GainNode | null = null;
   private activeMidi: number | null = null;
+  private pitchBend = 0;             // semitones — persists across notes (re-applied on each noteOn)
 
   // Mirror of param values for getParameter().
   private params: Record<string, number> = {
@@ -136,9 +137,11 @@ export class BraidsEngine implements ISynthEngine {
     const v = opts.velocity ?? 0.8;
     this.activeMidi = midi;
 
-    // Pitch
+    // Pitch — re-apply any active pitch-bend on top of the new note, so a held
+    // bend survives a note change instead of being overwritten. params.pitch
+    // stays the *unbent* base, which setPitchBend() bends relative to.
     const pitchParam = this.node.parameters.get("pitch");
-    if (pitchParam) pitchParam.setValueAtTime(midi, t);
+    if (pitchParam) pitchParam.setValueAtTime(midi + this.pitchBend, t);
     this.params.pitch = midi;
 
     // Strike the engine
@@ -168,8 +171,14 @@ export class BraidsEngine implements ISynthEngine {
     if (!this.ctx || !this.gainNode) return;
     const t = this.ctx.currentTime;
     const g = this.gainNode.gain;
+    // Drop any future-scheduled gain automation (a sequencer may have queued
+    // ramps ahead), hold the current value, then ramp to silence.
     cancelAndHold(g, t);
     g.linearRampToValueAtTime(0, t + 0.04);
+    // Also cancel future pitch automation and reset the worklet's gate so a
+    // panic fully disarms the engine — not just the output level.
+    this.node?.parameters.get("pitch")?.cancelScheduledValues(t);
+    this.node?.port.postMessage({ type: "gateOff" });
     this.activeMidi = null;
   }
 
@@ -177,6 +186,7 @@ export class BraidsEngine implements ISynthEngine {
     if (!this.node) return;
     const pitchParam = this.node.parameters.get("pitch");
     if (!pitchParam || !this.ctx) return;
+    this.pitchBend = semitones;   // remembered so the next noteOn re-applies it
     pitchParam.setTargetAtTime(this.params.pitch + semitones, this.ctx.currentTime, 0.005);
   }
 

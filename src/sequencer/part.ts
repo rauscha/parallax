@@ -51,11 +51,15 @@ function rebuild(m: Melody): void {
   }
   const events = expand(m.events);
   if (events.length === 0) return;
-  const part = new Tone.Part((_time, ev: PartEvent) => {
+  const part = new Tone.Part((time, ev: PartEvent) => {
     const eng = audioEngine.currentEngine;
     if (!eng) return;
-    if (ev.kind === "on") eng.noteOn(ev.midi, { velocity: ev.velocity });
-    else eng.noteOff(ev.midi);
+    // Pass Tone's scheduled time straight through to the engine so notes fire
+    // sample-accurately at the beat. Without it, the engine falls back to
+    // ctx.currentTime and notes play ~100–200ms early (the look-ahead window)
+    // and jitter relative to each other.
+    if (ev.kind === "on") eng.noteOn(ev.midi, { velocity: ev.velocity, time });
+    else eng.noteOff(ev.midi, { time });
   }, events);
   part.loop = true;
   part.loopStart = 0;

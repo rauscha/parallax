@@ -3,6 +3,7 @@
   import TapToStart from "./ui/TapToStart.svelte";
   import ModelPicker from "./ui/ModelPicker.svelte";
   import ParamPanel from "./ui/ParamPanel.svelte";
+  import ExplainPanel from "./ui/ExplainPanel.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
@@ -72,7 +73,7 @@
 
   <section class="region explain" aria-label="Explain panel">
     <div class="region-label">Explain</div>
-    <div class="placeholder">Per-model TIMBRE/COLOR explanation lands here in M4.</div>
+    <ExplainPanel />
   </section>
 
   <section class="region staff" aria-label="Melody sequencer">
@@ -244,15 +245,6 @@
     color: var(--text-dim);
     margin-bottom: 8px;
   }
-  .placeholder {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
   .transport {
     flex: 0 0 auto;
     display: flex;

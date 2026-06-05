@@ -45,6 +45,14 @@ Arrow keys move a highlighted selection cursor on the grid; Space/Enter place or
 **Why it matters:** a CSP is defense-in-depth — if any third-party script ever sneaks in (a bad dependency, an injected tag), the browser refuses to run it. And `npm run preview` is now a working way to eyeball a real production build locally.
 **Limitation:** clickjacking protection (`frame-ancestors` / `X-Frame-Options`) can't be set via `<meta>` — it needs real HTTP headers GitHub Pages doesn't offer. Noted, not blocking.
 
+### 7. Three small audio bugs ✓ (`98823ed`, pushed)
+All three came from the 2026-05-31 deep review / next-steps list. Each is a no-op for today's behavior and correct when exercised:
+- **Octave-shift-while-held strand** (QWERTY keyboard play) — holding a key, shifting octave, then releasing used to release the *wrong* note and leave the original droning forever. Now each key remembers the exact note it started, so release always stops the right one. (The on-screen note strip already did this correctly per-finger; the computer-keyboard path didn't.)
+- **Pitch-bend re-baseline** — a new note used to wipe out an active pitch-bend. Now the bend is remembered and re-applied to each new note. (No pitch-bend input is wired yet, so this is invisible today — but the engine API is now correct for when one lands.)
+- **Panic / all-notes-off** — used to only fade the output volume. Now it also cancels any future pitch automation and resets the engine's internal trigger, so a panic fully silences and disarms — important once the sequencer schedules notes ahead.
+**Verified:** type-check clean, app loads with no console errors. Full ear-testing needs a real click to unlock the AudioContext (can't be scripted), so these are verified by code review + the live site already exercising the audio path.
+**Why it matters:** no more stuck/droning notes from octave shifts, and a panic now truly stops everything.
+
 ---
 
 ## Waiting on you

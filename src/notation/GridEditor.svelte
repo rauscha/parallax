@@ -139,26 +139,34 @@
     return best;
   }
 
-  function commitFromDragState(): void {
-    if (!dragState || dragState.mode !== "place") return;
+  /** Place a note at `startStep`, trimming any note that overlaps it and
+   *  replacing any note that starts on the same step. Shared by the pointer
+   *  drag-commit path and the keyboard Space-to-place path. */
+  function placeNote(startStep: number, midi: number, durationSteps: number): void {
     const out: MelodyEvent[] = [];
     for (const e of events) {
-      if (e.startStep < dragState.startStep &&
-          dragState.startStep < e.startStep + e.durationSteps) {
-        const newDur = dragState.startStep - e.startStep;
+      if (e.startStep < startStep && startStep < e.startStep + e.durationSteps) {
+        const newDur = startStep - e.startStep;
         if (newDur > 0) out.push({ ...e, durationSteps: newDur });
         continue;
       }
-      if (e.startStep === dragState.startStep) continue;
+      if (e.startStep === startStep) continue;
       out.push(e);
     }
-    out.push({
-      startStep: dragState.startStep,
-      durationSteps: dragState.durationSteps,
-      midi: clampMidi(dragState.midi),
-    });
+    out.push({ startStep, durationSteps, midi: clampMidi(midi) });
     out.sort((a, b) => a.startStep - b.startStep);
     melodyStore.setKey("events", out);
+  }
+
+  /** Remove the note that starts exactly at (startStep, midi). */
+  function deleteNoteAt(startStep: number, midi: number): void {
+    melodyStore.setKey("events",
+      events.filter(e => !(e.startStep === startStep && e.midi === midi)));
+  }
+
+  function commitFromDragState(): void {
+    if (!dragState || dragState.mode !== "place") return;
+    placeNote(dragState.startStep, dragState.midi, dragState.durationSteps);
   }
 
   /* ——— Pointer handling (delegation on grid surface div) ————————— */
@@ -190,6 +198,7 @@
     const existing = cellMap.get(`${midi}-${step}`);
 
     gridEl.setPointerCapture(evt.pointerId);
+    cursor = { midi, step };   // keep keyboard cursor in sync with last tap
 
     if (existing?.isStart) {
       // Tap on start of note → potential delete (becomes re-place if dragged)
@@ -266,8 +275,7 @@
 
     if (dragState.mode === "toggle" && !dragState.userDragged) {
       // Pure tap on note start → delete it
-      melodyStore.setKey("events",
-        events.filter(e => !(e.startStep === dragState!.startStep && e.midi === dragState!.midi)));
+      deleteNoteAt(dragState.startStep, dragState.midi);
     } else {
       commitFromDragState();
     }
@@ -332,6 +340,66 @@
     const evs = randomizeMelody(key, scale, baseOctave);
     melodyStore.setKey("events", evs);
   }
+
+  /* ——— Keyboard navigation — selection cursor + Space toggle ————————
+     Arrow keys move a highlighted cursor cell; Space/Enter place or remove
+     a note there; Delete/Backspace removes one. The cursor is also synced to
+     the last pointer interaction so tap and type share one position. */
+
+  let cursor = $state<null | { midi: number; step: number }>(null);
+
+  /** Seed/repair the cursor — snap to a valid row if the scale view changed. */
+  function ensureCursor(): void {
+    if (cursor && rowMidis.includes(cursor.midi)) return;
+    const rootIdx = rowMidis.findIndex(m => isRoot(m, key));
+    const idx = rootIdx >= 0 ? rootIdx : Math.floor(rowMidis.length / 2);
+    cursor = { midi: rowMidis[idx] ?? MIDI_MIN, step: colToStep(0, barPage) };
+  }
+
+  function moveCursor(dRow: number, dStep: number): void {
+    ensureCursor();
+    if (!cursor) return;
+    let idx = rowMidis.indexOf(cursor.midi);
+    if (idx === -1) idx = Math.floor(rowMidis.length / 2);
+    idx = Math.max(0, Math.min(rowMidis.length - 1, idx + dRow));
+    const step = Math.max(0, Math.min(TOTAL_STEPS - 1, cursor.step + dStep));
+    cursor = { midi: rowMidis[idx], step };
+    const bar = Math.floor(step / COLS_PER_BAR);
+    if (bar !== barPage) barPage = bar;   // follow the cursor across bars
+  }
+
+  function toggleCursorCell(): void {
+    ensureCursor();
+    if (!cursor) return;
+    const { midi, step } = cursor;
+    const existing = cellMap.get(`${midi}-${step}`);
+    if (existing?.isStart) {
+      deleteNoteAt(step, midi);
+      return;
+    }
+    const next   = nextNoteAfterStep(step);
+    const maxDur = next ? Math.max(1, next.startStep - step) : TOTAL_STEPS - step;
+    placeNote(step, midi, Math.min(DEFAULT_DURATION, maxDur));
+  }
+
+  function onKeyDown(evt: KeyboardEvent): void {
+    switch (evt.key) {
+      case "ArrowUp":    evt.preventDefault(); moveCursor(+1, 0); break;
+      case "ArrowDown":  evt.preventDefault(); moveCursor(-1, 0); break;
+      case "ArrowLeft":  evt.preventDefault(); moveCursor(0, -1); break;
+      case "ArrowRight": evt.preventDefault(); moveCursor(0, +1); break;
+      case " ":
+      case "Enter":      evt.preventDefault(); toggleCursorCell(); break;
+      case "Delete":
+      case "Backspace": {
+        evt.preventDefault();
+        if (cursor && cellMap.get(`${cursor.midi}-${cursor.step}`)?.isStart) {
+          deleteNoteAt(cursor.step, cursor.midi);
+        }
+        break;
+      }
+    }
+  }
 </script>
 
 <!-- ─── Bar tabs ─────────────────────────────────────────────────────── -->
@@ -360,18 +428,23 @@
       {/each}
     </div>
 
-    <!-- Cell grid -->
+    <!-- Cell grid — an intentional interactive application surface: it takes
+         keyboard focus for arrow-key navigation and owns pointer + key handlers. -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="grid-surface"
       style:--row-count={rowMidis.length}
       bind:this={gridEl}
       role="application"
-      aria-label="Step sequencer grid — tap to place a note, drag right to extend, tap again to delete"
+      tabindex="0"
+      aria-label="Step sequencer grid — tap or use arrow keys to move; Space places or removes a note; drag right to extend"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
       onpointercancel={onPointerCancel}
       onpointerleave={onPointerLeave}
+      onkeydown={onKeyDown}
     >
       {#each rowMidis.toReversed() as midi}
         {#each Array.from({ length: COLS_PER_BAR }, (_, col) => col) as col}
@@ -379,11 +452,13 @@
           {@const entry = cellMap.get(`${midi}-${step}`)}
           {@const isGhost = !dragState && hoverCell?.midi === midi && hoverCell?.col === col}
           {@const isBeat  = col % 4 === 0}
+          {@const isCursor = cursor?.midi === midi && cursor?.step === step}
           <div
             class="cell"
             class:note-start={entry?.isStart}
             class:note-tail={entry && !entry.isStart}
             class:ghost={isGhost}
+            class:cursor={isCursor}
             class:root-row={isRoot(midi, key)}
             class:off-key={!foldToScale && !isInScale(midi, key, scale)}
             class:beat-start={isBeat}
@@ -528,6 +603,10 @@
     border-radius: var(--radius-sm);
     overflow: hidden;
   }
+  .grid-surface:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
 
   .cell {
     background: var(--surface-sunken);
@@ -558,6 +637,11 @@
   /* Hover ghost (mouse/pen preview) */
   .cell.ghost {
     background: color-mix(in srgb, var(--signal) 28%, var(--surface-sunken));
+  }
+  /* Keyboard selection cursor — ring drawn over whatever the cell holds */
+  .cell.cursor {
+    box-shadow: inset 0 0 0 2px var(--text);
+    z-index: 2;
   }
   /* Chromatic off-key + root override */
   .cell.root-row.note-start { background: var(--signal); }

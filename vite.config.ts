@@ -11,7 +11,18 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 //   style-src   'unsafe-inline' — Svelte writes inline style="--var:…" bindings;
 //               fonts.googleapis.com — the Inter/Space-Grotesk/Mono stylesheet.
 //   font-src    fonts.gstatic.com — those web fonts (Bravura is self-hosted).
-//   worker-src  'self' — the same-origin braids-worklet.js module.
+//   worker-src  'self' blob: — 'self' covers the same-origin braids-worklet.js
+//               module; `blob:` is REQUIRED by Tone.js, whose Transport clock
+//               ticker runs in a Web Worker created from a Blob URL
+//               (node_modules/tone/.../clock/Ticker.js). Without `blob:` the
+//               worker is blocked by CSP and — because the block is async, not a
+//               thrown error — Tone never falls back to its setTimeout clock, so
+//               the Transport silently stops firing scheduled notes (the playhead
+//               still sweeps off the audio clock, but the sequencer makes no
+//               sound). Do NOT tighten this back to 'self' without forcing
+//               Tone's clockSource to "timeout". Creating a blob worker already
+//               requires script execution (gated by script-src 'self'), so this
+//               adds negligible attack surface.
 // Note: frame-ancestors / X-Frame-Options can't be set via <meta>, so
 // clickjacking protection would need real headers GitHub Pages doesn't offer.
 const CSP = [
@@ -21,7 +32,7 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",
   "connect-src 'self'",
-  "worker-src 'self'",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",

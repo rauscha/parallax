@@ -3,6 +3,7 @@ import type {
   NoteOnOpts, NoteOffOpts, MidiNote,
 } from "../types";
 import { BRAIDS_MODELS, type BraidsModel } from "../../data/braids-models";
+import { getBraidsEnvelope } from "../../data/braids-envelopes";
 
 // Anchor an AudioParam at its current scheduled value at time `t`, then clear
 // future automation. Native cancelAndHoldAtTime preserves the ramp value
@@ -46,6 +47,13 @@ export class BraidsEngine implements ISynthEngine {
   private gainNode: GainNode | null = null;
   private activeMidi: number | null = null;
   private pitchBend = 0;             // semitones — persists across notes (re-applied on each noteOn)
+  // True for the unpitched drum models (KICK, SNAR, CYMB, DRUM): one-shots whose
+  // AD envelope shapes the whole amplitude decay, so noteOff must NOT ramp the JS
+  // gate down — that would truncate the tail (a quick tap should still play the
+  // full hit). The voice silences itself when the AD decay completes; the gate
+  // just stays open. Pitched models leave this false so the Release knob works
+  // and successive notes don't pile up into discordant overlapping rings.
+  private letRing = false;
 
   // Mirror of param values for getParameter().
   private params: Record<string, number> = {
@@ -159,12 +167,18 @@ export class BraidsEngine implements ISynthEngine {
   noteOff(midi: MidiNote, opts: NoteOffOpts = {}): void {
     if (!this.ctx || !this.gainNode) return;
     if (this.activeMidi !== null && this.activeMidi !== midi) return;
+    this.activeMidi = null;
+    if (this.node) this.node.port.postMessage({ type: "gateOff" });
+    // Let-ring drum models silence themselves via the WASM AD envelope; ramping
+    // the JS gate down here would clip the decay tail short, so leave it open.
+    // The gate is harmless once the WASM VCA reaches zero (gate × 0 = silence),
+    // and the next strike re-triggers the envelope. Panic/allNotesOff still closes
+    // it for a hard stop.
+    if (this.letRing) return;
     const t = opts.time ?? this.ctx.currentTime;
     const g = this.gainNode.gain;
     cancelAndHold(g, t);
     g.linearRampToValueAtTime(0, t + this.params.release);
-    this.activeMidi = null;
-    if (this.node) this.node.port.postMessage({ type: "gateOff" });
   }
 
   allNotesOff(): void {
@@ -194,7 +208,47 @@ export class BraidsEngine implements ISynthEngine {
   setShape(index: number): void {
     index = Math.max(0, Math.min(46, index | 0));
     this.currentModelIndex = index;
-    if (this.node) this.node.port.postMessage({ type: "setShape", value: index });
+    if (!this.node) return;
+    this.node.port.postMessage({ type: "setShape", value: index });
+    this.applyEnvelope(index);
+  }
+
+  // Push the model's built-in AD envelope into the worklet alongside the shape.
+  // The unpitched drum models (KICK, SNAR, CYMB, DRUM) get a one-shot VCA decay;
+  // every other model — including the self-decaying pitched ones (PLUK, BELL) —
+  // resolves to an all-zero envelope that leaves the VCA wide open and gates
+  // normally, identical to the pre-envelope behaviour.
+  // Values are clamped to the firmware-faithful ranges (attack/decay 0..15 so
+  // the LUT index stays in bounds, vca 0..1, depths 0..15) so a bad table entry
+  // can never push the DSP's envelope LUT read out of bounds.
+  private applyEnvelope(index: number): void {
+    if (!this.node) return;
+    const env = getBraidsEnvelope(index);
+    this.letRing = env.letRing;
+    const c = (x: number, hi: number) => Math.max(0, Math.min(hi, x | 0));
+    this.node.port.postMessage({
+      type: "setEnvelopeShape",
+      attack: c(env.attack, 15),
+      decay: c(env.decay, 15),
+    });
+    this.node.port.postMessage({
+      type: "setAdAmounts",
+      vca: c(env.vca, 1),
+      timbre: c(env.timbre, 15),
+      color: c(env.color, 15),
+      fm: c(env.fm, 15),
+    });
+
+    // If we switch models while no note is held, close the gate. A one-shot
+    // percussion model leaves the JS gate open (so its decay tail rings out);
+    // without this, switching from that to a *sustained* model — whose WASM VCA
+    // is wide open — would drone instantly through the still-open gate. Only do
+    // this when idle; a mid-note switch (live model sweep) keeps continuity.
+    if (this.activeMidi === null && this.ctx && this.gainNode) {
+      const t = this.ctx.currentTime;
+      cancelAndHold(this.gainNode.gain, t);
+      this.gainNode.gain.linearRampToValueAtTime(0, t + 0.01);
+    }
   }
 
   /** Current Braids model (for the explain panel / model picker). */

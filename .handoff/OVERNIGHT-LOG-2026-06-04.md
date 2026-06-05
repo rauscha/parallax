@@ -53,6 +53,28 @@ All three came from the 2026-05-31 deep review / next-steps list. Each is a no-o
 **Verified:** type-check clean, app loads with no console errors. Full ear-testing needs a real click to unlock the AudioContext (can't be scripted), so these are verified by code review + the live site already exercising the audio path.
 **Why it matters:** no more stuck/droning notes from octave shifts, and a panic now truly stops everything.
 
+### 8. M4 groundwork — Explain panel (data/text layer) ✓ (`f9f06df`, pushed)
+The "Explain" region used to be a placeholder. It's now a real panel that shows, for the currently selected model: its code/name/family, a one-line character description, and — the whole point of the app — what the **TIMBRE** and **COLOR** knobs actually do *for that model*, with live % readouts that track the patch. All the text comes from the existing 47-model data table. Reacts to model changes the same way the model picker does.
+**Scope kept deliberately tight:** this is the *data/text* layer only. The taste-heavy parts of M4 — animated mini-diagrams, the knob↔card highlight, the "show me" macro sweep, and the per-model envelope (AD) amount tuning that changes how each model *sounds* — were left for an interactive session (they need design taste and your ears). See "Waiting on you" below.
+**Verified:** static render correct (CSAW shows everything); type-check + a11y clean. Live model-*switch* couldn't be clicked through here because changing models is gated on a started AudioContext (needs a real click), but the panel uses the identical reactive pattern as the working model picker.
+**Why it matters:** this is the feature that teaches you what each of the 47 models is and how its two knobs behave — turning the synth from "knobs that do something" into "knobs you understand."
+
+---
+
+## Waiting on you
+
+Nothing blocked the run — all eight chosen tasks shipped. These are confirm-and-decide items for when you're back. The first three are genuine decisions (also mirrored in `PENDING-DECISIONS.md`); the rest are quick eyeball/ear checks.
+
+### Decisions
+1. **M4 — per-model envelope (AD) amounts.** The shim setters to give each model a built-in attack/decay shape (so PLUK/BELL/drum models pluck and decay instead of droning) have been ready since 2026-06-01 but default to 0. Wiring real amounts changes how every model *sounds*, which needs your ears — and it pairs with grid G5 (per-step expression). **Options:** (a) next session, I author conservative amounts for the clearly-percussive models and we ear-tune together *(recommended)*; (b) leave all at 0 until G5; (c) you hand me a per-model amount table. **Why deferred:** I can't ear-test (the AudioContext needs a real click), so authoring audible values blind was the wrong call.
+2. **M4 — Explain-panel visuals.** The data/text panel is in; the *delight* layer isn't: animated mini-diagrams per model, a knob↔card highlight, and a "show me" sweep that wiggles TIMBRE/COLOR to demo the sound. These are design-taste calls. **Options:** (a) we design them together interactively *(recommended)*; (b) I take a first pass at a simple static diagram set for you to react to; (c) skip them for v1. **Why deferred:** taste-heavy work is poor fit for an unattended run.
+3. **Staff: lines now run under the clef.** While adding key signatures I found the staff lines used to start *right of* the clef, so the clef and time signature floated in blank space. I extended the lines under the whole header (clef/key-sig/time-sig) — correct engraving and needed for key sigs to read. This slightly changes the look of the existing staff. **Confirm** you like it, or say the word and I revert. *(Recommended: keep — it's how real sheet music looks.)*
+
+### Quick checks (no decision needed)
+- **Ear-check the audio fixes.** With the computer keyboard (Z–M keys, `[`/`]` to shift octave): hold a note, shift octave, release — it should stop cleanly (no drone). I couldn't ear-test these (AudioContext needs a real click).
+- **Confirm the CSP on the live site** once this batch auto-deploys to andrewrausch.com/parallax/ — I verified it against a production-base local build (app mounts, fonts load, WASM compiles, zero violations), but a 10-second click-around on the deployed site is worth it.
+- **Grid 2-bar resize.** On the desktop, drag the browser window narrow↔wide over ~560px — the grid should flip between 1 and 2 bars. (Verified correct on fresh load at each width; the live-resize observer didn't fire under the test harness's synthetic resize, only real ones.)
+
 ---
 
 ## Waiting on you

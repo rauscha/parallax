@@ -1,25 +1,25 @@
-# Session hand-off — 2026-06-04 (machine: desktop · crane-desk)
+# Session hand-off — 2026-06-04 (overnight run · desktop · crane-desk)
 
 ## STATE (read this first)
-- **Branch:** `main`, clean, synced with `origin/main`. One worktree only — **nothing stranded.**
-- **Grid G0–G4 is shipped** (`5f35124`). The pitch-row × step-column grid sequencer surface is live behind a Staff/Grid toggle in the Sequencer section. Both surfaces coexist and share `melodyStore`.
-- No pending decisions. Next work is grid polish (keyboard nav, swipe) and then M4.
+- **Branch:** `main`, clean, synced with `origin/main`. One worktree only — nothing stranded.
+- **Overnight "go big" run shipped 8 tasks** (6 commits, all pushed). Grid polish + staff key-signatures + production CSP + three audio bug fixes + M4 Explain-panel groundwork. Latest commit `f9f06df`.
+- **3 decisions are waiting** in `.handoff/PENDING-DECISIONS.md` — these likely come first.
 
-## Done this session
-- **Built grid sequencer G0–G4 in one Sonnet session** (`5f35124`).
-  - **G0** — `surfaceStore`/`gridBaseOctaveStore`/`foldToScaleStore` in `editorMode.ts`; `GridEditor.svelte` mounted behind Staff/Grid toggle in `App.svelte`.
-  - **G1** — `src/notation/grid.ts`: `buildRowMidis` (fold-to-scale / chromatic), `colToStep`, `isRoot`, `pitchName`. Grid renders 15 rows × 16 cols (C major default, 2-octave range); root row tinted; bar tabs 1–4; pitch-class labels on left.
-  - **G2** — Pointer delegation on grid div: tap empty cell → place note (monophonic trim on overlap); tap note-start → delete; drag right → extend duration; hover-ghost on mouse/pen. `previewEvents` derived pattern mirrors `StaffEditor`.
-  - **G3** — RAF playhead sweeping columns; auto-follows active bar page during playback. ≥44px targets on toolbar controls.
-  - **G4** — Key/scale change remaps melody by degree (degree-3 stays degree-3 across key changes) when grid is active. In-Key ↔ Chromatic fold toggle. Octave shift ±1 (C2–C7 range, default C3–C5). "Randomize" button: in-scale quarter-note melody with ~30% beat gaps.
-  - Type-check: 0 errors. Browser-verified: cells light, bar nav works, Chromatic gives 25 rows vs 15 in In-Key.
+## Done this run (2026-06-04 overnight)
+Full plain-language write-up: `.handoff/OVERNIGHT-LOG-2026-06-04.md`.
+- **Grid polish** (`930b3c8`, `5173d21`) — keyboard nav (arrow cursor + Space), swipe between bars (tab strip + gutter), responsive desktop 2-bar view. Browser-verified.
+- **Staff key signatures + first-note spacing** (`0d899e7`) — key sig drawn once after the clef, in-key accidentals suppressed, naturals added where notes contradict the key; noteheads get breathing room from the barline. Also extended staff lines under the clef (was floating). Browser-verified across C/D/F.
+- **Production CSP** (`fa8ae42`) — `<meta>` CSP injected build-only via a Vite plugin; verified against a prod-base build (app mounts, fonts load, WASM compiles, 0 violations). Also fixed `npm run preview` (base was wrong for preview → every asset 404'd).
+- **Three audio bugs** (`98823ed`) — octave-shift-while-held strand (QWERTY keyboard), pitch-bend re-baseline, panic/all-notes-off completeness. Code-verified (ear-test needs a real gesture).
+- **M4 groundwork** (`f9f06df`) — Explain panel now shows per-model TIMBRE/COLOR text + live %. Data/text layer only.
 
 ## Next up
-1. **Grid polish (small, quick-wins):** keyboard arrow nav + Space toggle; touch swipe between bars; desktop 2-bar view.
-2. **M4** — Explain panel + wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts (shim setters ready since 2026-06-01). Pairs with G5 per-step expression.
+1. **Work the 3 pending decisions** (`PENDING-DECISIONS.md`): M4 per-model AD envelope amounts (needs ears), M4 explain-panel visuals (design taste), confirm/keep the staff-lines-under-clef change.
+2. **Quick checks** (in the overnight log): ear-test the audio fixes on the QWERTY keyboard; confirm the CSP on the live site after auto-deploy; confirm grid 2-bar live-resize on a real desktop window.
+3. **Then:** grid **G5** (per-step expression) pairs with the M4 AD-amount wiring. Remaining hygiene: wrap-around drag UI; optional git-secrets hook.
 
 ## Watch out for
-- **Don't extend `MelodyEvent`** until G5 (the per-step expression milestone with M4). The current grid is a pure UI surface on top of the existing data model.
-- **Keep both surfaces working.** Staff is still behind the toggle — `StaffEditor.svelte`, `render.ts`, `interaction.ts`, Bravura font are all untouched.
-- **Degree-remap is grid-only.** It only runs when `GridEditor` is mounted (i.e., `surface === 'grid'`). Staff users see notes stay at MIDI values on key change — existing behavior preserved.
-- Prior gotchas: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs reassign · MIDI clamp C1..C8 · DSP shim changes need `npm run wasm` + commit regenerated WASM.
+- **Don't extend `MelodyEvent`** until G5 (the per-step expression milestone). Both the staff and grid are pure UI surfaces on the existing data model.
+- **Keep both sequencer surfaces working** — Staff and Grid coexist behind the toggle and share `melodyStore`.
+- **Audio UI is gated on a started AudioContext**, which needs a real user click — scripted clicks don't unlock it, so model/param/transport controls can't be driven from a test harness.
+- Prior gotchas: AudioWorklet `import.meta.url` shim · Svelte 5 `$`-reserved store names · mutating a `Set` in `$state` needs reassign · MIDI clamp C1..C8 · DSP shim changes need `npm run wasm` + commit regenerated WASM · `vite preview` runs with `command:'serve'` (use `isPreview` for build-base behavior) · svelte-check honors only the first code in a multi-code `svelte-ignore` (stack them).

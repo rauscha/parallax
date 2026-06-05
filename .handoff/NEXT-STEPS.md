@@ -8,28 +8,26 @@ Last reconciled: 2026-06-04 (desktop — Grid G0–G4 shipped ✓).
 
 **Grid G0–G4 is shipped** (`5f35124`, 2026-06-04). Pitch-row × step-column grid surface lives behind a Staff/Grid toggle in the Sequencer section. Both surfaces write the same `melodyStore`. Next priorities:
 
-### Grid follow-up polish (small)
-- [ ] **Keyboard nav in grid** — arrow keys move a selection cursor, Space = toggle cell. Not done in G3 (only ≥44px coarse targets + auto-follow landed). Quick win.
-- [ ] **Swipe between bars** — touch swipe left/right to navigate bar pages. Current: tap bar tabs only.
-- [ ] **Desktop shows 2 bars** — when viewport is wide enough, show bars 1+2 or 3+4 side-by-side for a richer overview. Currently always 1 bar.
+### Grid follow-up polish (small) — ALL DONE 2026-06-04
+- [x] **Keyboard nav in grid** — arrow cursor + Space/Enter toggle, Delete removes; follows bar pages; syncs with tap. (`930b3c8`)
+- [x] **Swipe between bars** — swipe on the bar-tab strip + pitch-label gutter (kept off the cells, which own note drag-extend). (`5173d21`)
+- [x] **Desktop shows 2 bars** — ≥560px panel shows 32 cols with a bar divider; narrower stays at 1 bar. (`5173d21`)
 
 ### G5 — Per-step expression (pairs with M4)
 Extend `MelodyEvent` with optional per-step params: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability. Long-press (mobile) / modifier-click (desktop) → contextual sheet. Wire into M4's `AD_VCA/TIMBRE/COLOR/FM` amounts. **Do not extend MelodyEvent before this milestone.**
 
-## Later — M4
+## Later — M4 (groundwork shipped 2026-06-04; rest needs you)
 
-**Explain panel** (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Natural pairing with grid G5 (per-step macro locks).
-
-## Later — M4
-
-**Explain panel** (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Natural pairing with grid G5 (per-step macro locks).
+**Explain panel** — the per-model TIMBRE/COLOR **text/data layer is DONE** (`f9f06df`): the Explain region now shows each model's identity + what its macros do, with live %. **Still to do (needs design taste / your ears — see PENDING-DECISIONS):**
+- Animated mini-diagrams, knob↔card highlight, "show me" macro sweep.
+- **Wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing since 2026-06-01; amounts still 0). Changes how each model sounds → ear-tune. Natural pairing with grid **G5** (per-step macro locks).
 
 ## Soon (small follow-ups + hygiene)
-- [ ] **First-note spacing.** The beat-1 note sits too tight against the opening bar line — needs a small left-padding offset so the notehead has breathing room from the barline. Low-priority (notated, not blocking anything).
-- [ ] **Key signatures on the staff.** Currently every accidental is per-note — F major's Bb shows as a flat on every Bb. Real engraving puts the flat in the key signature once at the start. M4-ish polish.
+- [x] **First-note spacing** ✓ 2026-06-04 (`0d899e7`) — noteheads now sit a lead-in right of the barline.
+- [x] **Key signatures on the staff** ✓ 2026-06-04 (`0d899e7`) — drawn once after the clef; in-key notes no longer repeat the accidental. *(No intra-bar accidental memory yet — rarely visible, noted for later.)*
 - [ ] **"Drag past the end → wrap-around" UI.** Wrap is supported in the data model (`part.ts`), but the drag UI clips at the loop end. A future polish could let users explicitly wrap a long legato across the boundary.
-- [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01; Bravura self-hosted ✓ 2026-06-02.)*
-- [ ] Smaller bugs: pitch-bend re-baseline, future-note "panic", octave-shift-while-held stranded notes. *(Init-failure node/listener leak ✓ + scope degenerate-frame clamp ✓ both 2026-06-01.)*
+- [x] Security hardening: CSP via `<meta http-equiv>` ✓ 2026-06-04 (`fa8ae42`, build-only inject) + fixed `npm run preview` base. *(`dist/` gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01; Bravura self-hosted ✓ 2026-06-02.)* Remaining: optional git-secrets hook; clickjacking (`frame-ancestors`) needs HTTP headers GH Pages can't set.
+- [x] Smaller bugs ✓ 2026-06-04 (`98823ed`): pitch-bend re-baseline, future-note "panic", octave-shift-while-held strand all fixed. *(Init-failure leak ✓ + scope clamp ✓ both 2026-06-01.)*
 
 ## Later milestones (per plan file)
 - **M3** — Sequencer + clickable 4-bar/4-4 staff (Tone.Transport/Part, custom SVG notation, snap-to-scale, playhead + loop).
@@ -41,6 +39,13 @@ Extend `MelodyEvent` with optional per-step params: TIMBRE/COLOR p-locks, slide,
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-04 (desktop · crane-desk — overnight "go big" run):** Eight tasks shipped, each committed + pushed. Plain-language write-up: `.handoff/OVERNIGHT-LOG-2026-06-04.md`. Three decisions parked for the user in `PENDING-DECISIONS.md` (M4 AD amounts, M4 visuals, staff-lines-under-clef confirm).
+  - `f9f06df` M4 groundwork: Explain panel (per-model TIMBRE/COLOR data/text layer)
+  - `98823ed` Fix three small audio bugs: octave-strand, pitch-bend, panic
+  - `fa8ae42` Security: production CSP via meta tag + fix npm run preview base
+  - `0d899e7` Staff: key signatures + first-note breathing room
+  - `5173d21` Grid: swipe between bars + responsive 2-bar desktop view
+  - `930b3c8` Grid: keyboard navigation — arrow cursor + Space toggle
 - **2026-06-04 (desktop · crane-desk — M3 tag + grid sequencer planning):** Tagged `v0.4.0-m3` and pushed (M3 closed). Resolved the staff-vs-grid fork via two research streams (codebase reuse map + hardware/web sequencer survey) → `docs/grid-sequencer-plan.md`. Decisions: **coexist behind a toggle** (grid is a new surface alongside the staff; both write `melodyStore`) and **build scope G0–G4** (MVP + delight; per-step expression deferred to G5 with M4). Layout: pitch-row × time-column ("Song Maker" style), fold-to-scale rows. Planned in Opus; build in Sonnet. Also logged the beat-1-too-tight-to-barline cosmetic nit.
   - `845f0d7` docs: grid sequencer design + build plan (G0–G4)
 - **2026-06-03 (desktop, evening — M3 polish round + click-placement fix):** Closed out two rounds of user-feedback on M3.

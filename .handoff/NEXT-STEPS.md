@@ -2,15 +2,25 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-03 (desktop, evening — M3 polish round + cell-semantic placement fix).
+Last reconciled: 2026-06-03 (desktop, evening — M3 tagged `v0.4.0-m3` ✓).
 
-## Now — eyeball-verify + tag M3
-**M3 is done done.** Seven commits across the M3 arc, capped by today's polish round (`59afb68`) addressing your "the staff is kinda garbage" feedback and the deep-research-driven placement fix (`bbd7c4f`). All pushed and auto-deployed. Full play-by-play in [.handoff/SESSION-HANDOFF.md](SESSION-HANDOFF.md).
+## Now — Grid sequencer build (G0–G4)
 
-- [ ] **Eyeball pass on the live URL** — empty staff shows 4 whole rests · time-sig 4/4 stacks correctly · hover ghost tracks cursor · tap at very start of bar 1 → no leading 16th-rest · monophonic trim on overlap · F major B-line → Bb on the line · ♯ toolbar forces sharp · rest tool inserts silence · octave −8va swaps clef glyph · tempo input live re-tempos · play sweeps playhead.
-- [ ] **Tag M3:** `git tag v0.4.0-m3 && git push origin v0.4.0-m3`.
+**M3 is closed** (`v0.4.0-m3`). The staff-vs-grid question is resolved: **build a pitch-row × time-column grid surface that coexists with the staff behind a view toggle** (the melody core is surface-agnostic, so both write the same `melodyStore`). Full spec — design principles, methods survey, reuse map, phased plan — in **[docs/grid-sequencer-plan.md](../docs/grid-sequencer-plan.md)**. Locked scope for this round: **G0–G4** (lean MVP + delight). Planned with Opus 2026-06-04; enact with Sonnet.
+
+- [ ] **G0** — `surface` store + `GridEditor.svelte` mounted behind a staff/grid toggle.
+- [ ] **G1** — read-only grid render (`grid.ts` geometry, scale-degree rows, root anchor, bar tabs, octave control).
+- [ ] **G2** — interaction (tap place/replace, monophonic trim, drag for length, hover-ghost).
+- [ ] **G3** — playhead follow + responsive (≥44px, swipe, keyboard).
+- [ ] **G4** — scale magic (re-map by degree, In-Key/Chromatic toggle) + "randomize in scale".
+- [ ] *(deferred → G5, pairs with M4)* per-step expression: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability.
+
+## Later — M4
+
+**Explain panel** (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Natural pairing with grid G5 (per-step macro locks).
 
 ## Soon (small follow-ups + hygiene)
+- [ ] **First-note spacing.** The beat-1 note sits too tight against the opening bar line — needs a small left-padding offset so the notehead has breathing room from the barline. Low-priority (notated, not blocking anything).
 - [ ] **Key signatures on the staff.** Currently every accidental is per-note — F major's Bb shows as a flat on every Bb. Real engraving puts the flat in the key signature once at the start. M4-ish polish.
 - [ ] **"Drag past the end → wrap-around" UI.** Wrap is supported in the data model (`part.ts`), but the drag UI clips at the loop end. A future polish could let users explicitly wrap a long legato across the boundary.
 - [ ] Security hardening: CSP via `<meta http-equiv>` in `index.html` (GitHub Pages can't serve a `_headers` file — see hosting note in CLAUDE.md); optional git-secrets hook. *(`dist/` already gitignored ✓; dead `public/icons.svg` deleted ✓ 2026-06-01; Bravura self-hosted ✓ 2026-06-02.)*

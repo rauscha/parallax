@@ -165,7 +165,15 @@ export class BraidsEngine implements ISynthEngine {
     // Envelope: short attack ramp to (v * gain), then optional decay sustain.
     const target = v * this.params.gain;
     const g = this.gainNode.gain;
+    // Pin the attack ramp's START to `t`. cancelAndHold alone isn't enough: when
+    // the most recent gain event is in the past (e.g. the release ramp from a
+    // prior stop/noteOff), linearRampToValueAtTime interpolates the attack from
+    // THAT stale event, so the gate begins opening well before `t` — uncovering
+    // the pitch still sitting in the param (the previous note) as an audible
+    // grace note before the new pitch lands at `t`. An explicit setValueAtTime
+    // anchors the ramp at `t` so volume and pitch open together.
     cancelAndHold(g, t);
+    g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(target, t + this.params.attack);
     // Hold until noteOff. (For drum/percussion models we may want auto-release
     // — handled in M2 once the AD envelope wiring is exposed.)

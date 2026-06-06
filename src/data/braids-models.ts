@@ -38,6 +38,12 @@ export interface BraidsModel {
   timbre: string;
   /** What the COLOR knob does in this model. */
   color: string;
+  /**
+   * Optional deeper explanation for the Explain panel — what to listen for, what
+   * the model is good for, real-world references. Only the genuinely complex
+   * models need it; for the obvious ones the one-line `description` stands alone.
+   */
+  detail?: string;
 }
 
 export const BRAIDS_MODELS: BraidsModel[] = [
@@ -154,7 +160,8 @@ export const BRAIDS_MODELS: BraidsModel[] = [
   { index: 22, code: "VOWL", name: "Vowel Speech Synthesis", family: "formant",
     description: "Sung-vowel synthesis — interpolates between A, E, I, O, U as you turn the knob.",
     timbre: "Vowel — sweeps a → e → i → o → u.",
-    color: "Formant frequency shift (vocal-tract size)." },
+    color: "Formant frequency shift (vocal-tract size).",
+    detail: "A formant synth tuned to the human voice: TIMBRE slides through the vowels a→e→i→o→u while COLOR shifts the formants as if shrinking or enlarging the singer's vocal tract — child up high, giant down low. Hold a note and sweep TIMBRE for a 'talking' synth, or sequence it for robotic vocal lines. It reads most clearly in the mid register, where real voices actually sit." },
 
   { index: 23, code: "VFOF", name: "FOF Vowel Synthesis", family: "formant",
     description: "Vowel synthesis using FOF (Fonction d'Onde Formantique) — smoother, more singer-like than VOWL.",
@@ -169,7 +176,8 @@ export const BRAIDS_MODELS: BraidsModel[] = [
   { index: 25, code: "FM", name: "Phase Modulation (FM)", family: "fm",
     description: "Two-operator phase modulation — DX7-style bell, brass, electric piano tones.",
     timbre: "Modulation amount (FM index).",
-    color: "Modulator-to-carrier frequency ratio." },
+    color: "Modulator-to-carrier frequency ratio.",
+    detail: "Classic two-operator FM — the engine behind DX7 bells, electric pianos, and metallic brass. COLOR sets the modulator-to-carrier ratio: whole-number ratios (1:1, 2:1) stay harmonic and musical, while in-between ratios turn clangorous and bell-like. TIMBRE is the modulation depth — how much harmonic bite. Start with COLOR on a clean ratio and push TIMBRE for brightness; detune COLOR a hair for inharmonic bell tones." },
 
   { index: 26, code: "FBFM", name: "Feedback FM", family: "fm",
     description: "Phase modulation with operator feedback — harsher, more aggressive than plain FM.",
@@ -179,7 +187,8 @@ export const BRAIDS_MODELS: BraidsModel[] = [
   { index: 27, code: "WTFM", name: "Chaotic Feedback FM", family: "fm",
     description: "Dual-feedback FM — unstable, droning, often dissonant; sits between musical and broken.",
     timbre: "Modulation amount.",
-    color: "Modulator-to-carrier ratio (small changes can flip the timbre completely)." },
+    color: "Modulator-to-carrier ratio (small changes can flip the timbre completely).",
+    detail: "Two operators each feeding back on themselves and each other, so a small COLOR move can tip a pure tone into screaming chaos. There's no clean-note guarantee — this one is for drones, industrial textures, and sound design, not melody. Sit at low TIMBRE for a hollow digital tone, then ease COLOR up and listen for the moment it destabilizes: that edge, right before it breaks up, is the sweet spot." },
 
   { index: 28, code: "PLUK", name: "Plucked String", family: "physical",
     description: "Physical-model plucked string (Karplus-Strong).",
@@ -234,7 +243,8 @@ export const BRAIDS_MODELS: BraidsModel[] = [
   { index: 38, code: "WMAP", name: "Wave Map (2D)", family: "wavetable",
     description: "16×16 grid of waveforms — scan in two dimensions for a huge timbral surface.",
     timbre: "X-axis position (column) in the 16×16 grid.",
-    color: "Y-axis position (row) in the 16×16 grid." },
+    color: "Y-axis position (row) in the 16×16 grid.",
+    detail: "You're navigating a 16×16 grid of single-cycle waveforms — TIMBRE scrolls across columns, COLOR up and down rows — so every spot is a different harmonic snapshot and moving between them morphs the tone the way a wavetable synth sweeps. Automate the two knobs slowly for evolving pads; jump around for glitchy, harsh transitions. Both knobs are just 'position,' so there's no wrong setting — only territory to explore." },
 
   { index: 39, code: "WLIN", name: "Linear Wavetable Scan", family: "wavetable",
     description: "Single linear path through a sequence of waveforms with selectable interpolation.",

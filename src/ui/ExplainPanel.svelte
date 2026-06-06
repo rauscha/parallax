@@ -41,6 +41,10 @@
 
   <p class="desc">{model.description}</p>
 
+  {#if model.detail}
+    <p class="detail">{model.detail}</p>
+  {/if}
+
   <div class="cards">
     <div class="card">
       <div class="card-top">
@@ -108,6 +112,17 @@
     margin: 0;
     font-size: 0.74rem;
     line-height: 1.5;
+    color: var(--text-dim);
+  }
+
+  /* Deeper explanation — only present for the complex models. Set off from the
+     one-line description with a left rule so it reads as "the longer story." */
+  .detail {
+    margin: 0;
+    padding-left: 9px;
+    border-left: 2px solid var(--hairline);
+    font-size: 0.72rem;
+    line-height: 1.55;
     color: var(--text-dim);
   }
 

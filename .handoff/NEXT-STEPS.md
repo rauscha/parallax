@@ -2,9 +2,15 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-05 (desktop — overnight batch: grid polish + key-sigs + CSP + audio fixes + M4 text layer, all ✓).
+Last reconciled: 2026-06-06 (desktop · crane-desk — AD envelopes wired for drums, mobile sequencer fix, CI Node-24 bump, Explain richer-text started; all ✓ + deployed live).
 
 ## Now — Polish + M4
+
+### Explain panel (M4) — ACTIVE
+Baseline per-model TIMBRE/COLOR text panel shipped (`f9f06df`). User approved it and picked **three** depth directions to build (animated mini-diagrams **skipped** for v1):
+1. **Richer per-model text — IN PROGRESS.** Optional `detail` field on `BraidsModel` (`data/braids-models.ts`), rendered in `ExplainPanel.svelte` under the description with a left rule. 4 exemplars live: FM, WTFM, VOWL, WMAP (`66416ed`). **Blocked on user voice sign-off** — three questions outstanding: (a) length/voice (~3 sentences? drier/more technical?), (b) one flowing paragraph vs. split "listen for" / "good for" lines, (c) coverage list. Once answered, roll `detail` out to the non-obvious models (formants VOSM/VOWL/VFOF, wavetables WTBL/WMAP/WLIN/WTx4, physical PLUK/BOWD/BLOW/FLUT/BELL, drums KICK/SNAR/CYMB/DRUM, granular/noise NOIS/TWNQ/CLKN/CLOU/PRTC, QPSK, sync SYN-Q/SYN-W, wavefolder FOLD); leave the self-explanatory osc-stacks on their one-liner.
+2. **Knob ↔ card highlight** — touching/focusing a knob lights its matching Explain card and vice-versa. Needs a shared "active param" signal between `Knob`/`ParamPanel` and `ExplainPanel` (a small store).
+3. **"Show me" sweep** — a per-knob button that sweeps TIMBRE/COLOR live so you hear what it does on the current model; animates the engine param over a few seconds + moves the knob; must handle interrupt/restore.
 
 **Grid G0–G4 is shipped** (`5f35124`, 2026-06-04). Pitch-row × step-column grid surface lives behind a Staff/Grid toggle in the Sequencer section. Both surfaces write the same `melodyStore`. Next priorities:
 
@@ -16,13 +22,15 @@ Last reconciled: 2026-06-05 (desktop — overnight batch: grid polish + key-sigs
 ### G5 — Per-step expression (pairs with M4)
 Extend `MelodyEvent` with optional per-step params: TIMBRE/COLOR p-locks, slide, accent, ratchet, probability. Long-press (mobile) / modifier-click (desktop) → contextual sheet. Wire into M4's `AD_VCA/TIMBRE/COLOR/FM` amounts. **Do not extend MelodyEvent before this milestone.**
 
-## Later — M4 (groundwork shipped 2026-06-04; rest needs you)
+## Later — M4
 
-**Explain panel** — the per-model TIMBRE/COLOR **text/data layer is DONE** (`f9f06df`): the Explain region now shows each model's identity + what its macros do, with live %. **Still to do (needs design taste / your ears — see PENDING-DECISIONS):**
-- Animated mini-diagrams, knob↔card highlight, "show me" macro sweep.
-- **Wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the shim setters (plumbing since 2026-06-01; amounts still 0). Changes how each model sounds → ear-tune. Natural pairing with grid **G5** (per-step macro locks).
+The active M4 work (Explain panel depth) is under **Now** above. Remaining/related:
+- [x] **Per-model AD envelopes wired** ✓ 2026-06-06 (`0419ccd`) — `data/braids-envelopes.ts` table → `BraidsEngine.applyEnvelope()` on `setShape`. Scoped to the 4 unpitched drums as one-shots (`letRing`); PLUK/BELL excluded (self-decay + paraphonic). Values clamped to firmware ranges (attack/decay 0–15, vca 0–1, depths 0–15). **Don't re-enable PLUK/BELL one-shots without re-testing** — that caused discordant overlaps.
+- Animated mini-diagrams for the Explain panel — **skipped for v1** (user's call).
+- Per-step macro locks tie into grid **G5** below (extend `MelodyEvent` there, not before).
 
 ## Soon (small follow-ups + hygiene)
+- [x] **CI: Pages actions bumped to Node-24 majors** ✓ 2026-06-06 (`40ea94c`) — ahead of GitHub's 2026-06-16 forced upgrade; deprecation warning gone.
 - [x] **First-note spacing** ✓ 2026-06-04 (`0d899e7`) — noteheads now sit a lead-in right of the barline.
 - [x] **Key signatures on the staff** ✓ 2026-06-04 (`0d899e7`) — drawn once after the clef; in-key notes no longer repeat the accidental. *(No intra-bar accidental memory yet — rarely visible, noted for later.)*
 - [ ] **"Drag past the end → wrap-around" UI.** Wrap is supported in the data model (`part.ts`), but the drag UI clips at the loop end. A future polish could let users explicitly wrap a long legato across the boundary.
@@ -39,6 +47,11 @@ Extend `MelodyEvent` with optional per-step params: TIMBRE/COLOR p-locks, slide,
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-06 (desktop · crane-desk — session):** Resolved all three parked decisions; four commits, all pushed + deployed green to andrewrausch.com/parallax/.
+  - `0419ccd` M4: per-model AD envelopes — drum one-shots (`letRing`), pitched models self-decay. New `data/braids-envelopes.ts`; `BraidsEngine.applyEnvelope()` clamps to firmware ranges. First pass forced AD VCA + gate-open on 6 models; user ear-test flagged PLUK/BELL as discordant → root-caused (PLUK paraphonic in firmware, both self-decay) → scoped one-shots to the 4 unpitched drums and excluded PLUK/BELL. User keeping decay tuning as-is.
+  - `40ea94c` ci: bump Pages workflow actions to Node 24 majors (checkout@v6, setup-node@v6, upload-pages-artifact@v5, deploy-pages@v5) — clears the Node-20 deprecation. (Came from a spawned-task branch, fast-forwarded into main, branch deleted.)
+  - `6c60de2` fix: sequencer hidden on mobile — the fixed-viewport layout clipped the bottom (staff/grid) region off-screen. Mobile (<=720px) now scrolls the grid between a pinned top bar + transport; regions size to content (`overflow:visible`) so Controls/Explain don't collapse. Verified at 375px via preview harness (both surfaces render). Desktop untouched.
+  - `66416ed` Explain panel: deeper per-model text — optional `detail` field, 4 exemplars (FM/WTFM/VOWL/WMAP). WIP, see "Now". 
 - **2026-06-04 (desktop · crane-desk — overnight "go big" run):** Eight tasks shipped, each committed + pushed. Plain-language write-up: `.handoff/OVERNIGHT-LOG-2026-06-04.md`. Three decisions parked for the user in `PENDING-DECISIONS.md` (M4 AD amounts, M4 visuals, staff-lines-under-clef confirm).
   - `f9f06df` M4 groundwork: Explain panel (per-model TIMBRE/COLOR data/text layer)
   - `98823ed` Fix three small audio bugs: octave-strand, pitch-bend, panic

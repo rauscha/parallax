@@ -813,4 +813,23 @@
     .fold-btn   { padding: 7px 12px; min-height: 36px; }
     .randomize-btn { padding: 7px 14px; min-height: 36px; }
   }
+
+  /* On the phone layout (App.svelte ≤720px) the four regions size to content
+     and the page scrolls, so no ancestor hands the grid a *definite* height.
+     `1fr` rows have nothing to resolve against and collapse to a sliver — the
+     symptom that hid the grid entirely on mobile. Give each row a pixel floor
+     so the surface has an intrinsic height; the `1fr` still lets rows grow if
+     there's room. Desktop keeps the pure-`1fr` fill (no clipping in Chromatic
+     mode), so this stays scoped to the same breakpoint as the stacked layout. */
+  @media (max-width: 720px) {
+    /* Size the editor to its content and let the page scroll, instead of
+       filling (and being clipped by) the flex-constrained .staff-frame. Paired
+       with the row floor below, this lets every row show on the phone. */
+    .grid-editor { height: auto; overflow: visible; }
+    .grid-main   { flex: 0 0 auto; }
+    .grid-surface {
+      flex: 0 0 auto;
+      grid-template-rows: repeat(var(--row-count), minmax(24px, 1fr));
+    }
+  }
 </style>

@@ -2,23 +2,21 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-06 (desktop · crane-desk — AD envelopes wired for drums, mobile sequencer fix, CI Node-24 bump, Explain richer-text started; all ✓ + deployed live).
+Last reconciled: 2026-06-06 (desktop · crane-desk — Explain richer-text rolled out to all 47 models, scope row shrunk, grace-note strike-timing bug fixed; all ✓ + deployed live, grace-note awaiting user ear-confirm).
 
 ## Now — Polish + M4
 
-### 🐞 Grace-note on playback — DIAGNOSED 2026-06-06, fix pending (do this first)
-**Symptom:** a quick (~eighth-note) grace note of the *wrong* pitch leads into a programmed note on play/loop (user heard it into the first C of a C-E-G-C arpeggio).
+### 🐞 Grace-note on playback — FIXED 2026-06-06 (`3b45652`), awaiting user ear-confirm
+**Symptom:** a quick (~eighth-note) grace note of the *wrong* pitch led into a programmed note on play/loop (user heard it into the first C of a C-E-G-C arpeggio).
 
-**Root cause:** in `BraidsEngine.noteOn()` the pitch and the output-gain ramp are both stamped at the note's scheduled audio time `t` (correct), **but the strike is fired immediately via `this.node.port.postMessage({type:"gateOn"})` with no timestamp.** Tone's look-ahead scheduler calls `noteOn` ~100 ms *before* `t`, so `_braids_strike()` runs ~100 ms early. When the previous note is still gated open (legato / back-to-back arp steps, where note i's `off` shares a step with note i+1's `on`), that early strike **re-articulates the still-open previous note at the previous pitch** for ~look-ahead duration before the new pitch+gain land at `t` — the audible grace. Its pitch = whatever was last sounding (loop's prior note; or the A4 from `TapToStart`'s 260 ms confirmation blip on the very first play). Length ≈ Tone look-ahead (~0.1 s) → "eighth-note-ish". (Exact "D" the user reported = depends on voicing/tap; confirm by ear after the fix — mechanism is pitch-independent.)
+**Root cause:** in `BraidsEngine.noteOn()` the pitch and the output-gain ramp were both stamped at the note's scheduled audio time `t` (correct), **but the strike fired immediately via `postMessage({type:"gateOn"})` with no timestamp.** Tone's look-ahead scheduler calls `noteOn` ~100 ms *before* `t`, so `_braids_strike()` ran ~100 ms early. When the previous note was still gated open (back-to-back arp steps, note i's `off` sharing a step with note i+1's `on`), that early strike re-articulated the still-open previous note at the previous pitch for ~look-ahead duration before the new pitch+gain landed at `t` — the audible grace. Length ≈ Tone look-ahead (~0.1 s) → "eighth-note-ish".
 
-**Fix (JS only — NO `npm run wasm` needed):** time-stamp the strike.
-1. `noteOn`: send `{type:"gateOn", time: t}`.
-2. `braids-worklet.js`: queue pending strikes; in `process()`, fire `_braids_strike()` when the AudioWorkletGlobalScope `currentTime` ≥ queued time (aligns strike with the `setValueAtTime` pitch + gain ramp, all at `t`; residual skew ≤ 1 k-rate quantum ≈ 2.7 ms, inaudible).
-3. `allNotesOff()`: also clear the pending-strike queue (so a queued strike can't fire after stop/panic).
-- **Reject** the `setTimeout(postMessage, (t-now)*1000)` shortcut — main-thread jitter + background-tab throttling reintroduce the early/late fire.
-- Secondary (optional, same pass): `TapToStart` leaves pitch=69 (A4); harmless once strike is aligned, but consider setting pitch with the note to kill any stale-pitch edge.
+**Fix shipped (JS only — no WASM rebuild):**
+1. `noteOn` sends `{type:"gateOn", time: t}`.
+2. `braids-worklet.js` keeps a sorted `pendingStrikes[]` queue; `process()` drains entries whose time ≤ `currentTime` and fires one `_braids_strike()` (collapses multiple-due → one re-trigger). Aligns the strike to the same render-quantum boundary the k-rate pitch param updates on; residual skew ≤ 1 quantum (~2.7 ms). An immediate/untimed `gateOn` (TapToStart blip, manual play) still strikes at once.
+3. `allNotesOff()` posts `clearStrikes` to flush the queue so a stop/panic can't fire a stray re-trigger.
 
-**Verify:** user ear-test on a real tap (can't ear-test from the harness). Optional temp log to confirm strike fires at `t`.
+Type-check clean; harness ran the full path (worklet init → demo melody → 2.6 s transport → stop) with zero console errors. **Open item:** the user still needs to ear-confirm the grace note is gone on the live site — can't ear-test from the harness.
 
 ### Explain panel (M4) — ACTIVE
 Baseline per-model TIMBRE/COLOR text panel shipped (`f9f06df`). User approved it and picked **three** depth directions to build (animated mini-diagrams **skipped** for v1):
@@ -61,7 +59,11 @@ The active M4 work (Explain panel depth) is under **Now** above. Remaining/relat
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
-- **2026-06-06 (desktop · crane-desk — session):** Resolved all three parked decisions; four commits, all pushed + deployed green to andrewrausch.com/parallax/.
+- **2026-06-06 (desktop · crane-desk — Explain rollout + scope + grace-note fix):**
+  - `3b45652` fix(audio): grace-note bug — strikes are now time-stamped and deferred in the worklet until their render quantum, instead of firing ~100 ms early on message-receipt. See the "Now" entry for the full mechanism. JS-only, no WASM rebuild. Awaiting user ear-confirm on the live site.
+  - `6661ff2` ui: shrink scope row, give the height to the Explain panel (scope ~35%→27%, Explain ~25%→34%).
+  - `d666c14` / `427e74d` Explain richer text: `BraidsModel.detail` → `{ listenFor, goodFor }`, rendered as labeled lines; all 47 models covered in the agreed conversational voice.
+- **2026-06-06 (desktop · crane-desk — earlier session):** Resolved all three parked decisions; four commits, all pushed + deployed green to andrewrausch.com/parallax/.
   - `0419ccd` M4: per-model AD envelopes — drum one-shots (`letRing`), pitched models self-decay. New `data/braids-envelopes.ts`; `BraidsEngine.applyEnvelope()` clamps to firmware ranges. First pass forced AD VCA + gate-open on 6 models; user ear-test flagged PLUK/BELL as discordant → root-caused (PLUK paraphonic in firmware, both self-decay) → scoped one-shots to the 4 unpitched drums and excluded PLUK/BELL. User keeping decay tuning as-is.
   - `40ea94c` ci: bump Pages workflow actions to Node 24 majors (checkout@v6, setup-node@v6, upload-pages-artifact@v5, deploy-pages@v5) — clears the Node-20 deprecation. (Came from a spawned-task branch, fast-forwarded into main, branch deleted.)
   - `6c60de2` fix: sequencer hidden on mobile — the fixed-viewport layout clipped the bottom (staff/grid) region off-screen. Mobile (<=720px) now scrolls the grid between a pinned top bar + transport; regions size to content (`overflow:visible`) so Controls/Explain don't collapse. Verified at 375px via preview harness (both surfaces render). Desktop untouched.

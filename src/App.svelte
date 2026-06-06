@@ -424,14 +424,34 @@
   }
 
   @media (max-width: 720px) {
+    /* Stacked on a phone, the four regions are far taller than the viewport.
+       The desktop layout never scrolls (overflow:hidden) and lets a `1fr` scope
+       row eat the remaining height — on mobile that clipped the bottom region
+       (the sequencer) right off the screen with no way to reach it. Here we let
+       the grid SCROLL between the fixed top bar and transport, and size every
+       row to its content, with explicit heights for the two regions that have
+       no intrinsic height of their own (the canvas viz and the editor). */
     .grid {
       grid-template-columns: 1fr;
-      grid-template-rows: minmax(180px, 1fr) auto auto auto;
+      grid-template-rows: auto auto auto auto;
       grid-template-areas:
         "scope"
         "controls"
         "explain"
         "staff";
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      /* Allow the grid to be shorter than its content so it scrolls within the
+         remaining flex height instead of growing and pushing the transport off
+         screen (the flexbox min-height:auto trap). */
+      min-height: 0;
     }
+    /* Let each region grow to its full content height; the GRID scrolls past
+       them. Without this, the regions' own `overflow:auto` lets the grid shrink
+       them to near-zero to fit the fixed height — which crushed Controls and
+       Explain into unusable 46px slivers. */
+    .region { overflow: visible; }
+    .scope { height: 32vh; min-height: 190px; overflow: hidden; }
+    .staff { min-height: 340px; }
   }
 </style>

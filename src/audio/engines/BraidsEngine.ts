@@ -152,8 +152,14 @@ export class BraidsEngine implements ISynthEngine {
     if (pitchParam) pitchParam.setValueAtTime(midi + this.pitchBend, t);
     this.params.pitch = midi;
 
-    // Strike the engine
-    this.node.port.postMessage({ type: "gateOn" });
+    // Strike the engine — scheduled at the note's audio time `t`, NOT on
+    // message-receipt. A bare strike fired the instant the worklet got the
+    // message, which is up to one scheduler look-ahead (~100 ms) before `t`.
+    // With a previous note still gated open (back-to-back arp notes), that
+    // early strike re-articulated the OLD pitch for the look-ahead window —
+    // the audible "grace note into the real note" bug. Tagging it with `t`
+    // lets the worklet fire on the same render quantum the new pitch lands.
+    this.node.port.postMessage({ type: "gateOn", time: t });
 
     // Envelope: short attack ramp to (v * gain), then optional decay sustain.
     const target = v * this.params.gain;
@@ -193,6 +199,9 @@ export class BraidsEngine implements ISynthEngine {
     // panic fully disarms the engine — not just the output level.
     this.node?.parameters.get("pitch")?.cancelScheduledValues(t);
     this.node?.port.postMessage({ type: "gateOff" });
+    // Drop any strikes the sequencer queued ahead of the panic, so a stop
+    // doesn't fire a stray re-trigger a fraction of a second later.
+    this.node?.port.postMessage({ type: "clearStrikes" });
     this.activeMidi = null;
   }
 

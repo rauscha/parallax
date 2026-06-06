@@ -47,6 +47,12 @@ class BraidsProcessor extends AudioWorkletProcessor {
     this.activeShape = 0;
     this.pendingShape = 0;
 
+    // Strikes scheduled for a future AudioContext time, kept sorted ascending.
+    // Drained in process() when the render clock reaches each entry, so a strike
+    // lands on the same render quantum as its note's pitch automation instead of
+    // firing early on message-receipt (the "grace note" bug).
+    this.pendingStrikes = [];
+
     this.port.onmessage = (e) => this.onMessage(e.data);
 
     const wasmBinary = options.processorOptions?.wasmBinary;
@@ -93,8 +99,25 @@ class BraidsProcessor extends AudioWorkletProcessor {
           this.activeShape = this.pendingShape;
         }
         break;
-      case "gateOn":
-        if (this.ready) this.module._braids_strike();
+      case "gateOn": {
+        if (!this.ready) break;
+        // Fire now if the scheduled time has already passed (or no time was
+        // given — manual/immediate trigger); otherwise queue it for the right
+        // render quantum so the strike stays in lockstep with the k-rate pitch
+        // update at the same instant.
+        const when = typeof msg.time === "number" ? msg.time : currentTime;
+        if (when <= currentTime) {
+          this.module._braids_strike();
+        } else {
+          const q = this.pendingStrikes;
+          let i = q.length;
+          while (i > 0 && q[i - 1] > when) i--;
+          q.splice(i, 0, when);
+        }
+        break;
+      }
+      case "clearStrikes":
+        this.pendingStrikes.length = 0;
         break;
       case "gateOff":
         // Voice silencing handled at the engine layer via output-gain ramp.
@@ -157,6 +180,19 @@ class BraidsProcessor extends AudioWorkletProcessor {
     if (!output) return true;
 
     if (!this.ready) { output.fill(0); return true; }
+
+    // Fire any strikes whose scheduled time has arrived. currentTime is the
+    // start of this render quantum and the k-rate pitch param is sampled on the
+    // same boundary, so striking here keeps the trigger and the new pitch in
+    // lockstep — no early re-articulation of the previous note. Multiple due
+    // strikes collapse into one re-trigger (a monophonic voice can't stack).
+    const q = this.pendingStrikes;
+    if (q.length && q[0] <= currentTime) {
+      let n = 1;
+      while (n < q.length && q[n] <= currentTime) n++;
+      q.splice(0, n);
+      this.module._braids_strike();
+    }
 
     const midi = parameters.pitch[0];
     const pitchQ7 = Math.round(midi * 128);

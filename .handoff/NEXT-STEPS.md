@@ -6,6 +6,20 @@ Last reconciled: 2026-06-06 (desktop · crane-desk — AD envelopes wired for dr
 
 ## Now — Polish + M4
 
+### 🐞 Grace-note on playback — DIAGNOSED 2026-06-06, fix pending (do this first)
+**Symptom:** a quick (~eighth-note) grace note of the *wrong* pitch leads into a programmed note on play/loop (user heard it into the first C of a C-E-G-C arpeggio).
+
+**Root cause:** in `BraidsEngine.noteOn()` the pitch and the output-gain ramp are both stamped at the note's scheduled audio time `t` (correct), **but the strike is fired immediately via `this.node.port.postMessage({type:"gateOn"})` with no timestamp.** Tone's look-ahead scheduler calls `noteOn` ~100 ms *before* `t`, so `_braids_strike()` runs ~100 ms early. When the previous note is still gated open (legato / back-to-back arp steps, where note i's `off` shares a step with note i+1's `on`), that early strike **re-articulates the still-open previous note at the previous pitch** for ~look-ahead duration before the new pitch+gain land at `t` — the audible grace. Its pitch = whatever was last sounding (loop's prior note; or the A4 from `TapToStart`'s 260 ms confirmation blip on the very first play). Length ≈ Tone look-ahead (~0.1 s) → "eighth-note-ish". (Exact "D" the user reported = depends on voicing/tap; confirm by ear after the fix — mechanism is pitch-independent.)
+
+**Fix (JS only — NO `npm run wasm` needed):** time-stamp the strike.
+1. `noteOn`: send `{type:"gateOn", time: t}`.
+2. `braids-worklet.js`: queue pending strikes; in `process()`, fire `_braids_strike()` when the AudioWorkletGlobalScope `currentTime` ≥ queued time (aligns strike with the `setValueAtTime` pitch + gain ramp, all at `t`; residual skew ≤ 1 k-rate quantum ≈ 2.7 ms, inaudible).
+3. `allNotesOff()`: also clear the pending-strike queue (so a queued strike can't fire after stop/panic).
+- **Reject** the `setTimeout(postMessage, (t-now)*1000)` shortcut — main-thread jitter + background-tab throttling reintroduce the early/late fire.
+- Secondary (optional, same pass): `TapToStart` leaves pitch=69 (A4); harmless once strike is aligned, but consider setting pitch with the note to kill any stale-pitch edge.
+
+**Verify:** user ear-test on a real tap (can't ear-test from the harness). Optional temp log to confirm strike fires at `t`.
+
 ### Explain panel (M4) — ACTIVE
 Baseline per-model TIMBRE/COLOR text panel shipped (`f9f06df`). User approved it and picked **three** depth directions to build (animated mini-diagrams **skipped** for v1):
 1. **Richer per-model text — ✓ DONE 2026-06-06 (`d666c14`).** `detail` field on `BraidsModel` is now `{ listenFor, goodFor }`; `ExplainPanel.svelte` renders the two as labeled lines under the description (left rule kept). **All 47 models** carry detail (user chose full coverage incl. osc-stacks), in the agreed conversational, action-oriented voice; the 4 original exemplars (FM/WTFM/VOWL/WMAP) were converted to the split layout. Drum text matches the engine: KICK/SNAR/CYMB/DRUM = one-shots that ring out, PLUK/BELL = self-decaying. Type-check clean, browser-verified (CSAW + FM).

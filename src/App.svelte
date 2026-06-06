@@ -188,7 +188,9 @@
     overflow: hidden;
 
     grid-template-columns: 2fr 1fr;
-    grid-template-rows: 1.4fr 1fr 1.6fr;
+    /* Scope trimmed (1.4fr → 1.1fr) and that height handed to the Explain row
+       (1fr → 1.4fr) so the richer per-model text has room without scrolling. */
+    grid-template-rows: 1.1fr 1.4fr 1.6fr;
     grid-template-areas:
       "scope    controls"
       "explain  controls"
@@ -451,7 +453,7 @@
        them to near-zero to fit the fixed height — which crushed Controls and
        Explain into unusable 46px slivers. */
     .region { overflow: visible; }
-    .scope { height: 32vh; min-height: 190px; overflow: hidden; }
+    .scope { height: 26vh; min-height: 160px; overflow: hidden; }
     .staff { min-height: 340px; }
   }
 </style>

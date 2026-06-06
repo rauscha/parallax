@@ -2,23 +2,25 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-06 (desktop · crane-desk — Explain richer-text rolled out to all 47 models, scope row shrunk, grace-note bug fixed in two passes (strike timing + strike-carries-pitch); all ✓ + deployed live, grace-note awaiting user ear-confirm).
+Last reconciled: 2026-06-06 (desktop · crane-desk — Explain richer-text rolled out to all 47 models, scope row shrunk, grace-note bug REAL fix `0029ccb` (gain ramp opening early — diagnosed via post-gain audio capture; two earlier strike-focused passes were off-target but kept); all ✓ + deployed live, grace-note awaiting user ear-confirm).
 
 ## Now — Polish + M4
 
-### 🐞 Grace-note on playback — FIXED in two passes 2026-06-06 (`3b45652` + `d3a81da`), awaiting user ear-confirm
-**Symptom:** a quick (~eighth-note) grace note of the *wrong* pitch led into a programmed note. The user heard it **on the very first note of play** (cold, from silence) — NOT a back-to-back-transition artifact.
+### 🐞 Grace-note on playback — REAL FIX `0029ccb` 2026-06-06 (gain ramp), awaiting user ear-confirm
+**Symptom:** a quick grace note of the *wrong* pitch led into the first programmed note on play. User nailed the tell: the grace pitch = **whatever note last sounded** (A4 from the TapToStart blip on the very first play; otherwise the note you stopped on — stop an arp on G → "fractional G" before the C; stop on E → quick E). ~60 ms long → clearly a pitch, not a click.
 
-**Root cause (two layers):**
-1. *Strike fired early.* `noteOn` posted `{type:"gateOn"}` with no timestamp, so `_braids_strike()` ran the instant the worklet got the message — up to one Tone look-ahead (~100 ms) before the note's audio time `t`. → fixed in `3b45652` by queueing the strike for time `t`.
-2. *Strike read a stale pitch (the real culprit for the cold first note).* Even fired at `t`, the worklet rendered the strike at the **k-rate `pitch` param**, which doesn't reliably hold the new value on the strike quantum: the strike's fire test (`queuedTime ≤ currentTime`, a JS double compare) and the param's own update (frame-based inside the browser) disagree by a sub-quantum margin at the boundary, so the strike intermittently lands one quantum before the param flips. On the cold first note that re-articulated the **A4 (69) left by the TapToStart confirmation blip** before the pitch fell to the first note. Confirmed by worklet→main telemetry: strike fired at the right time but read `pitch=69` while the note was 60. (Intermittent — only when `t` lands in the unfavourable sub-quantum window.)
+**Root cause = the GAIN envelope, not the strike.** Diagnosed by capturing post-gain audio in the harness (ScriptProcessor tap) + worklet telemetry, on the same clock:
+- The pitch param (stepped `setValueAtTime(newPitch, t)`) and the strike both land *exactly* at the note's scheduled time `t`. ✓
+- But the audio *opened ~50 ms before `t`*, playing the lingering previous pitch for ~60 ms, then snapping to the new pitch at `t`.
+- Why: `noteOn` opened the gate with `cancelAndHold(g,t)` then `linearRampToValueAtTime(target, t+attack)`. When the most recent gain event is in the **past** (the release ramp from the previous stop/noteOff), `linearRampToValueAtTime` interpolates the attack **from that stale past event**, so the gate starts rising well before `t` — uncovering the pitch still sitting in the (correctly-scheduled-for-`t`) param. Pitch waits for `t`; the gain ramp didn't.
 
-**Fix shipped (JS only — no WASM rebuild):**
-- `noteOn` sends `{type:"gateOn", time: t, pitch: midi + pitchBend}`.
-- `braids-worklet.js` keeps a sorted `pendingStrikes[]` of `{t, pitchQ7}`. `process()` drains entries whose `t ≤ currentTime`, fires one `_braids_strike()` (collapses multiple-due → one; most-recent pitch wins), and **renders that quantum at the strike's own pitch** — bypassing the stale k-rate param. The k-rate param resumes control from the next quantum on, so held-note **pitch bend is unaffected**. All strikes (incl. immediate/manual) route through the queue now → one uniform race-free path; `allNotesOff()` posts `clearStrikes` to flush on stop/panic.
-- Residual: a sub-2.7 ms onset transient is theoretically possible (gain opens sample-accurately at `t` while the strike+pitch land on the next quantum boundary) but it's no longer a *re-triggered* wrong note — just a <3 ms low-level click at most. If the user still hears anything, the next lever is moving the amplitude gate into the worklet so gain+strike are quantum-aligned.
+**Fix (`0029ccb`, JS-only, no WASM):** pin the attack ramp's start to `t` with an explicit `g.setValueAtTime(g.value, t)` before the `linearRampToValueAtTime`. Volume and pitch now open together. **Verified by audio capture:** replay onset reads 262 Hz (C) immediately, zero leak — both the stop-mid-arp case (was 60 ms of the held pitch) and the cold-first-note case (was A4).
 
-Type-check clean; harness verified the strike's *applied* pitch always matches the intended note across cold tap→play and warm play/stop cycles. **Open item:** user ear-confirm on the live site (can't ear-test from the harness). Note the prior fix `3b45652` shipped to the live site and the user still heard it — consistent with layer-2 being the cause, so this is NOT a stale-cache issue.
+**The two earlier passes (`3b45652` strike-timing, `d3a81da` strike-carries-pitch) were NOT the fix** for this symptom — they corrected a real but sub-3 ms strike race. **Keep them**: they're still needed, especially for drums, whose one-shot AD envelope must not start decaying ~90 ms before the gate opens (an early strike would leave only the tail audible). So the strike now fires at `t` *and* the gate opens at `t` — both required.
+
+**Open item:** user ear-confirm on the live site (can't ear-test from the harness). No service worker is wired up (vite-plugin-pwa is installed but NOT in `vite.config.ts` — PWA is deferred M5 work), so there's **no stale-cache layer**: a normal refresh gets the new build.
+
+*Possible future polish (only if a faint onset click is reported): move the amplitude gate into the worklet so gain/pitch/strike are all quantum-aligned in one render path.*
 
 ### Explain panel (M4) — ACTIVE
 Baseline per-model TIMBRE/COLOR text panel shipped (`f9f06df`). User approved it and picked **three** depth directions to build (animated mini-diagrams **skipped** for v1):
@@ -62,8 +64,8 @@ Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2
 
 ## Done recently
 - **2026-06-06 (desktop · crane-desk — Explain rollout + scope + grace-note fix):**
-  - `d3a81da` fix(audio): grace-note bug, pass 2 (the one that mattered for the cold first note) — the strike now carries its own pitch and the worklet renders the strike quantum at that pitch, bypassing the racy k-rate `pitch` param. See the "Now" entry for the two-layer root cause + telemetry. JS-only, no WASM rebuild. Awaiting user ear-confirm.
-  - `3b45652` fix(audio): grace-note bug, pass 1 — time-stamp + defer the strike to its audio time instead of firing ~100 ms early on message-receipt. Necessary but not sufficient (the k-rate pitch race remained).
+  - `0029ccb` fix(audio): grace-note **REAL FIX** — the bug was the GAIN ramp opening ~50 ms before the note's time `t` (linearRamp interpolating from a stale past gain event), uncovering the lingering previous pitch. Pinned the ramp start to `t` via explicit `setValueAtTime`. Diagnosed + verified by post-gain audio capture in the harness. See the "Now" entry.
+  - `d3a81da` / `3b45652` fix(audio): two earlier passes (strike-carries-pitch / strike-timing). Correct and kept (needed for drums), but they fixed a sub-3 ms strike race, NOT the audible grace note.
   - `6661ff2` ui: shrink scope row, give the height to the Explain panel (scope ~35%→27%, Explain ~25%→34%).
   - `d666c14` / `427e74d` Explain richer text: `BraidsModel.detail` → `{ listenFor, goodFor }`, rendered as labeled lines; all 47 models covered in the agreed conversational voice.
 - **2026-06-06 (desktop · crane-desk — earlier session):** Resolved all three parked decisions; four commits, all pushed + deployed green to andrewrausch.com/parallax/.

@@ -42,7 +42,14 @@
   <p class="desc">{model.description}</p>
 
   {#if model.detail}
-    <p class="detail">{model.detail}</p>
+    <div class="detail">
+      <p class="detail-line">
+        <span class="detail-label">Listen for</span>{model.detail.listenFor}
+      </p>
+      <p class="detail-line">
+        <span class="detail-label">Good for</span>{model.detail.goodFor}
+      </p>
+    </div>
   {/if}
 
   <div class="cards">
@@ -115,15 +122,30 @@
     color: var(--text-dim);
   }
 
-  /* Deeper explanation — only present for the complex models. Set off from the
-     one-line description with a left rule so it reads as "the longer story." */
+  /* Deeper explanation — split into "Listen for" / "Good for" lines. Set off
+     from the one-line description with a left rule so it reads as "the longer
+     story." */
   .detail {
-    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     padding-left: 9px;
     border-left: 2px solid var(--hairline);
+  }
+  .detail-line {
+    margin: 0;
     font-size: 0.72rem;
     line-height: 1.55;
     color: var(--text-dim);
+  }
+  .detail-label {
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: var(--label-case);
+    font-weight: 600;
+    color: var(--text);
   }
 
   .cards {

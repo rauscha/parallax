@@ -155,11 +155,12 @@ export class BraidsEngine implements ISynthEngine {
     // Strike the engine — scheduled at the note's audio time `t`, NOT on
     // message-receipt. A bare strike fired the instant the worklet got the
     // message, which is up to one scheduler look-ahead (~100 ms) before `t`.
-    // With a previous note still gated open (back-to-back arp notes), that
-    // early strike re-articulated the OLD pitch for the look-ahead window —
-    // the audible "grace note into the real note" bug. Tagging it with `t`
-    // lets the worklet fire on the same render quantum the new pitch lands.
-    this.node.port.postMessage({ type: "gateOn", time: t });
+    // That early strike re-articulated the OLD pitch for the look-ahead window —
+    // the "grace note into the real note" bug. We also send the note's pitch so
+    // the worklet can apply it on the exact strike quantum: the k-rate `pitch`
+    // param can lag the strike by one quantum at the boundary, which otherwise
+    // re-articulates the stale prior pitch (e.g. the A4 tap-blip before note 1).
+    this.node.port.postMessage({ type: "gateOn", time: t, pitch: midi + this.pitchBend });
 
     // Envelope: short attack ramp to (v * gain), then optional decay sustain.
     const target = v * this.params.gain;

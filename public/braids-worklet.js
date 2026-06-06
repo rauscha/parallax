@@ -48,9 +48,10 @@ class BraidsProcessor extends AudioWorkletProcessor {
     this.pendingShape = 0;
 
     // Strikes scheduled for a future AudioContext time, kept sorted ascending.
-    // Drained in process() when the render clock reaches each entry, so a strike
-    // lands on the same render quantum as its note's pitch automation instead of
-    // firing early on message-receipt (the "grace note" bug).
+    // Each entry is { t, pitchQ7 }: the scheduled time and the note's pitch in
+    // Q7 (midi << 7). Drained in process() when the render clock reaches the
+    // entry — see process() for why the strike carries its own pitch instead of
+    // trusting the k-rate `pitch` param to be current (the grace-note race).
     this.pendingStrikes = [];
 
     this.port.onmessage = (e) => this.onMessage(e.data);
@@ -101,19 +102,16 @@ class BraidsProcessor extends AudioWorkletProcessor {
         break;
       case "gateOn": {
         if (!this.ready) break;
-        // Fire now if the scheduled time has already passed (or no time was
-        // given — manual/immediate trigger); otherwise queue it for the right
-        // render quantum so the strike stays in lockstep with the k-rate pitch
-        // update at the same instant.
+        // Queue every strike (even an already-due one) so process() fires it on
+        // a render-quantum boundary with its own pitch applied. A bare/manual
+        // trigger with no time defaults to "now" → fires on the next quantum
+        // (<2.7 ms later, inaudible). pitchQ7 = midi << 7; null if unspecified.
         const when = typeof msg.time === "number" ? msg.time : currentTime;
-        if (when <= currentTime) {
-          this.module._braids_strike();
-        } else {
-          const q = this.pendingStrikes;
-          let i = q.length;
-          while (i > 0 && q[i - 1] > when) i--;
-          q.splice(i, 0, when);
-        }
+        const pitchQ7 = typeof msg.pitch === "number" ? Math.round(msg.pitch * 128) : null;
+        const q = this.pendingStrikes;
+        let i = q.length;
+        while (i > 0 && q[i - 1].t > when) i--;
+        q.splice(i, 0, { t: when, pitchQ7 });
         break;
       }
       case "clearStrikes":
@@ -182,20 +180,28 @@ class BraidsProcessor extends AudioWorkletProcessor {
     if (!this.ready) { output.fill(0); return true; }
 
     // Fire any strikes whose scheduled time has arrived. currentTime is the
-    // start of this render quantum and the k-rate pitch param is sampled on the
-    // same boundary, so striking here keeps the trigger and the new pitch in
-    // lockstep — no early re-articulation of the previous note. Multiple due
-    // strikes collapse into one re-trigger (a monophonic voice can't stack).
+    // start of this render quantum. We can't trust the k-rate `pitch` param to
+    // already hold the new note's value here: the strike condition (queued time
+    // ≤ currentTime, a JS double compare) and the param's own update (frame-based
+    // inside the browser) can disagree by a sub-quantum margin at the boundary,
+    // so the strike sometimes lands one quantum before the param flips — which
+    // re-articulated the *previous* pitch (the grace note). So the strike
+    // carries its own pitch and we override this quantum's render pitch with it.
+    // Multiple due strikes collapse into one re-trigger (monophonic; the most
+    // recent note's pitch wins).
+    let strikePitchQ7 = null;
     const q = this.pendingStrikes;
-    if (q.length && q[0] <= currentTime) {
-      let n = 1;
-      while (n < q.length && q[n] <= currentTime) n++;
-      q.splice(0, n);
+    if (q.length && q[0].t <= currentTime) {
+      let fired = null;
+      while (q.length && q[0].t <= currentTime) fired = q.shift();
       this.module._braids_strike();
+      if (fired && fired.pitchQ7 !== null) strikePitchQ7 = fired.pitchQ7;
     }
 
     const midi = parameters.pitch[0];
-    const pitchQ7 = Math.round(midi * 128);
+    // Use the strike's pitch on its own quantum; the k-rate param is authoritative
+    // from the next quantum on (and for held-note pitch bend between strikes).
+    const pitchQ7 = strikePitchQ7 !== null ? strikePitchQ7 : Math.round(midi * 128);
     const t = clamp01(parameters.timbre[0]);
     const c = clamp01(parameters.color[0]);
     const fm = parameters.fm[0];

@@ -74,6 +74,14 @@ The `ISynthEngine` interface is hot-swappable by design (everything routes as MI
    - **Web Audio Modules (WAM v2)** as a possible plug-in host path if we ever want third-party voices without vendoring each one.
 3. **UX once there's more than one engine:** an engine picker alongside the model picker; per-engine parameter schema + Explain text already fall out of the existing schema-driven UI (`ParamPanel`/`ExplainPanel` read the live engine's schema, so they adapt for free). `engineIdStore` + the patch `engineId` field already exist for this; share-URLs/presets carry it.
 
+## Future — engine ↔ theme pairing (user idea 2026-06-07, NOT now)
+Map each engine to one of the three colorways so the look follows the voice:
+- **Laxsynth → Lab Instrument**, recolored to a **NES/SNES retro-console palette** (fits its chiptune/wavetable character). Exact palette TBD.
+- **Plaits → Sandbox** (the theme the user calls "KO" — renamed from "K.O. Console" → Sandbox on 2026-06-01, slug `sandbox`).
+- **Braids → Phosphor** (green-CRT).
+
+Intent: selecting an engine switches to its linked theme. Decide at build time: does an engine swap *hard-set* the theme or just set a default with the ThemeSwitcher still overriding? Recoloring Lab to NES/SNES **must keep the colorblind-safe + AA-contrast guarantees** and the existing token families (`--scope-*`, `--signal*`, `--knob-*`, surfaces). Pairs with the M5 "finalize all 3 themes" item; `engineIdStore` already exists to drive the switch.
+
 ## Parked questions (need a user decision — not scoped yet)
 - **"Reverse-engineer a sound from a song" tool.** User's idea (2026-06-07): pull up a track (e.g. a Chipzel tune), and get help recreating one of its synth voices on a Parallax engine — the oscilloscope/spectrum tooling already here would help. **Open question: does it live inside Parallax, or as a separate app/desktop tool?** Not yet designed. Decide scope before any build.
 - **Confirmed still on the roadmap (asked 2026-06-07, no change needed):** the **knob-snapshot / patch "postcard"** and **MIDI file import/export** are both still planned — they're **M5** items (see "Later milestones"). Not dropped.

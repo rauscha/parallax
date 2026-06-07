@@ -2,7 +2,7 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-06 (desktop · crane-desk — knob ↔ Explain-card highlight shipped (`751d4b6`) + mobile-grid `1fr`-collapse fix (`d5cee18`); grace-note user-confirmed gone. Added the post-v1 "engine library" vision (Plaits/Edges + other open-source voices) under Later. Earlier the same day: Explain richer-text to all 47 models, scope row shrunk, grace-note REAL fix `0029ccb` (gain ramp opening early). All ✓ + pushed; visual paint of the highlight + the mobile grid awaiting user eye-confirm on the live site.
+Last reconciled: 2026-06-07 (desktop · crane-desk — **Plaits shipped as the 2nd engine** + the multi-engine plumbing it needed). Edges was the original ask but can't be faithfully ported (its square voices are AVR hardware timers, no software DSP) → user chose Plaits, the backlog flagship. New engine **registry** + **Engine picker** (hot-swap, melody/transport survive); Explain panel now renders one card per macro knob (Braids 2, Plaits 3). Authentic Plaits WASM port — all 24 engines, manual-sourced knob text. Verified end-to-end (analyser RMS + Node smoke test); **awaiting user ear-confirm** of tone on the live site. Prior session (2026-06-06): knob↔card highlight, mobile-grid fix, grace-note closed.
 
 ## Now — Polish + M4
 
@@ -57,15 +57,15 @@ The active M4 work (Explain panel depth) is under **Now** above. Remaining/relat
 - **M3** — Sequencer + clickable 4-bar/4-4 staff (Tone.Transport/Part, custom SVG notation, snap-to-scale, playhead + loop).
 - **M4** — Explain panel (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the new shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Percussion/pluck/bell models need it; sustained tones must stay at 0.
 - **M5** — v1 finish: MIDI file import/export · shareable URL links (lz-string→hash) · presets (idb-keyval) · PWA install/offline · mobile pass · finalize all 3 themes · delight (patch postcard).
-- **M6 (optional)** — 2nd engine (Plaits / Web-MIDI-out) to prove hot-swap.
+- **M6 (optional)** — ~~2nd engine to prove hot-swap~~ **✓ DONE 2026-06-07: Plaits landed as the second engine** (authentic WASM port, 24 models), proving the `ISynthEngine` hot-swap + the registry-driven UI. Remaining optional M6 idea: Web-MIDI-out as a non-audio engine.
 
 ## Future — engine library (post-v1, big picture)
-The `ISynthEngine` interface is hot-swappable by design (everything routes as MIDI note numbers; Braids-specific code is confined to `engines/braids/` + `data/braids-*`). Once M6 proves the swap with a second engine, grow it into a small **library of voices** the user can pick between. Captured here so the vision isn't lost; not scheduled, not before v1 ships.
+The `ISynthEngine` interface is hot-swappable by design (everything routes as MIDI note numbers; Braids-specific code is confined to `engines/braids/` + `data/braids-*`). **M6 proved the swap (Plaits landed 2026-06-07) and the registry + Engine-picker plumbing now exists** (`src/audio/registry.ts`, `state/engine-control.ts`, `ui/EnginePicker.svelte`) — so adding further voices is now "vendor + shim + worklet + `data/<name>-models.ts` + one registry entry," following the Plaits port as the template. Grow it into a small **library of voices** the user can pick between. Not scheduled, not before v1 ships.
 
 **Licensing is the gating constraint.** Parallax ships MIT. Bundling a GPL voice into the shipped app is a relicensing problem, so prefer permissive (MIT/BSD/Apache) sources. Keep Émilie Gillet's MIT notice in every ported MI file (per the trademark/licensing rule in CLAUDE.md) and never brand the product with a module's name — factual attribution only.
 
 1. **More Mutable Instruments modules (the easy wins — already MIT, already in the vendored `pichenettes/eurorack` tree).** Same toolchain as Braids (Émilie Gillet's C++ → Emscripten → WASM-in-worklet), so each is mostly a new shim + `engines/<name>/` + `data/<name>-*`:
-   - **Plaits** — the spiritual successor to Braids: 16 synthesis models (analog/wavetable/FM/granular/physical/noise/drums), two macro controls (HARMONICS/TIMBRE/MORPH). The natural flagship 2nd engine for M6; richest payoff per unit work.
+   - **Plaits** — ✓ **DONE 2026-06-07** (the flagship 2nd engine). 24 synthesis models (16 classic + 8 from firmware 1.2), HARMONICS/TIMBRE/MORPH macros. `engines/PlaitsEngine.ts` + `public/plaits-worklet.js` + `data/plaits-models.ts` + `dsp/shim/plaits_shim.cc` are the template for the next port.
    - **Edges** — quad digital chiptune oscillator (square/NES-style). Small, fun, very different character from Braids.
    - **Others worth a look** (voices/oscillators specifically, not the utility/sequencer modules): **Rings** (modal/string resonator), **Elements** (modal/physical-modelling voice), **Warps** (wavefolder/cross-modulation/vocoder), **Tides** (function generator usable as a voice). Skip the non-voice modules (Marbles random source, Grids drum sequencer, Stages segment gen) unless a feature specifically needs them.
 2. **Other open-source synth voices (WASM-compilable) — vet the licence first.**
@@ -78,6 +78,13 @@ The `ISynthEngine` interface is hot-swappable by design (everything routes as MI
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-07 (desktop · crane-desk — Plaits as the 2nd engine + multi-engine plumbing):** Overnight run. Full write-up: `.handoff/OVERNIGHT-LOG-2026-06-07.md`. Edges (the original ask) can't be faithfully ported — its square voices are AVR hardware-timer-generated, no software DSP — so user chose **Plaits** (backlog flagship). Verified end-to-end (Node smoke test: 24/24 engines render, pitch MIDI-direct; browser analyser RMS: 0 at rest / 0.165 note / 0.029 release; bidirectional swap no-regression). Type-check clean. **Awaiting user ear-confirm** of Plaits tone on the live site (only thing not doable from the harness).
+  - `b42554e` chore(dev): `window.__parallax` audio handle (DEV-only, stripped from prod) for harness verification.
+  - `90f8968` feat(plaits): worklet + PlaitsEngine + 24-model catalogue; registered as 2nd engine.
+  - `9bdd7ff` feat(plaits): WASM shim + `npm run wasm:plaits` build → `public/plaits.{wasm,js}` (191 KB).
+  - `295cc54` vendor(plaits): Plaits DSP core from pichenettes/eurorack (MIT), DSP only.
+  - `9899e4a` feat(engine): Engine picker + `state/engine-control.ts` hot-swap (melody/transport survive).
+  - `40108ec` refactor(engine): registry-driven, engine-agnostic model UI (generic `EngineModel`; Explain = one card per knob).
 - **2026-06-06 (desktop · crane-desk — mobile-grid fix + knob↔card highlight + engine-library vision):**
   - `e6670fc` docs: added the post-v1 **engine-library vision** (Plaits/Edges + other open-source voices, with the MIT-vs-GPL licence gate) under "Later"; marked knob↔card done.
   - `751d4b6` feat(explain): **knob ↔ Explain-card highlight** — shared `activeParamStore`; knob publishes on hover/focus/drag union + self-glows, Timbre/Color cards mirror both ways. Logic + CSS verified; pixel paint pending live eye-confirm (preview screenshot renderer was wedged).

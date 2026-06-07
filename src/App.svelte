@@ -7,6 +7,7 @@
   import ExplainPanel from "./ui/ExplainPanel.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
+  import MatchPanel from "./ui/MatchPanel.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
@@ -20,6 +21,7 @@
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
   let viz = $state<"scope" | "spectrum">("scope");
+  let matchOpen = $state(false);
   let surface = $state<Surface>(surfaceStore.get());
   surfaceStore.subscribe((v) => { surface = v; });
 
@@ -45,7 +47,11 @@
     <span class="brand-name">Parallax</span>
     <span class="brand-sub">M3 → Grid</span>
   </div>
-  <ThemeSwitcher />
+  <div class="topbar-right">
+    <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
+      title="Load a track and recreate one of its sounds">◎ Match a sound</button>
+    <ThemeSwitcher />
+  </div>
 </header>
 
 <main class="grid">
@@ -126,6 +132,8 @@
 
 <NoteStrip />
 
+<MatchPanel bind:open={matchOpen} />
+
 <footer class="transport">
   <div class="transport-left">
     <button class="play-btn" onclick={toggleTransport} disabled={!ready || eventCount === 0}
@@ -180,6 +188,28 @@
     color: var(--text-dim);
     text-transform: var(--label-case);
     letter-spacing: var(--label-tracking);
+  }
+  .topbar-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .match-entry {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: filter var(--t-fast), border-color var(--t-fast);
+  }
+  .match-entry:hover:not(:disabled) { filter: brightness(1.1); border-color: var(--signal); }
+  .match-entry:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media (pointer: coarse) {
+    .match-entry { padding: 8px 12px; min-height: 36px; }
   }
 
   .grid {

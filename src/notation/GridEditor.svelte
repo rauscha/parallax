@@ -68,6 +68,17 @@
 
   let barPage = $state(0);
   let editorWidth = $state(0);
+  let gridHeight = $state(0);
+
+  /** Scale the pitch-label font to the row height so letters fit their rows and
+   *  stay aligned on short (laptop) screens. null before the height is measured
+   *  → the CSS fallback size applies. */
+  let labelFs = $derived.by(() => {
+    const n = rowMidis.length;
+    if (!n || !gridHeight) return null;
+    const fs = Math.max(6, Math.min(9, (gridHeight / n) * 0.74));
+    return `${fs.toFixed(1)}px`;
+  });
 
   let colsPerView   = $derived(editorWidth >= 560 ? COLS_PER_BAR * 2 : COLS_PER_BAR);
   let barsPerView   = $derived(colsPerView / COLS_PER_BAR);                      // 1 or 2
@@ -469,12 +480,14 @@
   </div>
 
   <!-- ─── Main grid (row labels + cells) ───────────────────────── -->
-  <div class="grid-main">
+  <div class="grid-main" bind:clientHeight={gridHeight}>
     <!-- Row labels (right-aligned pitch names) — also a swipe zone for bars -->
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="row-labels"
       aria-hidden="true"
+      style:--row-count={rowMidis.length}
+      style:--label-fs={labelFs}
       onpointerdown={onSwipeDown}
       onpointerup={onSwipeUp}
     >
@@ -636,17 +649,23 @@
   .row-labels {
     flex: 0 0 auto;
     width: 24px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    /* Mirror the cell grid's tracks AND its 1px row gap exactly so each label
+       lines up with its row. A plain flex column (no gaps) drifted ~1px lower
+       per row, which on a short laptop screen stacked into several rows of
+       misalignment by the bottom. */
+    grid-template-rows: repeat(var(--row-count), 1fr);
+    gap: 1px;
     touch-action: pan-y;   /* swipe zone for bar navigation */
-    /* rows align with grid-surface rows */
   }
   .row-label {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    font-size: 0.55rem;
+    min-height: 0;       /* let the track shrink to match the (short) cell rows */
+    overflow: hidden;    /* clip rather than overflow if a row is tiny */
+    /* Font scales to row height (set inline); falls back before measurement. */
+    font-size: var(--label-fs, 0.55rem);
     color: var(--text-dim);
     line-height: 1;
     padding-right: 2px;
@@ -829,6 +848,10 @@
     .grid-main   { flex: 0 0 auto; }
     .grid-surface {
       flex: 0 0 auto;
+      grid-template-rows: repeat(var(--row-count), minmax(24px, 1fr));
+    }
+    /* Keep the label gutter's tracks identical to the cells' on mobile too. */
+    .row-labels {
       grid-template-rows: repeat(var(--row-count), minmax(24px, 1fr));
     }
   }

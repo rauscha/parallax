@@ -14,6 +14,15 @@ export class AudioEngine {
   private masterGain: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
 
+  // Reference-sample path (the "Match a sound" tool): a decoded audio file plays
+  // through its own gain → analyser → destination, parallel to the synth. Kept
+  // separate so the loaded track is audible + scope-able WITHOUT routing through
+  // the engine, and so its spectrum can be drawn next to the live patch's.
+  private sampleGain: GainNode | null = null;
+  private sampleAnalyser: AnalyserNode | null = null;
+  private sampleSource: AudioBufferSourceNode | null = null;
+  private sampleBuffer: AudioBuffer | null = null;
+
   private _engine: ISynthEngine | null = null;
   private _started = false;
 
@@ -37,6 +46,15 @@ export class AudioEngine {
 
     this.masterGain.connect(this.analyser);
     this.analyser.connect(this.ctx.destination);
+
+    // Parallel reference-sample chain (silent until a file is played).
+    this.sampleGain = this.ctx.createGain();
+    this.sampleGain.gain.value = 0.85;
+    this.sampleAnalyser = this.ctx.createAnalyser();
+    this.sampleAnalyser.fftSize = 2048;
+    this.sampleAnalyser.smoothingTimeConstant = 0;   // match the synth analyser
+    this.sampleGain.connect(this.sampleAnalyser);
+    this.sampleAnalyser.connect(this.ctx.destination);
 
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this._started = true;
@@ -85,6 +103,8 @@ export class AudioEngine {
   get currentEngine(): ISynthEngine | null { return this._engine; }
   get audioContext(): AudioContext | null { return this.ctx; }
   get analyserNode(): AnalyserNode | null { return this.analyser; }
+  get sampleAnalyserNode(): AnalyserNode | null { return this.sampleAnalyser; }
+  get loadedSample(): AudioBuffer | null { return this.sampleBuffer; }
   get sampleRate(): number { return this.ctx?.sampleRate ?? 0; }
   get isStarted(): boolean { return this._started; }
 
@@ -94,8 +114,52 @@ export class AudioEngine {
     this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
   }
 
+  // ── Reference-sample (the "Match a sound" tool) ──
+
+  /** Decode an audio file into a buffer at the context's sample rate. The buffer
+   *  is retained (read via `loadedSample`) for offline analysis + playback. */
+  async loadSampleFile(file: File): Promise<AudioBuffer> {
+    if (!this.ctx) throw new Error("AudioEngine not started — call start() first.");
+    this.stopSample();
+    const arr = await file.arrayBuffer();
+    // decodeAudioData resamples to ctx.sampleRate, so analysis can assume it.
+    const buf = await this.ctx.decodeAudioData(arr);
+    this.sampleBuffer = buf;
+    return buf;
+  }
+
+  /** (Re)start playback of the loaded sample, looping the given region (seconds).
+   *  Any prior playback is stopped first. No-op if nothing is loaded. */
+  playSample(opts?: { loopStart?: number; loopEnd?: number; loop?: boolean }): void {
+    if (!this.ctx || !this.sampleGain || !this.sampleBuffer) return;
+    this.stopSample();
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.sampleBuffer;
+    src.loop = opts?.loop ?? true;
+    let offset = 0;
+    const dur = this.sampleBuffer.duration;
+    const s = Math.max(0, Math.min(dur, opts?.loopStart ?? 0));
+    const e = Math.max(0, Math.min(dur, opts?.loopEnd ?? dur));
+    if (e > s) { src.loopStart = s; src.loopEnd = e; offset = s; }
+    src.connect(this.sampleGain);
+    src.start(0, offset);
+    this.sampleSource = src;
+  }
+
+  /** Stop reference-sample playback (leaves the decoded buffer loaded). */
+  stopSample(): void {
+    if (!this.sampleSource) return;
+    try { this.sampleSource.stop(); } catch { /* not started / already stopped */ }
+    try { this.sampleSource.disconnect(); } catch { /* already gone */ }
+    this.sampleSource = null;
+  }
+
   async dispose(): Promise<void> {
     document.removeEventListener("visibilitychange", this.onVisibility);
+    this.stopSample();
+    this.sampleBuffer = null;
+    this.sampleGain = null;
+    this.sampleAnalyser = null;
     if (this._engine) await this._engine.dispose();
     this._engine = null;
     if (this.ctx) await this.ctx.close();

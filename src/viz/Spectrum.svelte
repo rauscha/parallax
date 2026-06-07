@@ -2,6 +2,10 @@
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
 
+  // Defaults to the live synth analyser; pass `analyser` to point a second
+  // instance at another source (e.g. the loaded reference sample in MatchPanel).
+  let { analyser: analyserProp = null }: { analyser?: AnalyserNode | null } = $props();
+
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
   let raf = 0;
@@ -33,7 +37,7 @@
 
   function draw() {
     raf = requestAnimationFrame(draw);
-    const analyser = audioEngine.analyserNode;
+    const analyser = analyserProp ?? audioEngine.analyserNode;
     if (!canvas || !analyser) return;
 
     const bins = analyser.frequencyBinCount;

@@ -2,7 +2,7 @@
 
 The single prioritized backlog. `.handoff/SESSION-HANDOFF.md` is the per-session digest; **this file persists across sessions**. Full architecture/roadmap spec: `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md`. Full diagnostic detail behind the "Now" items: `reviews/2026-05-31-deep-review.md` (§ refs below point into it).
 
-Last reconciled: 2026-06-06 (desktop · crane-desk — Explain richer-text rolled out to all 47 models, scope row shrunk, grace-note bug REAL fix `0029ccb` (gain ramp opening early — diagnosed via post-gain audio capture; two earlier strike-focused passes were off-target but kept); all ✓ + deployed live, grace-note awaiting user ear-confirm).
+Last reconciled: 2026-06-06 (desktop · crane-desk — knob ↔ Explain-card highlight shipped (`751d4b6`) + mobile-grid `1fr`-collapse fix (`d5cee18`); grace-note user-confirmed gone. Added the post-v1 "engine library" vision (Plaits/Edges + other open-source voices) under Later. Earlier the same day: Explain richer-text to all 47 models, scope row shrunk, grace-note REAL fix `0029ccb` (gain ramp opening early). All ✓ + pushed; visual paint of the highlight + the mobile grid awaiting user eye-confirm on the live site.
 
 ## Now — Polish + M4
 
@@ -25,7 +25,7 @@ Last reconciled: 2026-06-06 (desktop · crane-desk — Explain richer-text rolle
 ### Explain panel (M4) — ACTIVE
 Baseline per-model TIMBRE/COLOR text panel shipped (`f9f06df`). User approved it and picked **three** depth directions to build (animated mini-diagrams **skipped** for v1):
 1. **Richer per-model text — ✓ DONE 2026-06-06 (`d666c14`).** `detail` field on `BraidsModel` is now `{ listenFor, goodFor }`; `ExplainPanel.svelte` renders the two as labeled lines under the description (left rule kept). **All 47 models** carry detail (user chose full coverage incl. osc-stacks), in the agreed conversational, action-oriented voice; the 4 original exemplars (FM/WTFM/VOWL/WMAP) were converted to the split layout. Drum text matches the engine: KICK/SNAR/CYMB/DRUM = one-shots that ring out, PLUK/BELL = self-decaying. Type-check clean, browser-verified (CSAW + FM).
-2. **Knob ↔ card highlight** — touching/focusing a knob lights its matching Explain card and vice-versa. Needs a shared "active param" signal between `Knob`/`ParamPanel` and `ExplainPanel` (a small store).
+2. **Knob ↔ card highlight — ✓ DONE 2026-06-06 (`751d4b6`).** Touching/focusing/dragging a knob lights its matching Explain card and vice-versa, via a shared `activeParamStore` (atom in `state/stores.ts`). The Knob publishes on the hover/focus/drag union + self-highlights (`--signal` ring + `--signal-glow`); the Timbre/Color cards mirror it both ways (`--signal-deep` wash, the selected-row colour). Drag is in the union deliberately so the link still works on touch (no hover there). Logic + CSS verified in the harness (both directions, clean teardown, type-check clean); the actual pixel paint is pending a live eye-confirm — the preview screenshot renderer was wedged this session (timed out, and computed-colour readback was unreliable).
 3. **"Show me" sweep** — a per-knob button that sweeps TIMBRE/COLOR live so you hear what it does on the current model; animates the engine param over a few seconds + moves the knob; must handle interrupt/restore.
 
 **Grid G0–G4 is shipped** (`5f35124`, 2026-06-04). Pitch-row × step-column grid surface lives behind a Staff/Grid toggle in the Sequencer section. Both surfaces write the same `melodyStore`. Next priorities:
@@ -58,6 +58,21 @@ The active M4 work (Explain panel depth) is under **Now** above. Remaining/relat
 - **M4** — Explain panel (per-model timbre/color text + animated mini-diagrams + knob↔card highlight + "show me" sweep). **Also wire per-model `AD_VCA/TIMBRE/COLOR/FM` amounts** at noteOn via the new shim setters (plumbing landed 2026-06-01; amounts default to 0 today). Percussion/pluck/bell models need it; sustained tones must stay at 0.
 - **M5** — v1 finish: MIDI file import/export · shareable URL links (lz-string→hash) · presets (idb-keyval) · PWA install/offline · mobile pass · finalize all 3 themes · delight (patch postcard).
 - **M6 (optional)** — 2nd engine (Plaits / Web-MIDI-out) to prove hot-swap.
+
+## Future — engine library (post-v1, big picture)
+The `ISynthEngine` interface is hot-swappable by design (everything routes as MIDI note numbers; Braids-specific code is confined to `engines/braids/` + `data/braids-*`). Once M6 proves the swap with a second engine, grow it into a small **library of voices** the user can pick between. Captured here so the vision isn't lost; not scheduled, not before v1 ships.
+
+**Licensing is the gating constraint.** Parallax ships MIT. Bundling a GPL voice into the shipped app is a relicensing problem, so prefer permissive (MIT/BSD/Apache) sources. Keep Émilie Gillet's MIT notice in every ported MI file (per the trademark/licensing rule in CLAUDE.md) and never brand the product with a module's name — factual attribution only.
+
+1. **More Mutable Instruments modules (the easy wins — already MIT, already in the vendored `pichenettes/eurorack` tree).** Same toolchain as Braids (Émilie Gillet's C++ → Emscripten → WASM-in-worklet), so each is mostly a new shim + `engines/<name>/` + `data/<name>-*`:
+   - **Plaits** — the spiritual successor to Braids: 16 synthesis models (analog/wavetable/FM/granular/physical/noise/drums), two macro controls (HARMONICS/TIMBRE/MORPH). The natural flagship 2nd engine for M6; richest payoff per unit work.
+   - **Edges** — quad digital chiptune oscillator (square/NES-style). Small, fun, very different character from Braids.
+   - **Others worth a look** (voices/oscillators specifically, not the utility/sequencer modules): **Rings** (modal/string resonator), **Elements** (modal/physical-modelling voice), **Warps** (wavefolder/cross-modulation/vocoder), **Tides** (function generator usable as a voice). Skip the non-voice modules (Marbles random source, Grids drum sequencer, Stages segment gen) unless a feature specifically needs them.
+2. **Other open-source synth voices (WASM-compilable) — vet the licence first.**
+   - Permissive-friendly: **Faust** DSP (export many synths/instruments; MIT-ish), **STK** (Synthesis ToolKit, permissive), classic FM/DX-style or PD/Csound-derived voices where the licence allows.
+   - GPL — usable only if we never bundle into the MIT app (or accept relicensing): **Dexed**/DX7 FM, **Surge XT**, **Vital/Vitalium**, **Odin 2**. Note them, don't ship them under MIT.
+   - **Web Audio Modules (WAM v2)** as a possible plug-in host path if we ever want third-party voices without vendoring each one.
+3. **UX once there's more than one engine:** an engine picker alongside the model picker; per-engine parameter schema + Explain text already fall out of the existing schema-driven UI (`ParamPanel`/`ExplainPanel` read the live engine's schema, so they adapt for free). `engineIdStore` + the patch `engineId` field already exist for this; share-URLs/presets carry it.
 
 ## Deferred (do not quietly add)
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).

@@ -1,27 +1,69 @@
-# Session hand-off — 2026-06-07 (machine: desktop · crane-desk)
+# Session hand-off — 2026-06-07 (remote session · repo on c:\parallax)
+
+> Resumed **remotely** (Tailscale, via the Claude-in-Chrome extension). Whichever
+> physical machine you pick up on next, **`git pull` first** — everything below is
+> committed and pushed to `origin/main`. Don't trust any local copy over the remote.
 
 ## STATE (read this first)
-- **Branch:** `main`, clean, synced with `origin/main` (`a1f11b3`). One worktree only — nothing stranded.
-- Everything is committed and pushed; the deploy workflow auto-ships to **andrewrausch.com/parallax/** on push.
-- **Plaits shipped as Parallax's second synth engine this session.** Pick **Braids / Plaits** from the new *Engine* selector above the model picker. The scope, Explain panel, and sequencer grid all work with it. Verified end-to-end numerically — but **not ear-confirmed** (I can't ear-test from the harness). That's the one open item.
+- **Branch:** `main`, clean, fully synced with `origin/main` at **`d65ca36`**. One
+  worktree only (`c:\parallax`) — nothing stranded.
+- Everything committed + pushed; the deploy auto-ships to **andrewrausch.com/parallax/**
+  on push (a deploy is running now for `d65ca36`).
+- **Laxsynth (the 3rd engine) is built, live-verified in a real browser, and shipped.**
+  Pick **Braids / Plaits / Laxsynth** from the Engine selector. This session's whole
+  job was to *verify Laxsynth in the browser* — it passed, and the check **caught +
+  fixed a real bug** (the controls panel wasn't refreshing when you switch engines).
+- **One open item, and it's yours: ear-test Laxsynth against your real M8 WavSynth.**
+  Everything mechanical is proven; only the *tone* needs your ears.
 
 ## Done this session
-- **Multi-engine plumbing (the app never had it).** New engine **registry** (`src/audio/registry.ts`) = the one place that knows what engines exist. ModelPicker + ExplainPanel + bindings read it per active engine, so they adapt with no per-engine code. Explain now renders **one card per macro knob** (Braids: Timbre/Color; Plaits: Harmonics/Timbre/Morph). New **EnginePicker** + `state/engine-control.ts` hot-swap engines; melody + transport survive the swap. (`40108ec`, `9899e4a`)
-- **Authentic Plaits WASM port** (same approach as Braids, no placeholder oscillators). Vendored Émilie Gillet's MIT Plaits DSP (`295cc54`), wrote the shim + `npm run wasm:plaits` build → `public/plaits.wasm` 191 KB (`9bdd7ff`), worklet + `PlaitsEngine.ts` + all-**24**-model catalogue with manual-sourced knob text (`90f8968`). Pitch is MIDI-direct.
-- **Edges was the original ask but is not faithfully portable** — its square voices are AVR hardware-timer-generated (no software DSP to lift). Surfaced in pre-flight; user chose Plaits (backlog flagship). Plaits' **Chiptune** engine covers the Edges itch.
-- **Verified end-to-end:** Node smoke test = 24/24 engines render finite, non-silent, correctly pitched; browser analyser RMS = 0.00001 at rest / 0.165 on a note / 0.029 on release; bidirectional Braids↔Plaits swap, no regression. Type-check clean throughout.
-- Dev-only `window.__parallax` audio handle (`b42554e`) — stripped from production builds; for harness verification on this machine where pixel/screenshot readback is wedged.
+- **Live browser verification of Laxsynth.** Confirmed in the running app: all 3
+  engines in the picker; Laxsynth inits with **zero console errors**; 9 shapes across
+  Wavetable + Noise families; the controls panel shows the right 5 groups; all 16
+  params seed **exactly** to their defaults; **audio actually renders** (scope draws
+  the waveform); the **Warp** and **Mult** operators visibly/audibly reshape the
+  sound; shape-switching swaps both the waveform and the per-shape Explain text; an
+  engine swap **mid-playback** keeps the sequence playing.
+- **Fixed a real bug found during that check** (`d65ca36`): the controls panel
+  (`ParamPanel`) only refreshed its knobs at first boot, not on an engine swap — so
+  switching to Laxsynth left **Braids' knobs** on screen, wired to the wrong params.
+  Cause: it reacted only to the audio-ready flag (fires once), not to the
+  engine-changed signal. Fix: it now also subscribes to `engineIdStore`. **This bug
+  also hit Braids↔Plaits** — it had just never been eyeballed after a swap. Verified
+  fixed live in every direction. `npm run check` clean (0 errors); one-file change.
+- (Earlier in this session's lineage, already pushed: `8fbecc1` the Laxsynth engine
+  itself; `acb3625` fixed Plaits' Chiptune infinite-drone → real note-decay.)
 
 ## Next up
-1. **You: ear-confirm Plaits on the live site** (once deployed). Flip the Engine selector to Plaits, scroll the 24 models, play. Listen especially to the **drums (BD/SD/HH)** and the **6-op FM banks**. Signal-flow + pitch are proven; only tone needs your ear. *(Optional tuning afterward: the new DECAY / LPG TONE knobs set ring length/brightness — raise DECAY if sustained notes feel too plucky.)*
-2. **"Show me" sweep** (M4 Explain item 3, the last interactive Explain piece) — per-knob button that sweeps a macro live so you hear what it does; animate the param + move the knob; handle interrupt/restore. Now applies to *both* engines via the registry.
-3. **Grid G5 — per-step expression** — the only place `MelodyEvent` gets extended (p-locks, slide, accent, ratchet); pairs with M4 amounts.
-4. **(Earlier, still open) eye-confirm** the knob↔card highlight + mobile-grid render from the 2026-06-06 session, if not already done.
+1. **You: ear-test Laxsynth vs the M8 WavSynth.** Dev server still running at
+   **localhost:5173** (parked on clean Laxsynth defaults). Play the keyboard (Z–M
+   row) or Load demo. Heads-up: Drive + Resonance together get **hot** — ride Gain.
+   Any calibration (shape roster, operator curves, headroom) is a **no-rebuild edit**
+   to `public/laxsynth-worklet.js` — just tell me what your ears want.
+2. **Decide the "reverse-engineer a sound from a song" tool** (your earlier question —
+   recreate a synth voice you hear in a track). Still an open *question*, not scoped:
+   inside Parallax or a separate tool? Parked in `PENDING-DECISIONS.md`.
+3. **Plaits ear-confirm** (carried over) — general tone pass on the 24 models; the
+   Chiptune drone is now fixed. Lower priority than Laxsynth.
+4. **"Show me" knob sweep** + **Grid G5 per-step expression** — standing M4/grid
+   backlog, unchanged.
 
 ## Watch out for
-- **Faithful Plaits behaviour, not bugs:** the 3 "6-Op FM" entries are DX7 banks — you scroll their 32 presets with the **HARMONICS** knob, not the model picker. Drum/pluck models are percussive one-shots that ring per DECAY regardless of note length. Plaits doesn't drone at rest (its low-pass gate is closed) — that's correct.
-- **Plaits build:** `npm run wasm:plaits` (separate from Braids' `npm run wasm`). Needs the Emscripten env (`& "$env:USERPROFILE\emsdk\emsdk_env.ps1"`). The prebuilt `public/plaits.{wasm,js}` are committed so CI ships them with no toolchain. A throwaway Node smoke test lives at `dsp/build/plaits-smoke.mjs` (gitignored) — handy to re-validate the WASM after a shim change.
-- **Adding a 3rd engine is now a recipe:** vendor + shim + worklet + `data/<name>-models.ts` + one `ENGINES` entry in `registry.ts`. PlaitsEngine/worklet/shim are the template.
-- **Preview screenshot renderer is still wedged** (same as last session): canvas pixel + colour readback are unreliable, so UI verification this session was DOM + numeric-analyser only. Screenshots time out. If you reopen the harness fresh and they work, great.
-- **Note timing** is quantised to the audio render block (~2.7 ms) for Plaits — inaudible for the sequencer; flagged as a future refinement only if ultra-tight retriggers ever matter.
-- Standing gotchas (unchanged): AudioContext needs a real tap (can't ear-test from the harness) · DSP shim changes need a WASM rebuild + commit the regenerated WASM · the `worker-src 'self' blob:` CSP must stay · `vite preview` uses `isPreview` for build-base · mutating a `Set` in `$state` needs reassignment · MIDI clamp C1..C8 · no service worker yet (a normal refresh gets the latest build).
+- **`git pull` before touching the other machine.** This session ran remotely; the
+  only safe assumption is "it's on `origin/main`."
+- **A `npm run dev` server is still running in the background** on this machine
+  (localhost:5173). Fine to leave for the ear-test — just know it's there.
+- **Laxsynth is plain-JS, not WASM.** `public/laxsynth-worklet.js` is NOT in the
+  Vite/TypeScript pipeline and NOT type-checked — edit it and just **refresh** the
+  browser (no `npm run build`, no `npm run wasm`). Flip side: a typo there fails
+  *silently at runtime*, so watch the browser console after editing it.
+- **Laxsynth is a clean-room original, not a port.** The M8 WavSynth is closed-source
+  (only the M8's MacroSynth = Braids is open). So it's "sounds like the WavSynth's
+  *class*," tuned by ear — there's no reference code to match. (Memory:
+  `m8-engines-licensing`.)
+- **Pattern from the fix:** any *future* engine-aware UI must react to `engineIdStore`,
+  not the audio-ready flag. `ModelPicker` / `ExplainPanel` / `ParamPanel` all do now.
+- Standing (unchanged): AudioContext needs a real tap (can't ear-test from the
+  harness) · the **patch postcard + MIDI import/export** you asked about are still on
+  the **M5** roadmap (not dropped) · `vite base` is `/parallax/` on build, `/` on dev
+  · no service worker yet (a normal refresh gets the latest build).

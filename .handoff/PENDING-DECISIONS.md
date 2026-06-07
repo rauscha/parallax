@@ -1,13 +1,24 @@
 # Waiting on you
 
-**No blockers.** The 2026-06-07 overnight run (Plaits second engine) shipped completely — nothing was deferred. Two *optional* items for you:
+**No blockers.** Everything built is committed, pushed, and (for Laxsynth) browser-verified. The open items are all *yours* — ear-tests and one design decision.
 
-## From the 2026-06-07 Plaits run (optional — nothing is blocked)
-1. **Ear-confirm Plaits on the live site.** Switch the **Engine** selector (new, above the model picker) to **Plaits**, scroll the 24 models, and play. Verified numerically that signal flows + pitch is correct (note 69 → 440 Hz) and all 24 engines render; I just can't ear-test tone from the harness. Listen especially to the **drums** and **6-op FM banks**.
-2. **Optional tuning (exposed knobs, not code):** new **DECAY** / **LPG TONE** knobs set ring length/brightness (default 0.5 — raise DECAY if sustained notes feel too plucky). Default Plaits model is engine 0 (VAF); say if you'd prefer another.
-   - *Faithful-behaviour notes (not bugs):* the 3 "6-Op FM" entries are DX7 banks — scroll their 32 presets with the **HARMONICS** knob; drum/pluck models are percussive one-shots that ring per DECAY regardless of note length.
+## 1. Ear-test Laxsynth vs your M8 WavSynth (the main one)
+Laxsynth (the new **3rd engine**) is live-verified mechanically — it loads, all controls work, audio renders, the operators reshape the sound. The only thing I can't judge is **tone**. Switch the Engine selector to **Laxsynth**, play the 9 shapes, push Size/Mult/Warp/Mirror, and A/B against the real WavSynth.
+- Dev server is running at **localhost:5173** (parked on clean Laxsynth defaults); also live at andrewrausch.com/parallax/ after the deploy.
+- Heads-up: **Drive + Resonance together get hot** — ride the Gain knob.
+- Calibration (shape roster, operator curves, default headroom) is a **no-rebuild edit** to `public/laxsynth-worklet.js` — tell me what your ears want and I'll tune it. Plan/detail: `~/.claude/plans/pure-wibbling-cook.md`.
 
-Full detail: `.handoff/OVERNIGHT-LOG-2026-06-07.md`.
+## 2. Design decision: the "reverse-engineer a sound from a song" tool
+Your earlier idea — pull up a track and get help recreating one of its synth voices on a Parallax engine. **Open question: does it live inside Parallax, or as a separate app/desktop tool?** Not scoped yet; needs your call before any build. (Tracked in `NEXT-STEPS.md` → "Parked questions".)
+
+## 3. Plaits tone ear-confirm (carried over, lower priority)
+From the 2026-06-07 Plaits run — still worth a general tone pass on the 24 models. The Chiptune infinite-drone you'd have hit is now **fixed** (`acb3625`). Numerically verified (note 69 → 440 Hz, all 24 render); listen especially to the **drums** and **6-op FM banks**.
+- *Knobs, not code:* **DECAY** / **LPG TONE** set ring length/brightness (default 0.5 — raise DECAY if notes feel too plucky).
+- *Faithful behaviour, not bugs:* the 3 "6-Op FM" entries are DX7 banks — scroll their 32 presets with **HARMONICS**; drum/pluck models are one-shots that ring per DECAY regardless of note length.
+
+*Confirmed still on the roadmap (you asked): the patch **postcard** + **MIDI import/export** are both M5 items, not dropped.*
+
+Full detail: Laxsynth → this session's `SESSION-HANDOFF.md`; Plaits → `.handoff/OVERNIGHT-LOG-2026-06-07.md`.
 
 ---
 

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { audioEngine } from "../audio/AudioEngine";
-  import { BraidsEngine } from "../audio/engines/BraidsEngine";
-  import { audioReadyStore } from "../state/stores";
-  import { installBindings } from "../state/bindings";
+  import { audioReadyStore, engineIdStore } from "../state/stores";
+  import { startEngine } from "../state/engine-control";
   import { installSequencer, installPart } from "../sequencer";
 
   let starting = $state(false);
@@ -14,13 +13,12 @@
     error = null;
     try {
       await audioEngine.start();
-      await audioEngine.useEngine(new BraidsEngine());
-      // Seed the patch store + wire store→engine pushes BEFORE flipping ready,
-      // so subscribers (ModelPicker, ParamPanel) snapshot the seeded values
-      // the instant they react.
-      installBindings(audioEngine);
+      // Construct + swap in the default engine and seed the patch store + wire
+      // store→engine pushes BEFORE flipping ready, so subscribers (ModelPicker,
+      // ParamPanel) snapshot the seeded values the instant they react.
+      await startEngine(engineIdStore.get());
       // Sequencer adopts the engine's AudioContext so Tone's scheduler shares
-      // a timeline with the Braids worklet.
+      // a timeline with the engine's worklet.
       installSequencer();
       installPart();
       // Confirmation strike — short A440 so we know the chain is live end-to-end.

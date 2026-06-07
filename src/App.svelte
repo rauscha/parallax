@@ -1,6 +1,7 @@
 <script lang="ts">
   import ThemeSwitcher from "./ui/ThemeSwitcher.svelte";
   import TapToStart from "./ui/TapToStart.svelte";
+  import EnginePicker from "./ui/EnginePicker.svelte";
   import ModelPicker from "./ui/ModelPicker.svelte";
   import ParamPanel from "./ui/ParamPanel.svelte";
   import ExplainPanel from "./ui/ExplainPanel.svelte";
@@ -64,6 +65,8 @@
 
   <section class="region controls" aria-label="Synth controls">
     <div class="region-label">Controls</div>
+    <EnginePicker />
+    <div class="divider"></div>
     <ModelPicker />
     <div class="divider"></div>
     <ParamPanel />

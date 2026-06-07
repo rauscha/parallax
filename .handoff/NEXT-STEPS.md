@@ -6,7 +6,7 @@ Last reconciled: 2026-06-06 (desktop · crane-desk — knob ↔ Explain-card hig
 
 ## Now — Polish + M4
 
-### 🐞 Grace-note on playback — REAL FIX `0029ccb` 2026-06-06 (gain ramp), awaiting user ear-confirm
+### ✓ Grace-note on playback — CLOSED 2026-06-06 (REAL FIX `0029ccb`, gain ramp; user ear-confirmed gone)
 **Symptom:** a quick grace note of the *wrong* pitch led into the first programmed note on play. User nailed the tell: the grace pitch = **whatever note last sounded** (A4 from the TapToStart blip on the very first play; otherwise the note you stopped on — stop an arp on G → "fractional G" before the C; stop on E → quick E). ~60 ms long → clearly a pitch, not a click.
 
 **Root cause = the GAIN envelope, not the strike.** Diagnosed by capturing post-gain audio in the harness (ScriptProcessor tap) + worklet telemetry, on the same clock:
@@ -18,7 +18,7 @@ Last reconciled: 2026-06-06 (desktop · crane-desk — knob ↔ Explain-card hig
 
 **The two earlier passes (`3b45652` strike-timing, `d3a81da` strike-carries-pitch) were NOT the fix** for this symptom — they corrected a real but sub-3 ms strike race. **Keep them**: they're still needed, especially for drums, whose one-shot AD envelope must not start decaying ~90 ms before the gate opens (an early strike would leave only the tail audible). So the strike now fires at `t` *and* the gate opens at `t` — both required.
 
-**Open item:** user ear-confirm on the live site (can't ear-test from the harness). No service worker is wired up (vite-plugin-pwa is installed but NOT in `vite.config.ts` — PWA is deferred M5 work), so there's **no stale-cache layer**: a normal refresh gets the new build.
+**Closed:** user ear-confirmed on the live site that the grace note is gone. No deeper lever needed. *(Aside: no service worker is wired up — vite-plugin-pwa is installed but NOT in `vite.config.ts`, PWA is deferred M5 work — so there's no stale-cache layer; a normal refresh gets the new build.)*
 
 *Possible future polish (only if a faint onset click is reported): move the amplitude gate into the worklet so gain/pitch/strike are all quantum-aligned in one render path.*
 
@@ -78,6 +78,11 @@ The `ISynthEngine` interface is hot-swappable by design (everything routes as MI
 Polyphony · Web MIDI input · audio recording/export · insert FX · Plaits / 2nd engine (until M6).
 
 ## Done recently
+- **2026-06-06 (desktop · crane-desk — mobile-grid fix + knob↔card highlight + engine-library vision):**
+  - `e6670fc` docs: added the post-v1 **engine-library vision** (Plaits/Edges + other open-source voices, with the MIT-vs-GPL licence gate) under "Later"; marked knob↔card done.
+  - `751d4b6` feat(explain): **knob ↔ Explain-card highlight** — shared `activeParamStore`; knob publishes on hover/focus/drag union + self-glows, Timbre/Color cards mirror both ways. Logic + CSS verified; pixel paint pending live eye-confirm (preview screenshot renderer was wedged).
+  - `d5cee18` fix(grid): **mobile grid rendered** — `1fr` rows collapsed to a sliver on the ≤720px content-sized layout; gave rows a `minmax(24px,1fr)` floor + let the editor size to content. Desktop untouched. Verified numerically (In Key 15 rows / Chromatic 25 rows / desktop).
+  - **Grace-note bug CLOSED** — user ear-confirmed the fix (`0029ccb`) on the live site.
 - **2026-06-06 (desktop · crane-desk — Explain rollout + scope + grace-note fix):**
   - `0029ccb` fix(audio): grace-note **REAL FIX** — the bug was the GAIN ramp opening ~50 ms before the note's time `t` (linearRamp interpolating from a stale past gain event), uncovering the lingering previous pitch. Pinned the ramp start to `t` via explicit `setValueAtTime`. Diagnosed + verified by post-gain audio capture in the harness. See the "Now" entry.
   - `d3a81da` / `3b45652` fix(audio): two earlier passes (strike-carries-pitch / strike-timing). Correct and kept (needed for drums), but they fixed a sub-3 ms strike race, NOT the audible grace note.

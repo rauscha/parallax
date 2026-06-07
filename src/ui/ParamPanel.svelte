@@ -1,11 +1,13 @@
 <script lang="ts">
   import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore, patchStore } from "../state/stores";
+  import { audioReadyStore, patchStore, engineIdStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import Knob from "./Knob.svelte";
 
   let ready = $state(false);
+  let engineId = $state<string>(engineIdStore.get());
   audioReadyStore.subscribe((v) => { ready = v; });
+  engineIdStore.subscribe((v) => { engineId = v; });
 
   // Controls are auto-generated from the live engine's parameter schema —
   // the schema holds non-serializable bits (format, describe) so it lives on
@@ -16,10 +18,16 @@
   let values = $state<Record<string, number>>(patchStore.get().params);
   patchStore.subscribe((p) => { values = p.params; });
 
-  // When audio comes up, pull the engine's schema. Values were already seeded
-  // into patchStore by installBindings() before ready flipped.
+  // Pull the live engine's schema when audio comes up — and again whenever the
+  // engine hot-swaps. Reading engineId registers it as an effect dependency so a
+  // swap (Braids → Plaits → Laxsynth) re-pulls the new schema; without it the
+  // panel keeps rendering the previous engine's knobs (ready stays true across a
+  // swap, so it can't be the trigger). installBindings() seeds patchStore (the
+  // values) and sets engineIdStore *after* useEngine(), so by the time this
+  // re-runs, currentEngine is already the new engine.
   $effect(() => {
     if (!ready) return;
+    void engineId;   // dependency: re-pull schema on engine swap, not just boot
     const eng = audioEngine.currentEngine;
     if (!eng) return;
     specs = eng.getParameterSchema().filter((d) => d.id !== "model");

@@ -6,12 +6,13 @@
    * the text comes straight from that table; the % readouts mirror the live
    * patch so the words line up with what you're hearing.
    *
-   * M4 groundwork: this is the data/text layer. The animated mini-diagrams, the
-   * knob↔card highlight, and the "show me" sweep are deliberately deferred to an
-   * interactive design pass.
+   * M4 groundwork: this is the data/text layer. The animated mini-diagrams and
+   * the "show me" sweep are deferred to an interactive design pass; the knob ↔
+   * card highlight (below) is the first interactive piece to land.
    */
+  import { onDestroy } from "svelte";
   import { BRAIDS_MODELS, BRAIDS_FAMILIES, type BraidsModel } from "../data/braids-models";
-  import { patchStore } from "../state/stores";
+  import { activeParamStore, patchStore } from "../state/stores";
 
   let modelId = $state<string | null>(patchStore.get().modelId);
   let params  = $state<Record<string, number>>(patchStore.get().params);
@@ -28,6 +29,17 @@
   // Live macro values (fall back to the schema defaults before the patch seeds).
   let timbrePct = $derived(Math.round((params.timbre ?? 0.5) * 100));
   let colorPct  = $derived(Math.round((params.color  ?? 0.5) * 100));
+
+  // Knob ↔ card highlight: mirror the shared "engaged param" store so the card
+  // lights when its knob is touched, and hovering the card lights the knob.
+  // Pointer events only (cards aren't focusable controls) — on touch the knob's
+  // drag still drives the card direction, which is the case that matters there.
+  let activeId = $state<string | null>(activeParamStore.get());
+  const unsub = activeParamStore.subscribe((v) => { activeId = v; });
+  onDestroy(unsub);
+
+  function lift(id: string) { activeParamStore.set(id); }
+  function drop(id: string) { if (activeParamStore.get() === id) activeParamStore.set(null); }
 </script>
 
 <div class="explain-panel">
@@ -53,7 +65,16 @@
   {/if}
 
   <div class="cards">
-    <div class="card">
+    <!-- Pointer-only highlight cue: hovering the card lights its knob. It's a
+         progressive enhancement, not a control — the knob is the real (keyboard-
+         accessible) input — so no ARIA role is warranted. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="card"
+      class:active={activeId === "timbre"}
+      onpointerenter={() => lift("timbre")}
+      onpointerleave={() => drop("timbre")}
+    >
       <div class="card-top">
         <span class="knob">Timbre</span>
         <span class="val">{timbrePct}%</span>
@@ -61,7 +82,13 @@
       <p class="card-text">{model.timbre}</p>
     </div>
 
-    <div class="card">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="card"
+      class:active={activeId === "color"}
+      onpointerenter={() => lift("color")}
+      onpointerleave={() => drop("color")}
+    >
       <div class="card-top">
         <span class="knob">Color</span>
         <span class="val">{colorPct}%</span>
@@ -158,6 +185,14 @@
     border: var(--hairline-w) solid var(--hairline);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  /* Lit when its knob is engaged (or the card itself is hovered). --signal-deep
+     is the same wash used for selected rows, so the cue reads as "this is the
+     active control" without shouting. */
+  .card.active {
+    background: var(--signal-deep);
+    border-color: var(--signal);
   }
   .card-top {
     display: flex;

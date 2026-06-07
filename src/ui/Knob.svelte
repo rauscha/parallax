@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import type { ParameterDescriptor } from '../audio/types';
+  import { activeParamStore } from '../state/stores';
 
   let { spec, value, onchange }: {
     spec: ParameterDescriptor;
@@ -15,6 +16,26 @@
   let dragging = $state(false);
   let startY = 0;
   let startVal = 0;
+
+  // ── Knob ↔ Explain-card highlight link ──
+  // The user is "engaged" with this knob while hovering, keyboard-focused, or
+  // dragging it. Publish that to the shared store so the matching Explain card
+  // lights up; subscribe back so hovering the card (or any other writer) lights
+  // this knob too. Drag is part of the union deliberately — on touch there's no
+  // hover, so the drag is what keeps the card lit while you turn the knob.
+  let hovered = $state(false);
+  let focused = $state(false);
+  const engaged = $derived(hovered || focused || dragging);
+
+  let activeId = $state<string | null>(activeParamStore.get());
+  const unsubscribe = activeParamStore.subscribe((v) => { activeId = v; });
+  const active = $derived(activeId === spec.id);
+
+  $effect(() => {
+    if (engaged) activeParamStore.set(spec.id);
+    // Only clear if we're the one currently shown — never stomp another knob.
+    else if (activeParamStore.get() === spec.id) activeParamStore.set(null);
+  });
 
   const range = $derived(spec.max - spec.min);
   const step = $derived(spec.step ?? (range || 1) / 1000);
@@ -57,7 +78,13 @@
     pendingValue = null;
     onchange(snap(v));
   }
-  onDestroy(() => { if (rafHandle) cancelAnimationFrame(rafHandle); });
+  onDestroy(() => {
+    if (rafHandle) cancelAnimationFrame(rafHandle);
+    unsubscribe();
+    // A knob torn down mid-engage (e.g. model switch) must not leave the store
+    // pointing at a param that no longer has a knob.
+    if (activeParamStore.get() === spec.id) activeParamStore.set(null);
+  });
 
   // ── Vertical-drag interaction ──
   function onPointerDown(e: PointerEvent) {
@@ -120,6 +147,7 @@
 <div
   class="knob"
   class:dragging
+  class:active
   role="slider"
   tabindex="0"
   aria-label={spec.label}
@@ -132,6 +160,10 @@
   onpointermove={onPointerMove}
   onpointerup={endDrag}
   onpointercancel={endDrag}
+  onpointerenter={() => (hovered = true)}
+  onpointerleave={() => (hovered = false)}
+  onfocus={() => (focused = true)}
+  onblur={() => (focused = false)}
   ondblclick={() => commitNow(spec.default)}
   onkeydown={onKeyDown}
 >
@@ -197,6 +229,14 @@
      the value is still read from the arc + the number. */
   .knob.dragging {
     background: var(--surface-raised);
+  }
+  /* Engaged (hover / focus / drag) or lit from the matching Explain card. The
+     ring matches :focus-visible so keyboard focus stays just as crisp, plus a
+     glow so the link reads at a glance. Defined after :focus-visible so it wins
+     when both apply. */
+  .knob.active {
+    background: var(--surface-raised);
+    box-shadow: 0 0 0 2px var(--signal), 0 0 14px var(--signal-glow);
   }
   .knob-value {
     font-family: var(--font-mono);

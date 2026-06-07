@@ -43,6 +43,13 @@ export const melodyStore = map<Melody>({
   events: [],
 });
 
+/** Which synth parameter the user is currently engaging — hover, keyboard
+ *  focus, or an active drag. Drives the knob ↔ Explain-card highlight link so
+ *  touching a knob lights its card (and hovering a card lights its knob). It's
+ *  a transient UI cue, not patch state, so it lives here and is never persisted
+ *  or shared. null = nothing engaged. Holds the param id (e.g. "timbre"). */
+export const activeParamStore = atom<string | null>(null);
+
 /** Audio system status — drives the tap-to-start overlay. */
 export const audioReadyStore = atom<boolean>(false);
 

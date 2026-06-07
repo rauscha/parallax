@@ -1,7 +1,8 @@
 <script lang="ts">
   import { tick, onDestroy } from "svelte";
-  import { BRAIDS_MODELS, BRAIDS_FAMILIES, type BraidsModel } from "../data/braids-models";
-  import { audioReadyStore, patchStore } from "../state/stores";
+  import type { EngineModel } from "../audio/types";
+  import { engineEntryOrDefault } from "../audio/registry";
+  import { audioReadyStore, patchStore, engineIdStore } from "../state/stores";
 
   let ready = $state(false);
   let query = $state("");
@@ -16,14 +17,20 @@
 
   // patchStore is the source of truth — modelIndex is derived from modelId.
   // Writes flow store → bindings → engine; the picker never touches the engine.
+  let engineId = $state<string>(engineIdStore.get());
   let modelId = $state<string | null>(patchStore.get().modelId);
+  engineIdStore.subscribe((v) => { engineId = v; });
   patchStore.subscribe((p) => { modelId = p.modelId; });
 
-  const LAST = BRAIDS_MODELS.length - 1;
+  // Catalogue for the active engine (registry-driven → adapts to Braids/Plaits).
+  let entry = $derived(engineEntryOrDefault(engineId));
+  let models = $derived(entry.models);
+  let families = $derived(entry.families);
+  let LAST = $derived(models.length - 1);
 
   let modelIndex = $derived.by(() => {
     if (!modelId) return 0;
-    const i = BRAIDS_MODELS.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
+    const i = models.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
     return i >= 0 ? i : 0;
   });
 
@@ -39,7 +46,7 @@
 
   function setModel(idx: number) {
     const next = Math.max(0, Math.min(LAST, idx));
-    patchStore.setKey("modelId", BRAIDS_MODELS[next].code.toLowerCase());
+    patchStore.setKey("modelId", models[next].code.toLowerCase());
   }
 
   // Pulse on every model change — including external ones (share-URL loads,
@@ -51,20 +58,20 @@
     pulse();
   });
 
-  let current = $derived(BRAIDS_MODELS[modelIndex]);
-  let currentFamily = $derived(BRAIDS_FAMILIES.find((f) => f.id === current.family)?.label ?? "");
+  let current = $derived(models[modelIndex]);
+  let currentFamily = $derived(families.find((f) => f.id === current?.family)?.label ?? "");
 
   // Family-grouped, filtered list. Search matches code, name, family or blurb.
   let grouped = $derived.by(() => {
     const q = query.trim().toLowerCase();
-    const hit = (m: BraidsModel) =>
+    const hit = (m: EngineModel) =>
       !q ||
       m.code.toLowerCase().includes(q) ||
       m.name.toLowerCase().includes(q) ||
       m.family.toLowerCase().includes(q) ||
       m.description.toLowerCase().includes(q);
-    return BRAIDS_FAMILIES
-      .map((f) => ({ id: f.id, label: f.label, models: BRAIDS_MODELS.filter((m) => m.family === f.id && hit(m)) }))
+    return families
+      .map((f) => ({ id: f.id, label: f.label, models: models.filter((m) => m.family === f.id && hit(m)) }))
       .filter((g) => g.models.length > 0);
   });
 

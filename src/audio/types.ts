@@ -55,6 +55,47 @@ export interface ParameterDescriptor {
 export interface NoteOnOpts { velocity?: NormalizedValue; time?: Seconds; }
 export interface NoteOffOpts { time?: Seconds; }
 
+/**
+ * Generic, engine-agnostic model metadata for the picker + Explain panel.
+ *
+ * Each engine that has a discrete "model" axis exposes its catalogue as
+ * EngineModel[] (via the registry). This is a superset of the original
+ * Braids-specific shape: the per-model macro-knob meanings live in `knobs`
+ * (Braids = TIMBRE/COLOR, Plaits = HARMONICS/TIMBRE/MORPH), so the Explain
+ * panel renders one card per knob without knowing which engine it's looking at.
+ */
+export interface EngineKnobMeaning {
+  /** Parameter id this card describes — must match a getParameterSchema() id
+   *  so the knob ↔ card highlight (activeParamStore) links up. */
+  id: string;
+  /** Short display label, e.g. "Timbre", "Harmonics", "Morph". */
+  label: string;
+  /** What this knob does *in this model*. The whole reason the app exists. */
+  text: string;
+}
+
+export interface EngineModel {
+  /** Firmware/engine enum index. Goes into setParameter("model", index). */
+  index: number;
+  /** Short hardware-style display code, e.g. "CSAW", "VA". */
+  code: string;
+  /** Display name in plain English. */
+  name: string;
+  /** Family id for grouping (matches one of the engine's EngineFamily ids). */
+  family: string;
+  /** One-sentence character description. */
+  description: string;
+  /** Per-model macro-knob meanings, in display order (1+ cards). */
+  knobs: EngineKnobMeaning[];
+  /** Deeper Explain text — sonic character + musical use. */
+  detail?: { listenFor: string; goodFor: string };
+}
+
+export interface EngineFamily {
+  id: string;
+  label: string;
+}
+
 export interface ISynthEngine {
   manifest: EngineManifest;
 

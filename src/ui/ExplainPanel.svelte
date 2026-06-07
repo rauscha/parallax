@@ -11,24 +11,35 @@
    * card highlight (below) is the first interactive piece to land.
    */
   import { onDestroy } from "svelte";
-  import { BRAIDS_MODELS, BRAIDS_FAMILIES, type BraidsModel } from "../data/braids-models";
-  import { activeParamStore, patchStore } from "../state/stores";
+  import type { EngineModel } from "../audio/types";
+  import { engineEntryOrDefault } from "../audio/registry";
+  import { activeParamStore, patchStore, engineIdStore } from "../state/stores";
 
-  let modelId = $state<string | null>(patchStore.get().modelId);
-  let params  = $state<Record<string, number>>(patchStore.get().params);
+  let engineId = $state<string>(engineIdStore.get());
+  let modelId  = $state<string | null>(patchStore.get().modelId);
+  let params   = $state<Record<string, number>>(patchStore.get().params);
+  engineIdStore.subscribe((v) => { engineId = v; });
   patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; });
 
-  // patchStore.modelId is the source of truth (a lowercase code like "csaw").
-  let model = $derived.by((): BraidsModel => {
-    if (!modelId) return BRAIDS_MODELS[0];
-    const i = BRAIDS_MODELS.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
-    return BRAIDS_MODELS[i >= 0 ? i : 0];
-  });
-  let familyLabel = $derived(BRAIDS_FAMILIES.find((f) => f.id === model.family)?.label ?? "");
+  // Models/families come from the registry for the *active* engine, so this
+  // panel adapts to Braids or Plaits (or anything future) without code changes.
+  let entry = $derived(engineEntryOrDefault(engineId));
 
-  // Live macro values (fall back to the schema defaults before the patch seeds).
-  let timbrePct = $derived(Math.round((params.timbre ?? 0.5) * 100));
-  let colorPct  = $derived(Math.round((params.color  ?? 0.5) * 100));
+  // patchStore.modelId is the source of truth (a lowercase code like "csaw").
+  let model = $derived.by((): EngineModel | null => {
+    const models = entry.models;
+    if (models.length === 0) return null;
+    if (!modelId) return models[0];
+    const i = models.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
+    return models[i >= 0 ? i : 0];
+  });
+  let familyLabel = $derived(
+    model ? (entry.families.find((f) => f.id === model.family)?.label ?? "") : ""
+  );
+
+  // Live macro value for a knob card, as a percent (macro knobs are 0..1 in both
+  // engines). Falls back to 50% before the patch seeds.
+  function pct(id: string): number { return Math.round((params[id] ?? 0.5) * 100); }
 
   // Knob ↔ card highlight: mirror the shared "engaged param" store so the card
   // lights when its knob is touched, and hovering the card lights the knob.
@@ -43,59 +54,50 @@
 </script>
 
 <div class="explain-panel">
-  <div class="head">
-    <span class="code">{model.code}</span>
-    <div class="titles">
-      <span class="name">{model.name}</span>
-      <span class="family">{familyLabel}</span>
+  {#if model}
+    <div class="head">
+      <span class="code">{model.code}</span>
+      <div class="titles">
+        <span class="name">{model.name}</span>
+        <span class="family">{familyLabel}</span>
+      </div>
     </div>
-  </div>
 
-  <p class="desc">{model.description}</p>
+    <p class="desc">{model.description}</p>
 
-  {#if model.detail}
-    <div class="detail">
-      <p class="detail-line">
-        <span class="detail-label">Listen for</span>{model.detail.listenFor}
-      </p>
-      <p class="detail-line">
-        <span class="detail-label">Good for</span>{model.detail.goodFor}
-      </p>
+    {#if model.detail}
+      <div class="detail">
+        <p class="detail-line">
+          <span class="detail-label">Listen for</span>{model.detail.listenFor}
+        </p>
+        <p class="detail-line">
+          <span class="detail-label">Good for</span>{model.detail.goodFor}
+        </p>
+      </div>
+    {/if}
+
+    <div class="cards">
+      <!-- One card per macro knob (Braids: Timbre/Color; Plaits: Harmonics/
+           Timbre/Morph). Pointer-only highlight cue: hovering the card lights
+           its knob. It's a progressive enhancement, not a control — the knob is
+           the real (keyboard-accessible) input — so no ARIA role is warranted. -->
+      {#each model.knobs as knob (knob.id)}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="card"
+          class:active={activeId === knob.id}
+          onpointerenter={() => lift(knob.id)}
+          onpointerleave={() => drop(knob.id)}
+        >
+          <div class="card-top">
+            <span class="knob">{knob.label}</span>
+            <span class="val">{pct(knob.id)}%</span>
+          </div>
+          <p class="card-text">{knob.text}</p>
+        </div>
+      {/each}
     </div>
   {/if}
-
-  <div class="cards">
-    <!-- Pointer-only highlight cue: hovering the card lights its knob. It's a
-         progressive enhancement, not a control — the knob is the real (keyboard-
-         accessible) input — so no ARIA role is warranted. -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="card"
-      class:active={activeId === "timbre"}
-      onpointerenter={() => lift("timbre")}
-      onpointerleave={() => drop("timbre")}
-    >
-      <div class="card-top">
-        <span class="knob">Timbre</span>
-        <span class="val">{timbrePct}%</span>
-      </div>
-      <p class="card-text">{model.timbre}</p>
-    </div>
-
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="card"
-      class:active={activeId === "color"}
-      onpointerenter={() => lift("color")}
-      onpointerleave={() => drop("color")}
-    >
-      <div class="card-top">
-        <span class="knob">Color</span>
-        <span class="val">{colorPct}%</span>
-      </div>
-      <p class="card-text">{model.color}</p>
-    </div>
-  </div>
 </div>
 
 <style>

@@ -1,6 +1,6 @@
 import type { AudioEngine } from "../audio/AudioEngine";
 import { patchStore, engineIdStore } from "./stores";
-import { BRAIDS_MODELS } from "../data/braids-models";
+import { codeForIndex, indexForCode } from "../audio/registry";
 
 /**
  * Wire the central stores to the live audio engine. After this runs, the
@@ -18,6 +18,7 @@ import { BRAIDS_MODELS } from "../data/braids-models";
 export function installBindings(audioEngine: AudioEngine): () => void {
   const eng = audioEngine.currentEngine;
   if (!eng) throw new Error("installBindings: no current engine — call useEngine() first.");
+  const engineId = eng.manifest.id;
 
   // Snapshot the engine's defaults into the store. This is the only direction
   // the store ever reads from the engine; from here on out it flows downward.
@@ -31,7 +32,7 @@ export function installBindings(audioEngine: AudioEngine): () => void {
   // For Braids, the constructor defaults to model index 0 (CSAW). Future
   // engines that aren't modelEnumerable get modelId: null.
   const initialModelId = eng.manifest.capabilities.modelEnumerable
-    ? codeForIndex(0)
+    ? codeForIndex(engineId, 0)
     : null;
 
   patchStore.set({
@@ -58,22 +59,13 @@ export function installBindings(audioEngine: AudioEngine): () => void {
     if (p.modelId !== lastModelId) {
       lastModelId = p.modelId;
       if (p.modelId) {
-        const idx = indexForCode(p.modelId);
+        const idx = indexForCode(engineId, p.modelId);
         // Route via the standard parameter API so we don't import engine-specific
-        // types here — BraidsEngine.setParameter("model", idx) delegates to setShape.
+        // types here — setParameter("model", idx) delegates to the engine's setShape.
         if (idx >= 0) audioEngine.currentEngine?.setParameter("model", idx);
       }
     }
   });
 
   return () => { unsubPatch(); };
-}
-
-function codeForIndex(idx: number): string | null {
-  return BRAIDS_MODELS[idx]?.code.toLowerCase() ?? null;
-}
-
-function indexForCode(code: string): number {
-  const lower = code.toLowerCase();
-  return BRAIDS_MODELS.findIndex((m) => m.code.toLowerCase() === lower);
 }

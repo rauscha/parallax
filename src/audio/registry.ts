@@ -15,8 +15,10 @@
 import type { ISynthEngine, EngineModel, EngineFamily } from "./types";
 import { BraidsEngine } from "./engines/BraidsEngine";
 import { PlaitsEngine } from "./engines/PlaitsEngine";
+import { LaxsynthEngine } from "./engines/LaxsynthEngine";
 import { BRAIDS_MODELS, BRAIDS_FAMILIES } from "../data/braids-models";
 import { PLAITS_MODELS, PLAITS_FAMILIES } from "../data/plaits-models";
+import { LAXSYNTH_MODELS, LAXSYNTH_FAMILIES } from "../data/laxsynth-models";
 
 export interface EngineRegistryEntry {
   id: string;
@@ -62,6 +64,15 @@ export const ENGINES: EngineRegistryEntry[] = [
     createEngine: () => new PlaitsEngine(),
     models: PLAITS_MODELS,
     families: PLAITS_FAMILIES,
+  },
+  {
+    // Laxsynth (our original WavSynth-style engine) authors its catalogue
+    // directly as EngineModel[] too — no adapter needed.
+    id: "laxsynth",
+    name: "Laxsynth",
+    createEngine: () => new LaxsynthEngine(),
+    models: LAXSYNTH_MODELS,
+    families: LAXSYNTH_FAMILIES,
   },
 ];
 

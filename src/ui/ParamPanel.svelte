@@ -30,8 +30,10 @@
   const GROUP_LABELS: Record<string, string> = {
     shape: "Shape",
     pitch: "Pitch",
+    filter: "Filter",
     envelope: "Envelope",
     lofi: "Lo-fi (the Braids crunch)",
+    drive: "Drive & Crush",
     output: "Output",
   };
 

@@ -64,7 +64,7 @@ $em_flags = @(
   "-s", "ASSERTIONS=0",
   "-s", "FILESYSTEM=0",
   "-s", "MALLOC=emmalloc",
-  "-s", "EXPORTED_FUNCTIONS=['_plaits_init','_plaits_set_engine','_plaits_set_note','_plaits_set_harmonics','_plaits_set_timbre','_plaits_set_morph','_plaits_set_decay','_plaits_set_lpg_colour','_plaits_set_trigger','_plaits_set_level','_plaits_alloc','_plaits_free','_plaits_render','_malloc','_free']",
+  "-s", "EXPORTED_FUNCTIONS=['_plaits_init','_plaits_set_engine','_plaits_set_note','_plaits_set_harmonics','_plaits_set_timbre','_plaits_set_morph','_plaits_set_decay','_plaits_set_lpg_colour','_plaits_set_timbre_mod_amount','_plaits_set_trigger','_plaits_set_level','_plaits_alloc','_plaits_free','_plaits_render','_malloc','_free']",
   "-s", "EXPORTED_RUNTIME_METHODS=['HEAP16','HEAPU8','HEAPF32']"
 )
 

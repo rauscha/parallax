@@ -110,15 +110,15 @@ export const PLAITS_MODELS: EngineModel[] = [
       goodFor: "Lush string pads, retro sci-fi chords, anything that wants that 70s ensemble shimmer." } },
 
   { index: 7, code: "CHIP", name: "Chiptune", family: "chiptune",
-    description: "Four variable-width square voices for chords and arpeggios — an 8-bit games console in a patch.",
+    description: "A clocked arpeggiator driving variable-width square voices — an 8-bit games console in a patch. Each note you play steps the arpeggio one place through the chosen chord.",
     knobs: [
-      k("harmonics", "Harmonics", "Chord — picks the chord the four square voices play."),
-      k("timbre", "Timbre", "Arpeggio type, or chord inversion — sets how the notes are voiced or sequenced."),
+      k("harmonics", "Harmonics", "Chord — the set of notes the arpeggio walks through. Turn fully down for a single note (no arpeggio); up for richer chords."),
+      k("timbre", "Timbre", "Arpeggio pattern & range — up / down / up-down / random, across 1, 2 or 4 octaves."),
       k("morph", "Morph", "Pulse width and sync — the squelchy width-mod and ring of the squares."),
     ],
     detail: {
-      listenFor: "NES/Game-Boy squares — bright, buzzy, with that unmistakable chiptune arpeggio chatter.",
-      goodFor: "8-bit leads, arpeggios and chord stabs — the closest Plaits gets to the Edges sound you asked about." } },
+      listenFor: "NES/Game-Boy squares with that unmistakable arpeggio chatter — because each strike advances the arp, repeating one note walks up or down the chord rather than replaying it.",
+      goodFor: "8-bit arpeggios, chord stabs and bleeps. For straight melodic lines drop HARMONICS to minimum so every note plays as written; use the Decay knob to set how long each step rings." } },
 
   // --- original 16 (registry indices 8..23) ---------------------------------
   { index: 8, code: "VA", name: "Virtual Analog", family: "analog",

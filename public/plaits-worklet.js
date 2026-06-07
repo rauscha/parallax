@@ -23,6 +23,7 @@ const PLAITS_RATE = 48000;
 const PLAITS_BLOCK = 12;
 const RB_BLOCKS = 128;            // ring-buffer capacity (stays near-empty in practice)
 const RETRIG_BLOCKS = 6;          // hold trigger low this many blocks to force a strike edge
+const CHIPTUNE_ENGINE = 7;        // the one engine whose note-decay we drive (see applyChiptuneEnv)
 
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
@@ -54,6 +55,7 @@ class PlaitsProcessor extends AudioWorkletProcessor {
     this.srcCurr = 0;
 
     this.pendingEngine = 0;
+    this.decayValue = 0.5;            // mirrors PlaitsEngine's Decay default; drives Chiptune's note-decay
 
     // Gate state. gateLevel = held velocity (0 = note off). triggerHigh tracks
     // the last trigger value we wrote, so a new note knows whether it must force
@@ -93,6 +95,7 @@ class PlaitsProcessor extends AudioWorkletProcessor {
     this.module._plaits_init(seed >>> 0);
     this.module._plaits_set_engine(this.pendingEngine);
     this.ready = true;
+    this.applyChiptuneEnv();
     this.port.postMessage({ type: "ready" });
   }
 
@@ -101,13 +104,14 @@ class PlaitsProcessor extends AudioWorkletProcessor {
     switch (msg.type) {
       case "setEngine":
         this.pendingEngine = msg.value | 0;
-        if (this.ready) m._plaits_set_engine(this.pendingEngine);
+        if (this.ready) { m._plaits_set_engine(this.pendingEngine); this.applyChiptuneEnv(); }
         break;
       case "setHarmonics":   // (also available as a k-rate param; message kept for parity)
         if (this.ready) m._plaits_set_harmonics(clamp01(msg.value));
         break;
       case "setDecay":
-        if (this.ready) m._plaits_set_decay(clamp01(msg.value));
+        this.decayValue = clamp01(msg.value);
+        if (this.ready) { m._plaits_set_decay(this.decayValue); this.applyChiptuneEnv(); }
         break;
       case "setLpgColour":
         if (this.ready) m._plaits_set_lpg_colour(clamp01(msg.value));
@@ -129,6 +133,22 @@ class PlaitsProcessor extends AudioWorkletProcessor {
         this.gateLevel = 0;
         break;
     }
+  }
+
+  // Chiptune (engine 7) bypasses the low-pass gate, so note-off gives no release —
+  // its amplitude comes from an internal one-shot decay whose time is set by
+  // patch.timbre_modulation_amount (voice.cc repurposes that field for this engine
+  // only). At 0 the decay coefficient is exactly 1.0, so the note drones forever;
+  // we map the Decay knob onto it instead: knob down = short pluck, up = long-but-
+  // finite ring. Every other engine keeps it at 0 (there it would sweep TIMBRE).
+  applyChiptuneEnv() {
+    if (!this.ready || !this.module) return;
+    let shape = 0;
+    if (this.pendingEngine === CHIPTUNE_ENGINE) {
+      const inv = 1 - clamp01(this.decayValue);
+      shape = 0.04 + inv * inv * 0.96;   // decay=1 -> 0.04 (~10s); decay=0 -> 1.0 (~16ms pluck)
+    }
+    this.module._plaits_set_timbre_mod_amount(shape);
   }
 
   queueGate(t, on, velocity) {

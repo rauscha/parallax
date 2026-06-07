@@ -96,6 +96,15 @@ EMSCRIPTEN_KEEPALIVE void plaits_set_morph(float v)      { g_patch.morph = v; }
 EMSCRIPTEN_KEEPALIVE void plaits_set_decay(float v)      { g_patch.decay = v; }
 EMSCRIPTEN_KEEPALIVE void plaits_set_lpg_colour(float v) { g_patch.lpg_colour = v; }
 
+// TIMBRE modulation-amount attenuverter. We use it ONLY for the Chiptune engine
+// (index 7): voice.cc repurposes this field there as the arpeggiator's note-decay
+// shape (ChiptuneEngine::set_envelope_shape) instead of a TIMBRE sweep, because
+// Chiptune bypasses the low-pass gate and has no key-release of its own. Keep it 0
+// for every other engine (otherwise the internal envelope sweeps their TIMBRE).
+// 0 -> the Chiptune note never decays (drones forever); larger -> shorter decay.
+// Driven from plaits-worklet.js, scaled off the Decay knob.
+EMSCRIPTEN_KEEPALIVE void plaits_set_timbre_mod_amount(float v) { g_patch.timbre_modulation_amount = v; }
+
 // Gate inputs. trigger: rising edge strikes; level: VCA / sustain amplitude.
 EMSCRIPTEN_KEEPALIVE void plaits_set_trigger(float v)    { g_mod.trigger = v; }
 EMSCRIPTEN_KEEPALIVE void plaits_set_level(float v)      { g_mod.level = v; }

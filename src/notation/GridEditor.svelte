@@ -431,20 +431,41 @@
      gutter; a swipe that fires swallows the trailing click on a tab button. */
 
   const SWIPE_THRESHOLD = 36;   // px of horizontal travel to flip a bar
-  let swipeStart: null | { x: number; y: number; id: number } = null;
+  const SWIPE_CAPTURE_AT = 8;   // px of travel before we grab the pointer
+  let swipeStart: null | { x: number; y: number; id: number; el: HTMLElement; captured: boolean } = null;
   let swipeHandled = false;     // true right after a swipe → eats the next tab click
 
   function onSwipeDown(evt: PointerEvent): void {
-    swipeStart = { x: evt.clientX, y: evt.clientY, id: evt.pointerId };
+    swipeStart = {
+      x: evt.clientX, y: evt.clientY, id: evt.pointerId,
+      el: evt.currentTarget as HTMLElement, captured: false,
+    };
     swipeHandled = false;
-    try { (evt.currentTarget as HTMLElement).setPointerCapture(evt.pointerId); } catch {}
+    // Deliberately DON'T setPointerCapture here. Capturing on pointerdown makes
+    // the browser dispatch the following `click` to this container instead of the
+    // bar-tab <button> under the pointer, so the button's onclick never runs and
+    // tapping a tab silently fails to change bars. Capture lazily — only once a
+    // real horizontal drag is underway (onSwipeMove) — so a plain tap stays a
+    // normal button click while a swipe still tracks off the narrow gutter.
+  }
+
+  function onSwipeMove(evt: PointerEvent): void {
+    if (!swipeStart || swipeStart.id !== evt.pointerId || swipeStart.captured) return;
+    const dx = evt.clientX - swipeStart.x;
+    const dy = evt.clientY - swipeStart.y;
+    if (Math.abs(dx) > SWIPE_CAPTURE_AT && Math.abs(dx) > Math.abs(dy)) {
+      try { swipeStart.el.setPointerCapture(evt.pointerId); } catch {}
+      swipeStart.captured = true;
+    }
   }
 
   function onSwipeUp(evt: PointerEvent): void {
     if (!swipeStart || swipeStart.id !== evt.pointerId) return;
     const dx = evt.clientX - swipeStart.x;
     const dy = evt.clientY - swipeStart.y;
-    try { (evt.currentTarget as HTMLElement).releasePointerCapture?.(evt.pointerId); } catch {}
+    if (swipeStart.captured) {
+      try { swipeStart.el.releasePointerCapture?.(evt.pointerId); } catch {}
+    }
     swipeStart = null;
     if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
       // swipe left → next page, swipe right → previous page (a page = 1 or 2 bars)
@@ -466,6 +487,7 @@
     role="group"
     aria-label="Bar navigation — tap a bar, or swipe left/right to move between bars"
     onpointerdown={onSwipeDown}
+    onpointermove={onSwipeMove}
     onpointerup={onSwipeUp}
   >
     {#each Array.from({ length: BARS }, (_, i) => i) as bar}
@@ -489,6 +511,7 @@
       style:--row-count={rowMidis.length}
       style:--label-fs={labelFs}
       onpointerdown={onSwipeDown}
+      onpointermove={onSwipeMove}
       onpointerup={onSwipeUp}
     >
       {#each rowMidis.toReversed() as midi}

@@ -4,6 +4,7 @@
   import { patchStore, engineIdStore } from "../state/stores";
   import { getEngineEntry } from "../audio/registry";
   import type { ParameterDescriptor } from "../audio/types";
+  import { analyzeRegion, type RegionAnalysis } from "../audio/sample-analysis";
   import Spectrum from "../viz/Spectrum.svelte";
   import Knob from "./Knob.svelte";
 
@@ -20,6 +21,15 @@
   let error = $state("");
   let region = $state<{ start: number; end: number }>({ start: 0, end: 0 });
   let peaks: Float32Array | null = $state(null);
+
+  // ── Detection (Increment 2): pitch / brightness / envelope of the region ──
+  let analysis = $state<RegionAnalysis | null>(null);
+  function runAnalysis() {
+    const buf = audioEngine.loadedSample;
+    if (!buf) { analysis = null; return; }
+    try { analysis = analyzeRegion(buf, region.start, region.end); }
+    catch { analysis = null; }
+  }
 
   // The reference sample's analyser (parallel to the synth's). Captured when the
   // overlay opens — it's created at audio start, and the overlay only opens once
@@ -78,6 +88,7 @@
       peaks = computePeaks(buf, 600);
       region = { start: 0, end: Math.min(buf.duration, 2) };   // default: first ~2s
       hasSample = true;
+      runAnalysis();
       if (looping) startLoop();
     } catch {
       error = "Couldn't decode that file. Try a .wav or .mp3.";
@@ -143,6 +154,7 @@
     selecting = false;
     try { waveCanvas?.releasePointerCapture(e.pointerId); } catch { /* */ }
     if (region.end - region.start < 0.05) region = { start: 0, end: duration };   // tiny → whole file
+    runAnalysis();
     if (looping) startLoop();
   }
 
@@ -229,6 +241,8 @@
   });
 
   const fmt = (s: number) => s.toFixed(2);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const fmtHz = (hz: number) => (hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`);
 </script>
 
 {#if open}
@@ -306,12 +320,43 @@
             </div>
           {/if}
 
-          <!-- Detection + suggestion land next (foundation-first build) -->
+          <!-- Detected (Increment 2) -->
+          <div class="match-section">
+            <div class="section-label">Detected <span class="muted">— from the selected region</span></div>
+            {#if analysis}
+              <div class="detect-grid">
+                <div class="detect-cell">
+                  <div class="detect-key">Pitch</div>
+                  {#if analysis.note}
+                    <div class="detect-val">{analysis.note}</div>
+                    <div class="detect-sub">{analysis.freq ? Math.round(analysis.freq) : "—"} Hz</div>
+                  {:else}
+                    <div class="detect-val muted-val">—</div>
+                    <div class="detect-sub">no clear pitch (noisy / percussive)</div>
+                  {/if}
+                </div>
+                <div class="detect-cell">
+                  <div class="detect-key">Brightness</div>
+                  <div class="detect-val">{cap(analysis.brightness)}</div>
+                  <div class="detect-sub">centroid {fmtHz(analysis.centroidHz)}</div>
+                </div>
+                <div class="detect-cell">
+                  <div class="detect-key">Envelope</div>
+                  <div class="detect-val">{cap(analysis.decayChar)}</div>
+                  <div class="detect-sub">{Math.round(analysis.attackMs)} ms attack</div>
+                </div>
+              </div>
+            {:else}
+              <p class="hint">Select a region to detect its pitch, brightness and envelope.</p>
+            {/if}
+          </div>
+
+          <!-- Suggestion + Apply land next (Increment 3) -->
           <div class="match-section next">
-            <div class="section-label">Detect &amp; suggest</div>
+            <div class="section-label">Suggest a patch</div>
             <p class="placeholder">
-              Next step: auto-detect the clip's pitch, brightness and envelope, then
-              suggest an engine · model and a starting patch you can apply in one click.
+              Next step: rank an engine · model from these features, then apply a
+              starting patch in one click — refine it with the knobs above.
             </p>
           </div>
         {/if}
@@ -470,6 +515,42 @@
   }
 
   .knob-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+  .detect-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .detect-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+  }
+  .detect-key {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .detect-val {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--signal);
+    line-height: 1.1;
+  }
+  .detect-val.muted-val { color: var(--text-dim); }
+  .detect-sub {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
 
   .next .placeholder {
     margin: 0;

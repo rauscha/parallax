@@ -5,6 +5,8 @@
   import { getEngineEntry } from "../audio/registry";
   import type { ParameterDescriptor } from "../audio/types";
   import { analyzeRegion, type RegionAnalysis } from "../audio/sample-analysis";
+  import { suggestPatches, type PatchSuggestion } from "../audio/suggest";
+  import { startEngine } from "../state/engine-control";
   import Spectrum from "../viz/Spectrum.svelte";
   import Knob from "./Knob.svelte";
 
@@ -29,6 +31,32 @@
     if (!buf) { analysis = null; return; }
     try { analysis = analyzeRegion(buf, region.start, region.end); }
     catch { analysis = null; }
+  }
+
+  // ── Suggestion (Increment 3): rank engine·model from the detected features ──
+  let suggestions = $derived(analysis ? suggestPatches(analysis) : []);
+  let applying = $state(false);
+
+  // Swap engine if needed (re-seeds the patch with that engine's defaults), then
+  // overlay the suggested model + macro nudges and push via the store binding.
+  async function applySuggestion(s: PatchSuggestion) {
+    applying = true;
+    error = "";
+    try {
+      if (s.engineId !== engineIdStore.get()) await startEngine(s.engineId);
+      const eng = audioEngine.currentEngine;
+      const byId = new Map((eng?.getParameterSchema() ?? []).map((d) => [d.id, d]));
+      const params = { ...patchStore.get().params };
+      for (const [id, frac] of Object.entries(s.macros)) {
+        const d = byId.get(id);
+        if (d) params[id] = d.min + frac * (d.max - d.min);   // 0..1 → knob range
+      }
+      patchStore.set({ version: 1, engineId: s.engineId, modelId: s.modelId, params });
+    } catch {
+      error = "Couldn't apply that patch (engine failed to load). Try another.";
+    } finally {
+      applying = false;
+    }
   }
 
   // The reference sample's analyser (parallel to the synth's). Captured when the
@@ -351,13 +379,39 @@
             {/if}
           </div>
 
-          <!-- Suggestion + Apply land next (Increment 3) -->
-          <div class="match-section next">
-            <div class="section-label">Suggest a patch</div>
-            <p class="placeholder">
-              Next step: rank an engine · model from these features, then apply a
-              starting patch in one click — refine it with the knobs above.
-            </p>
+          <!-- Suggestion + Apply (Increment 3) -->
+          <div class="match-section">
+            <div class="section-label">Suggest a patch <span class="muted">— ranked from the detected features</span></div>
+            {#if suggestions.length}
+              {@const top = suggestions[0]}
+              <div class="suggest-top">
+                <div class="suggest-head">
+                  <div class="suggest-name">
+                    <span class="eng">{top.engineName}</span>
+                    <span class="sep">·</span>
+                    <span class="mdl">{top.modelCode}</span>
+                    <span class="mdl-name">{top.modelName}</span>
+                  </div>
+                  <button class="apply-btn" onclick={() => applySuggestion(top)} disabled={applying}>
+                    {applying ? "Applying…" : "Apply starting patch"}
+                  </button>
+                </div>
+                {#if top.why}<p class="suggest-why">{top.why}</p>{/if}
+              </div>
+              {#if suggestions.length > 1}
+                <div class="suggest-alts">
+                  <span class="alts-label">Also try</span>
+                  {#each suggestions.slice(1, 3) as alt (alt.engineId + alt.modelId)}
+                    <button class="alt-chip" onclick={() => applySuggestion(alt)} disabled={applying}>
+                      {alt.engineName} · {alt.modelCode}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+              <p class="hint">Sets the engine + model and nudges the macros — a launch point you refine with the knobs and spectra above.</p>
+            {:else}
+              <p class="hint">Select a region to get a suggested engine and model.</p>
+            {/if}
           </div>
         {/if}
       </div>
@@ -552,17 +606,96 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .next .placeholder {
+  .suggest-top {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-left: 2px solid var(--signal);
+    border-radius: var(--radius-sm);
+  }
+  .suggest-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .suggest-name {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .suggest-name .eng {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .suggest-name .sep { color: var(--text-dim); }
+  .suggest-name .mdl {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--signal);
+  }
+  .suggest-name .mdl-name {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .apply-btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    padding: 7px 14px;
+    color: var(--bg);
+    background: var(--signal);
+    border: var(--hairline-w) solid var(--signal);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: filter var(--t-fast);
+    white-space: nowrap;
+  }
+  .apply-btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .apply-btn:disabled { opacity: 0.6; cursor: default; }
+  .suggest-why {
     margin: 0;
     font-family: var(--font-mono);
     font-size: 0.7rem;
     line-height: 1.5;
     color: var(--text-dim);
-    padding: 10px 12px;
-    background: var(--surface-sunken);
-    border-left: 2px solid var(--signal-dim);
-    border-radius: var(--radius-sm);
   }
+  .suggest-alts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .alts-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .alt-chip {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    padding: 4px 10px;
+    color: var(--text);
+    background: var(--surface-sunken);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  .alt-chip:hover:not(:disabled) { background: var(--surface-raised); color: var(--signal); }
+  .alt-chip:disabled { opacity: 0.6; cursor: default; }
 
   @media (max-width: 720px) {
     .overlay { padding: 0; }

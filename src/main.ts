@@ -9,6 +9,13 @@ if (!target) throw new Error("#app root element missing from index.html");
 
 const app = mount(App, { target });
 
+// Register the service worker for installability + offline use. Production only
+// — there's no SW in dev. Dynamically imported so it stays out of the dev graph
+// entirely; the autoUpdate registerType applies new builds on the next load.
+if (import.meta.env.PROD) {
+  import("./state/pwa-register").then((m) => m.registerPwa());
+}
+
 // Dev-only debug handle. Stripped from production builds (import.meta.env.DEV is
 // statically false there, so the block is dead-code-eliminated). Lets the
 // preview harness read the live audio graph numerically — the only reliable

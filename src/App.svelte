@@ -9,6 +9,7 @@
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
+  import PwaToast from "./ui/PwaToast.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
@@ -135,6 +136,8 @@
 <NoteStrip />
 
 <MatchPanel bind:open={matchOpen} />
+
+<PwaToast />
 
 <footer class="transport">
   <div class="transport-left">

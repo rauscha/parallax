@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Maskable PWA icon: full-bleed dark field (so any platform mask — circle,
+       squircle, rounded square — crops cleanly) with the Parallax oscilloscope
+       mark centered well inside the 80% safe zone. Mirrors favicon.svg: a dim
+       offset trace behind a bright one. -->
+  <rect width="512" height="512" fill="#0B0E11"/>
+  <g transform="translate(16,38.5) scale(15)">
+    <path d="M4 18 Q7 13 10 18 T16 18 T22 18 T28 18"
+          fill="none" stroke="#1E8A78" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 16 Q7 10 10 16 T16 16 T22 16 T28 16"
+          fill="none" stroke="#34E1C4" stroke-width="2.8"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

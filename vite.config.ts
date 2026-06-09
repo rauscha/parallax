@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // Content-Security-Policy for the deployed app. GitHub Pages can't serve a
 // `_headers`/HTTP-header CSP, so we ship it as a <meta http-equiv> tag — but
@@ -62,7 +63,47 @@ export default defineConfig(({ command, isPreview }) => ({
   // the deploy path changes (root host → '/'). Runtime asset loads use
   // import.meta.env.BASE_URL.
   base: command === 'build' || isPreview ? '/parallax/' : '/',
-  plugins: [svelte(), cspMeta(command === 'build')],
+  plugins: [
+    svelte(),
+    cspMeta(command === 'build'),
+    // PWA: installable + offline. Only meaningful on build (no SW in dev — the
+    // virtual:pwa-register module is a no-op there, and main.ts only registers
+    // in PROD). Workbox precaches the whole shipped app INCLUDING the WASM
+    // engines + worklets + Bravura font, so the synth works fully offline once
+    // visited. base (/parallax/) flows through to the manifest scope/start_url
+    // and the SW registration path automatically. We register manually
+    // (injectRegister: false) via an ES module import so there's no inline
+    // script for the strict production CSP to block.
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: false,
+      includeAssets: ['favicon.svg', 'pwa-icon.svg', 'fonts/*.woff2'],
+      manifest: {
+        name: 'Parallax',
+        short_name: 'Parallax',
+        description: 'A web playground for the sounds of Braids.',
+        theme_color: '#0B0E11',
+        background_color: '#0B0E11',
+        display: 'standalone',
+        orientation: 'any',
+        categories: ['music', 'entertainment'],
+        // SVG icons (sizes:"any") — modern Chrome/Edge/Android accept these for
+        // installability. No rasteriser is available in this toolchain to mint
+        // PNGs; a future asset-generator pass (needs sharp) could add crisp
+        // PNG/Apple-touch variants. pwa-icon.svg is full-bleed for maskable.
+        icons: [
+          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'pwa-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,woff2,wasm}'],
+        // plaits.wasm is ~191 KB; give headroom so nothing is silently skipped.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+      },
+    }),
+  ],
   server: {
     host: true, // bind 0.0.0.0 so the dev server is reachable over Tailscale / LAN
     // Honor PORT env var so tooling (Claude Preview, CI) can pin a chosen port;

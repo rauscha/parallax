@@ -1,58 +1,27 @@
-# Session hand-off — 2026-06-08 (machine: laptop)
+# Session hand-off — 2026-06-09 (machine: desktop)
 
 ## STATE (read this first)
-- Branch: `main`, clean and synced — `0 ahead / 0 behind origin/main` at `a556f66`.
-  Only one worktree (`C:/parallax`); nothing hiding anywhere.
-- The **"Match a sound" tool is feature-complete** — all 3 increments (compare
-  surface · detection · suggestion+Apply) are shipped and browser-verified. This
-  session built **Increment 3** (suggestion + Apply) on top of Increment 2 (which
-  shipped earlier in the same lineage). Type-check clean (849 files), zero console
-  errors in-browser. Nothing in progress, nothing stranded.
+- Branch: `main`, clean + synced: **yes** (`8bfcd12`, == origin/main, single worktree `C:/parallax`, nothing uncommitted).
+- **M5 (road to v1) is ~90% shipped.** This overnight run added the five v1-finish features — shareable patch URLs, local preset library, MIDI file import/export, PWA install/offline, and the patch-postcard delight — each committed, pushed, type-checked, Node-tested where pure, and **browser-verified live** (share round-trip, preset save/load, postcard eyeballed in 2 themes; zero console errors). What's left before tagging `v0.5.0-m5` is judgment-only: a real-device mobile pass + a final aesthetic look across all 3 themes. Full write-up: `.handoff/OVERNIGHT-LOG-2026-06-09.md`.
 
 ## Done this session
-- **Match Increment 3 — suggest a patch + one-click Apply (`5351fca`).**
-  - New `src/audio/suggest.ts`: `rankModels(features, catalogue)` scores every
-    model across all 3 engines by family fit (brightness → bright/dark families;
-    pitched-vs-percussive gate; envelope → physical/drum/wavetable tilts) + keyword
-    hits in each model's own `listenFor`/`goodFor` prose. Pure + deterministic
-    (ties break on registry order). `suggestPatches(analysis)` is the thin browser
-    wrapper over the live `ENGINES` registry.
-  - `MatchPanel.svelte`: renders the top **Engine · Model** + a one-line "why"
-    (from `goodFor`) + **[Apply starting patch]**, plus two "Also try" alternates.
-    Apply = `startEngine` if the engine differs → overlay model + brightness-mapped
-    macro nudges (0..1 fraction → each knob's range) → `patchStore.set`; the
-    existing binding pushes it to the engine.
-- **Verification:** 13/13 ground-truth checks over the REAL catalogue (sine→CSAW
-  analog, saw→VFOF/FORM bright, noise→TWNQ/PNZ noise, pluck→PLUK physical,
-  deterministic) + in-browser end-to-end (sine clip → Detected A4/Low/Sustained →
-  Braids·CSAW suggestion + alts → Apply lands timbre 0.33 / color 0.4; cross-engine
-  Apply swaps Plaits→Braids with both pickers updating; zero console errors).
-- Reconciled backlog + pending-decisions docs (`a556f66` + the handoff commit).
+- `f370a48` **Share URLs** — `state/serialization.ts` (pure, versioned, defensive; 27/27 Node) + `state/share-url.ts` (lz-string → `#p=…`). TapToStart hydrates engine+patch+melody from the link on boot. New `PatchToolbar` Share button.
+- `4ef167c` **Presets** — `state/persistence.ts` over idb-keyval (reuses the share wire format). `PresetMenu` popover. `engine-control.loadState()` swaps engine if a preset needs a different one.
+- `8301708` **MIDI I/O** — `sequencer/midi/convert.ts` over @tonejs/midi (step↔ticks; lossy-to-grid import: quantize / mono / trim / drop-past-bar-4). `MidiMenu` popover. 11/11 Node.
+- `3584ca4` **PWA** — vite-plugin-pwa; Workbox precaches both WASM engines + all worklets + Bravura font (offline-capable). CSP-safe (manual register, no inline script). `PwaToast`, maskable `public/pwa-icon.svg`.
+- `eb61942` **Patch postcard** — `ui/postcard.ts` pure canvas renderer (1200×630, theme-aware) + `PostcardModal` (preview / Download PNG / Copy image).
+- `8bfcd12` hand-off docs (overnight log + NEXT-STEPS reconciliation).
 
 ## Next up
-1. **(Optional) Ear-pass the Match tool on a real track** — load a tune, isolate a
-   voice, see if the detection + suggestion feel right by ear. Only thing left for
-   this feature, and it's a nice-to-have, not a gate.
-2. **M5 — the road to v1:** MIDI file import/export · shareable URL links
-   (lz-string → hash) · presets (idb-keyval) · PWA install/offline · mobile pass ·
-   finalize all 3 themes. This is the real remaining work toward shipping v1.
-3. **Explain panel "Show me" sweep** (M4 leftover) — a per-knob button that sweeps
-   TIMBRE/COLOR live so you hear what it does; must handle interrupt/restore.
+1. **Mobile pass on a real phone** — the top bar gained 4 buttons (`flex-wrap` added, popovers cap at 86vw); check the wrapped bar + the popovers/postcard modal at ~375px.
+2. **Final 3-theme aesthetic look-over** — token coverage is verified across lab/sandbox/phosphor; postcard confirmed in Lab+Phosphor; eyeball the whole app especially in **Sandbox** (light theme).
+3. **Then tag `v0.5.0-m5`** and push (M5 / v1 closed).
+4. Optional: PNG PWA icons via a `@vite-pwa/assets-generator`/sharp pass (only SVG icons today — no rasteriser in this toolchain).
 
 ## Watch out for
-- **Fresh session recommended.** This one is large — it carried both the Increment
-  2 and Increment 3 builds. Start clean for whatever's next (especially if pivoting
-  to M5 or a different domain).
-- **Suggestion ranking leans Braids.** Braids has 47 richly-described models, so it
-  tends to win ties — Plaits/Laxsynth picks sit lower in the ranked list. Not a
-  bug; if you want more cross-engine variety later, rebalance the scoring or add
-  per-engine weighting. Logged in NEXT-STEPS as future polish.
-- **Macro nudge is a heuristic.** Apply assumes "first knob ≈ brightness" — true
-  for most models but not all. It's a *starting point*; the dual spectrum + knobs
-  are where the sound actually gets dialed. Stated in the UI hint.
-- **No test runner is wired up.** The 13 ground-truth checks ran via a throwaway
-  transpile-to-CJS harness (now deleted), exactly as Increment 2 did. If you want
-  these to be permanent, that's a small separate task (wire vitest or similar).
-- Standing (unchanged): a `npm run dev` server may still be running · `vite base`
-  is `/parallax/` on build, `/` on dev · no service worker (a refresh gets the
-  latest build) · loaded audio stays in memory only, never leaves the browser.
+- **Don't tag `v0.5.0-m5` until the mobile + theme eyeball is done** — those are the only open M5 items and they need a human, not me.
+- **Fresh session recommended** — this one is large (post-compact + 7 commits + browser verification). The remaining work is a different (visual/device) domain; start clean.
+- The Claude Preview **screenshot renderer is wedged** (hidden tab pauses RAF / times out), as in prior sessions — but `eval` + reading canvas pixels via `toDataURL` works, which is how the postcard was eyeballed. Use that, not screenshots.
+- Share/Postcard buttons fall back gracefully when the **clipboard is blocked** on insecure `localhost` (Share → "In address bar"; Copy image → "use Download"). Expected, not a bug; clipboard works on the real HTTPS site.
+- **MIDI import** is Node-verified for the conversion, but the file-picker path wasn't driven in-browser (low risk — standard `<input type=file>` over the tested `convert.ts`).
+- Standing (unchanged): a `npm run dev` server may still be running · `vite base` is `/parallax/` on build, `/` on dev · loaded audio stays in memory only.

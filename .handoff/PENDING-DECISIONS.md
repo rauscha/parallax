@@ -1,8 +1,15 @@
 # Waiting on you
 
-**No blockers.** The one open thing is an **eyeball**, not a decision: confirm
-Match Increment 1 + the grid fix look right in a browser (localhost:5173 or the
-live site). Details in `SESSION-HANDOFF.md` → "Next up".
+**No blockers, no open decisions.** The "Match a sound" tool is feature-complete
+(Increments 1–3 all shipped + browser-verified 2026-06-08). The only outstanding
+thing is an optional **ear-pass on a real track** — load a tune you know, pick a
+voice, and see whether the detection + suggestion feel right by ear. That's a
+nice-to-have, not a gate.
+
+## Resolved 2026-06-08 (laptop session)
+- **Match Increment 1 eyeball → DONE.** Was the one open item here; the compare
+  surface, detection, and suggestion+Apply were all driven in a real browser
+  this session (zero console errors). Nothing left to confirm in-browser.
 
 ## Resolved 2026-06-07 (laptop session)
 1. **Laxsynth tone → GOOD.** Ear-tested vs the M8 WavSynth; user: "lax sounding

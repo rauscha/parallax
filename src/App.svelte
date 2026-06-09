@@ -5,6 +5,7 @@
   import ModelPicker from "./ui/ModelPicker.svelte";
   import ParamPanel from "./ui/ParamPanel.svelte";
   import ExplainPanel from "./ui/ExplainPanel.svelte";
+  import PatchToolbar from "./ui/PatchToolbar.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
@@ -50,6 +51,7 @@
   <div class="topbar-right">
     <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
       title="Load a track and recreate one of its sounds">◎ Match a sound</button>
+    <PatchToolbar />
     <ThemeSwitcher />
   </div>
 </header>
@@ -193,6 +195,8 @@
     display: inline-flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .match-entry {
     font-family: var(--font-mono);

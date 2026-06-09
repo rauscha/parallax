@@ -3,6 +3,7 @@
   import { audioReadyStore, engineIdStore } from "../state/stores";
   import { startEngine } from "../state/engine-control";
   import { installSequencer, installPart } from "../sequencer";
+  import { readSharedState, applySharedState } from "../state/share-url";
 
   let starting = $state(false);
   let error = $state<string | null>(null);
@@ -13,14 +14,22 @@
     error = null;
     try {
       await audioEngine.start();
-      // Construct + swap in the default engine and seed the patch store + wire
+      // A share-link (#p=…) carries the engine to boot into, so read it BEFORE
+      // starting the engine — otherwise we'd spin up the default and immediately
+      // hot-swap. Falls back to the stored/default engine when there's no link.
+      const shared = readSharedState();
+      // Construct + swap in the engine and seed the patch store + wire
       // store→engine pushes BEFORE flipping ready, so subscribers (ModelPicker,
       // ParamPanel) snapshot the seeded values the instant they react.
-      await startEngine(engineIdStore.get());
+      await startEngine(shared?.patch.engineId ?? engineIdStore.get());
       // Sequencer adopts the engine's AudioContext so Tone's scheduler shares
       // a timeline with the engine's worklet.
       installSequencer();
       installPart();
+      // Overlay the shared patch + melody on top of the seeded defaults. Uses
+      // the engine that actually loaded (engineIdStore was set by the binding),
+      // so an unavailable-engine link degrades to the fallback cleanly.
+      if (shared) applySharedState(shared, engineIdStore.get());
       // Confirmation strike — short A440 so we know the chain is live end-to-end.
       audioEngine.currentEngine?.noteOn(69, { velocity: 0.5 });
       setTimeout(() => audioEngine.currentEngine?.noteOff(69), 260);

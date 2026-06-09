@@ -55,10 +55,26 @@
   gridBaseOctaveStore.subscribe(v => { baseOctave   = v; });
   foldToScaleStore.subscribe(   v => { foldToScale  = v; });
 
+  /* ——— Responsive octave span ————————————————————————————————————
+     Two octaves of rows are too tall to show well on a phone — they overflow
+     the panel and crowd the labels. Below the mobile breakpoint we drop to a
+     single octave so the whole grid fits. matchMedia (not editorWidth) so it
+     tracks the same 720px breakpoint as the rest of the mobile layout. */
+
+  let narrow = $state(false);
+  $effect(() => {
+    const mq = window.matchMedia("(max-width: 720px)");
+    narrow = mq.matches;
+    const onChange = (e: MediaQueryListEvent) => { narrow = e.matches; };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
+  let octaveSpan = $derived(narrow ? 1 : 2);
+
   /* ——— Derived geometry ———————————————————————————————————————— */
 
   let useFlats   = $derived(preferFlats(key, scale));
-  let rowMidis   = $derived(buildRowMidis(key, scale, baseOctave, foldToScale));
+  let rowMidis   = $derived(buildRowMidis(key, scale, baseOctave, foldToScale, octaveSpan));
 
   /* ——— Bar page + responsive view ————————————————————————————————
      barPage (0..3) is the "active" bar — what the playhead/cursor sit on and
@@ -361,7 +377,7 @@
   /* ——— G4: Randomize ————————————————————————————————————————————— */
 
   function handleRandomize(): void {
-    const evs = randomizeMelody(key, scale, baseOctave);
+    const evs = randomizeMelody(key, scale, baseOctave, octaveSpan);
     melodyStore.setKey("events", evs);
   }
 
@@ -586,7 +602,7 @@
         aria-label="Shift pitch range down"
         title="Shift pitch range down"
       >−8va</button>
-      <span class="oct-label">C{baseOctave}–C{baseOctave + 2}</span>
+      <span class="oct-label">C{baseOctave}–C{baseOctave + octaveSpan}</span>
       <button
         class="oct-btn"
         onclick={() => setGridBaseOctave(baseOctave + 1)}

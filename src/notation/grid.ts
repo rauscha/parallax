@@ -35,16 +35,18 @@ export function pitchName(midi: number, useFlats: boolean): string {
  * foldToScale=true → only in-scale notes ("In Key" mode, default).
  * foldToScale=false → all 12 semitones ("Chromatic" escape hatch).
  * baseOctave controls the start octave (e.g. 3 → starts at C3 = MIDI 48).
- * Range: 2 full octaves from startMidi.
+ * octaves controls how many octaves the rows span (2 on desktop; 1 on small
+ * screens, where two octaves of rows are too tall to show well).
  */
 export function buildRowMidis(
   key: string,
   scale: ScaleId,
   baseOctave: number,
   foldToScale: boolean,
+  octaves: number = 2,
 ): number[] {
   const startMidi = (baseOctave + 1) * 12;   // e.g. baseOctave=3 → C3 = 48
-  const endMidi   = startMidi + 24;           // 2 octaves up
+  const endMidi   = startMidi + octaves * 12; // `octaves` octaves up
 
   if (!foldToScale || scale === "chromatic") {
     return Array.from({ length: endMidi - startMidi + 1 }, (_, i) => startMidi + i);
@@ -127,8 +129,9 @@ export function randomizeMelody(
   key: string,
   scale: ScaleId,
   baseOctave: number,
+  octaves: number = 2,
 ): Array<{ startStep: number; durationSteps: number; midi: number }> {
-  const midis = buildRowMidis(key, scale, baseOctave, true);
+  const midis = buildRowMidis(key, scale, baseOctave, true, octaves);
   if (!midis.length) return [];
 
   const events: Array<{ startStep: number; durationSteps: number; midi: number }> = [];

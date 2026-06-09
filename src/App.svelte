@@ -490,6 +490,14 @@
     .region { overflow: visible; }
     .scope { height: 26vh; min-height: 160px; overflow: hidden; }
     .staff { min-height: 340px; }
+    /* Flow the grid from the top of its frame instead of centering it. Centering
+       a grid taller than the frame let the overflow spill upward over the
+       Sequencer/Key labels; top-align + stretch keeps it within its own band. */
+    .staff-frame {
+      align-items: stretch;
+      justify-content: flex-start;
+      min-height: 0;
+    }
 
     /* Top bar stays a single tidy row on phones: brand on the left, everything
        else collapsed behind ToolsMenu's `⋯` button (which owns its own popover).

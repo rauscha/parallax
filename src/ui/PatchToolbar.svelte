@@ -13,6 +13,7 @@
   import { writeShareUrl } from "../state/share-url";
   import PresetMenu from "./PresetMenu.svelte";
   import MidiMenu from "./MidiMenu.svelte";
+  import PostcardModal from "./PostcardModal.svelte";
 
   let ready = $state(audioReadyStore.get());
   audioReadyStore.subscribe((v) => { ready = v; });
@@ -20,6 +21,7 @@
   // Transient button feedback ("Share" → "Copied!" / "In address bar").
   let shareLabel = $state<"Share" | "Copied!" | "In address bar">("Share");
   let resetTimer = 0;
+  let postcardOpen = $state(false);
 
   async function share() {
     const url = writeShareUrl();
@@ -41,12 +43,20 @@
   <PresetMenu />
   <button
     class="io-btn"
+    onclick={() => (postcardOpen = true)}
+    disabled={!ready}
+    title="Make a shareable postcard image of this patch"
+  >✦ Postcard</button>
+  <button
+    class="io-btn"
     class:done={shareLabel !== "Share"}
     onclick={share}
     disabled={!ready}
     title="Copy a link that recreates this exact sound + melody"
   >⤴ {shareLabel}</button>
 </div>
+
+<PostcardModal bind:open={postcardOpen} />
 
 <style>
   .io-bar {

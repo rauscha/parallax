@@ -895,9 +895,13 @@
     .grid-surface {
       grid-template-rows: repeat(var(--row-count), minmax(28px, 1fr));
     }
-    /* Keep the label gutter's tracks identical to the cells' on mobile too. */
+    /* Keep the label gutter's tracks identical to the cells' on mobile too, and
+       give the pitch letters more room — at 24px they were cramped against the
+       cells and the taller ones clipped. */
     .row-labels {
+      width: 30px;
       grid-template-rows: repeat(var(--row-count), minmax(28px, 1fr));
     }
+    .row-label { padding-right: 5px; font-size: var(--label-fs, 0.62rem); }
   }
 </style>

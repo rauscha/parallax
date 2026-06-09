@@ -115,3 +115,9 @@ body::after {
   mix-blend-mode: overlay;
 }
 [data-theme="phosphor"] body::after { display: none; }
+/* On phones the fixed grain sits over the dense sequencer grid and, blended on
+   the tinted low-contrast cells, reads as a muddy gradient as content scrolls
+   beneath it. The texture buys little on a small screen — drop it there. */
+@media (pointer: coarse) {
+  body::after { display: none; }
+}

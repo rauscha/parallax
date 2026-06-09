@@ -1,31 +1,36 @@
-import { atom } from "nanostores";
+import { engineIdStore } from "./stores";
 
+/**
+ * Theming follows the engine. Each synth voice wears its own skin, so selecting
+ * an engine (EnginePicker / preset / share-link) is what switches the theme —
+ * there is no separate manual theme control. `engineIdStore` is the single
+ * source of truth; this module just mirrors it onto <html data-theme>.
+ */
 export type ThemeId = "lab" | "sandbox" | "phosphor";
 
-export const THEMES: { id: ThemeId; name: string; tagline: string }[] = [
-  { id: "lab",      name: "Lab Instrument", tagline: "Precise. Teal trace on near-black." },
-  { id: "sandbox",  name: "Sandbox",        tagline: "Warm body, hot orange, dark scope." },
-  { id: "phosphor", name: "Phosphor",       tagline: "Vintage CRT. Green bloom. Scanlines." },
-];
+const ENGINE_THEME: Record<string, ThemeId> = {
+  braids: "phosphor",   // vintage CRT green
+  plaits: "sandbox",    // warm TE-style body
+  laxsynth: "lab",      // SNES-inspired indigo
+};
 
-const STORAGE_KEY = "parallax:theme";
+/** Browser chrome colour per theme — keeps the mobile status bar in step. */
+const THEME_COLOR: Record<ThemeId, string> = {
+  lab: "#1A1626",
+  sandbox: "#E9E5DC",
+  phosphor: "#0A0805",
+};
 
-function readInitial(): ThemeId {
-  if (typeof localStorage === "undefined") return "lab";
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "ko") return "sandbox";   // legacy slug from the pre-rename overnight push
-  if (stored === "lab" || stored === "sandbox" || stored === "phosphor") return stored;
-  return "lab";
+export function themeForEngine(engineId: string): ThemeId {
+  return ENGINE_THEME[engineId] ?? "phosphor";
 }
 
-export const themeStore = atom<ThemeId>(readInitial());
-
-export function setTheme(id: ThemeId) {
-  themeStore.set(id);
-}
-
-themeStore.subscribe((id) => {
+function apply(engineId: string) {
   if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-theme", id);
-  try { localStorage.setItem(STORAGE_KEY, id); } catch { /* private mode */ }
-});
+  const theme = themeForEngine(engineId);
+  document.documentElement.setAttribute("data-theme", theme);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLOR[theme]);
+}
+
+apply(engineIdStore.get());
+engineIdStore.subscribe(apply);

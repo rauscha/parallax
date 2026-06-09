@@ -1,41 +1,48 @@
 /* Theme tokens — shared schema, three palettes.
-   Switch via [data-theme="lab"|"sandbox"|"phosphor"] on <html>.
-   Lab Instrument is the default. */
+   The active theme follows the selected engine (see state/theme.ts):
+   braids → phosphor, plaits → sandbox, laxsynth → lab. Set via
+   [data-theme="lab"|"sandbox"|"phosphor"] on <html>. Braids boots first, so
+   phosphor is the landing theme; :root mirrors lab as a static fallback. */
 
 :root,
 [data-theme="lab"] {
+  /* SNES-inspired — deep indigo body, teal signal, warm-gold accent, lavender
+     ink. Softer/richer than a flat NES palette; every text shade still meets
+     WCAG AA (≥4.5:1) against --bg, and active state always pairs colour with a
+     shape/weight cue (colourblind-safe). Paired with the Laxsynth engine. */
+
   /* Surface tier */
-  --bg:               #0B0E11;
-  --surface:          #14181D;
-  --surface-raised:   #1C2228;
-  --surface-sunken:   #0E1216;             /* inset wells: search field, list */
-  --hairline:         #2A323B;
-  --hairline-soft:    rgba(232, 237, 242, 0.06);
+  --bg:               #1A1626;
+  --surface:          #221D33;
+  --surface-raised:   #2C2542;
+  --surface-sunken:   #14111F;             /* inset wells: search field, list */
+  --hairline:         #3D3557;
+  --hairline-soft:    rgba(236, 232, 245, 0.07);
 
   /* Text — every shade meets WCAG AA (≥4.5:1) against --bg. */
-  --text:             #E8EDF2;
-  --text-muted:       #9AA7B4;
-  --text-dim:         #8A95A0;        /* was #5A6672 (3.3:1) — now 6.2:1 */
+  --text:             #ECE8F5;
+  --text-muted:       #B3A9CC;
+  --text-dim:         #9A8FB8;        /* ~6:1 on --bg */
 
   /* Signal colors */
-  --signal:           #34E1C4;        /* teal — scope, active values */
-  --signal-ink:       var(--signal);  /* same on dark bgs — bright teal already 11:1 */
-  --signal-dim:       rgba(52, 225, 196, 0.35);
-  --signal-deep:      rgba(52, 225, 196, 0.18);  /* selected-row wash */
-  --signal-glow:      rgba(52, 225, 196, 0.55);
-  --accent:           #FF4D8D;        /* magenta — record, active note */
-  --accent-dim:       rgba(255, 77, 141, 0.35);
+  --signal:           #4FD6C4;        /* teal — scope, active values */
+  --signal-ink:       #6FE6D6;        /* a touch brighter for text on dark */
+  --signal-dim:       rgba(79, 214, 196, 0.35);
+  --signal-deep:      rgba(79, 214, 196, 0.18);  /* selected-row wash */
+  --signal-glow:      rgba(79, 214, 196, 0.55);
+  --accent:           #F4C45A;        /* warm gold — record, active note */
+  --accent-dim:       rgba(244, 196, 90, 0.35);
 
   /* Scope */
-  --scope-bg:         #07090B;
+  --scope-bg:         #0E0B18;
   --scope-trace:      var(--signal);
   --scope-trace-w:    1.5px;
   --scope-glow:       var(--signal-glow);
-  --scope-grid:       rgba(52, 225, 196, 0.08);
+  --scope-grid:       rgba(79, 214, 196, 0.08);
   --scope-persist:    0.85;           /* prior-frame alpha (closer to 1 = more persistence) */
 
   /* Knob */
-  --knob-track:       #1C2228;
+  --knob-track:       #2C2542;
   --knob-fill:        var(--signal);
   --knob-pointer:     var(--text);
   --knob-tick:        var(--text-dim);

@@ -868,14 +868,20 @@
        filling (and being clipped by) the flex-constrained .staff-frame. Paired
        with the row floor below, this lets every row show on the phone. */
     .grid-editor { height: auto; overflow: visible; }
+    /* .grid-main is `flex: 0 0 auto` so it takes an *intrinsic* height in the
+       column-flex editor (the row floors below supply that height). NOT on
+       .grid-surface — that's a child of the *horizontal* .grid-main flex, where
+       `flex: 0 0 auto` would size it to its (zero-width `1fr` cells) content and
+       collapse the whole grid to a sliver. The surface keeps the desktop
+       `flex: 1 1 auto` so it fills the row width; only its *height* is made
+       intrinsic, via the row tracks. */
     .grid-main   { flex: 0 0 auto; }
     .grid-surface {
-      flex: 0 0 auto;
-      grid-template-rows: repeat(var(--row-count), minmax(24px, 1fr));
+      grid-template-rows: repeat(var(--row-count), minmax(28px, 1fr));
     }
     /* Keep the label gutter's tracks identical to the cells' on mobile too. */
     .row-labels {
-      grid-template-rows: repeat(var(--row-count), minmax(24px, 1fr));
+      grid-template-rows: repeat(var(--row-count), minmax(28px, 1fr));
     }
   }
 </style>

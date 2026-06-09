@@ -13,13 +13,21 @@
   import { onDestroy } from "svelte";
   import type { EngineModel } from "../audio/types";
   import { engineEntryOrDefault } from "../audio/registry";
-  import { activeParamStore, patchStore, engineIdStore } from "../state/stores";
+  import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
+  import { sweepingParamStore, startSweep, stopSweep } from "../state/show-me";
 
   let engineId = $state<string>(engineIdStore.get());
   let modelId  = $state<string | null>(patchStore.get().modelId);
   let params   = $state<Record<string, number>>(patchStore.get().params);
   engineIdStore.subscribe((v) => { engineId = v; });
   patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; });
+
+  // "Show me" sweep state: which knob is being demonstrated, and whether audio
+  // is up (the button is dead until the engine can make sound).
+  let ready = $state(audioReadyStore.get());
+  audioReadyStore.subscribe((v) => { ready = v; });
+  let sweepingId = $state<string | null>(sweepingParamStore.get());
+  const unsubSweep = sweepingParamStore.subscribe((v) => { sweepingId = v; });
 
   // Models/families come from the registry for the *active* engine, so this
   // panel adapts to Braids or Plaits (or anything future) without code changes.
@@ -47,10 +55,15 @@
   // drag still drives the card direction, which is the case that matters there.
   let activeId = $state<string | null>(activeParamStore.get());
   const unsub = activeParamStore.subscribe((v) => { activeId = v; });
-  onDestroy(unsub);
+  onDestroy(() => { unsub(); unsubSweep(); stopSweep(); });
 
   function lift(id: string) { activeParamStore.set(id); }
-  function drop(id: string) { if (activeParamStore.get() === id) activeParamStore.set(null); }
+  function drop(id: string) {
+    // Don't drop the highlight out from under an in-progress sweep — it keeps
+    // the swept knob + card lit even if the pointer wanders off the card.
+    if (sweepingId === id) return;
+    if (activeParamStore.get() === id) activeParamStore.set(null);
+  }
 </script>
 
 <div class="explain-panel">
@@ -94,6 +107,15 @@
             <span class="val">{pct(knob.id)}%</span>
           </div>
           <p class="card-text">{knob.text}</p>
+          <div class="card-actions">
+            <button
+              class="show-me"
+              class:sweeping={sweepingId === knob.id}
+              disabled={!ready}
+              onclick={() => startSweep(knob.id)}
+              title={`Hear what ${knob.label} does on this model — sweeps the knob across its range`}
+            >{sweepingId === knob.id ? "■ Stop" : "▸ Show me"}</button>
+          </div>
         </div>
       {/each}
     </div>
@@ -219,5 +241,37 @@
     font-size: 0.72rem;
     line-height: 1.45;
     color: var(--text-dim);
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+  }
+  /* "Show me" — demonstrates the knob by sweeping it live. Quiet by default so
+     it doesn't compete with the text; lights up to the signal colour while it's
+     running (and the label flips to ■ Stop, so the state reads without hue). */
+  .show-me {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    color: var(--text-muted);
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+  }
+  .show-me:hover:not(:disabled) { color: var(--text); border-color: var(--signal); }
+  .show-me:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+  .show-me.sweeping {
+    color: var(--signal-ink);
+    background: var(--signal-deep);
+    border-color: var(--signal);
+  }
+  .show-me:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media (pointer: coarse) {
+    .show-me { padding: 8px 14px; min-height: 36px; }
   }
 </style>

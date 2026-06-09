@@ -6,6 +6,7 @@
   import ParamPanel from "./ui/ParamPanel.svelte";
   import ExplainPanel from "./ui/ExplainPanel.svelte";
   import PatchToolbar from "./ui/PatchToolbar.svelte";
+  import ToolsMenu from "./ui/ToolsMenu.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
@@ -47,13 +48,14 @@
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Parallax</span>
-    <span class="brand-sub">M3 → Grid</span>
   </div>
   <div class="topbar-right">
-    <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
-      title="Load a track and recreate one of its sounds">◎ Match a sound</button>
-    <PatchToolbar />
-    <ThemeSwitcher />
+    <ToolsMenu>
+      <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
+        title="Load a track and recreate one of its sounds">◎ Match a sound</button>
+      <PatchToolbar />
+      <ThemeSwitcher />
+    </ToolsMenu>
   </div>
 </header>
 
@@ -186,13 +188,6 @@
     font-weight: 600;
     color: var(--text);
     letter-spacing: -0.01em;
-  }
-  .brand-sub {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    text-transform: var(--label-case);
-    letter-spacing: var(--label-tracking);
   }
   .topbar-right {
     display: inline-flex;
@@ -495,5 +490,10 @@
     .region { overflow: visible; }
     .scope { height: 26vh; min-height: 160px; overflow: hidden; }
     .staff { min-height: 340px; }
+
+    /* Top bar stays a single tidy row on phones: brand on the left, everything
+       else collapsed behind ToolsMenu's `⋯` button (which owns its own popover).
+       No wrapping, no overflow. */
+    .topbar { gap: 10px; padding: 8px 12px; }
   }
 </style>

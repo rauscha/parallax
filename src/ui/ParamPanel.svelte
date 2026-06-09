@@ -125,4 +125,19 @@
     flex-wrap: wrap;
     gap: 0.1rem;
   }
+
+  /* On phones the controls column is full-width, so pack the knobs into an even
+     auto-filled grid instead of a ragged flex wrap — denser and tidier, with
+     less wasted vertical space between groups. */
+  @media (max-width: 720px) {
+    .param-panel { gap: 10px; }
+    .group { gap: 4px; }
+    .group-label { padding-bottom: 2px; }
+    .knob-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(3.1rem, 1fr));
+      gap: 4px 2px;
+      justify-items: center;
+    }
+  }
 </style>

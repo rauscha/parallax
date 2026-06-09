@@ -11,6 +11,7 @@
    */
   import { audioReadyStore } from "../state/stores";
   import { writeShareUrl } from "../state/share-url";
+  import PresetMenu from "./PresetMenu.svelte";
 
   let ready = $state(audioReadyStore.get());
   audioReadyStore.subscribe((v) => { ready = v; });
@@ -35,6 +36,7 @@
 </script>
 
 <div class="io-bar">
+  <PresetMenu />
   <button
     class="io-btn"
     class:done={shareLabel !== "Share"}

@@ -1,6 +1,9 @@
 import { audioEngine } from "../audio/AudioEngine";
 import { engineEntryOrDefault } from "../audio/registry";
 import { installBindings } from "./bindings";
+import { engineIdStore } from "./stores";
+import { applySharedState } from "./share-url";
+import type { SharedState } from "./serialization";
 
 /**
  * Engine swap orchestration. One place owns the lifecycle of "which engine is
@@ -29,4 +32,20 @@ export async function startEngine(engineId: string): Promise<void> {
   await audioEngine.useEngine(engine);
   disposeBindings?.();
   disposeBindings = installBindings(audioEngine);
+}
+
+/**
+ * Load a full instrument state (from a preset, or any decoded SharedState) at
+ * runtime, hot-swapping the engine first if the state names a different one.
+ * `startEngine` re-seeds the patch from the new engine's defaults, so we then
+ * overlay the saved patch + melody via applySharedState. The engine id is
+ * resolved through the registry, so a state referencing an engine this build
+ * lacks falls back to the default cleanly. Audio must already be started.
+ */
+export async function loadState(state: SharedState): Promise<void> {
+  const resolved = engineEntryOrDefault(state.patch.engineId).id;
+  if (resolved !== engineIdStore.get()) {
+    await startEngine(resolved);
+  }
+  applySharedState(state, resolved);
 }

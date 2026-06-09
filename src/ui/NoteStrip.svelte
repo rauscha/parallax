@@ -34,6 +34,7 @@
 
   let ready = $state(false);
   let octave = $state(4);              // C4 default — matches QWERTY harness
+  let collapsed = $state(false);       // tuck the keys away to reclaim screen
   let held = $state<Set<number>>(new Set());
 
   // pointerId → midi note. Lets us release the right note on multitouch.
@@ -113,46 +114,53 @@
   onDestroy(releaseAll);
 </script>
 
-<div class="note-strip" role="group" aria-label="Touch note strip">
-  <button class="oct" aria-label="Octave down"
-    onclick={() => { octave = Math.max(0, octave - 1); }}
-    disabled={!ready || octave === 0}>◀</button>
-  <div class="oct-label">oct&nbsp;<strong>{octave}</strong></div>
+<div class="note-strip" class:collapsed role="group" aria-label="Touch note strip">
+  {#if collapsed}
+    <button class="reveal" onclick={() => (collapsed = false)}
+      aria-expanded="false" aria-label="Show note keys">▴ Note keys</button>
+  {:else}
+    <button class="oct" aria-label="Octave down"
+      onclick={() => { octave = Math.max(0, octave - 1); }}
+      disabled={!ready || octave === 0}>◀</button>
+    <div class="oct-label">oct&nbsp;<strong>{octave}</strong></div>
 
-  <div class="chips">
-    {#each ACCIDENTALS as note (note.offset)}
-      {@const midi = midiOf(note.offset)}
-      <button
-        class="chip black"
-        class:held={held.has(midi)}
-        disabled={!ready}
-        style="grid-row: 1; grid-column: {note.col} / span 2;"
-        aria-label="{note.name} octave {octave}"
-        onpointerdown={(e) => onChipDown(e, midi)}
-        onpointerup={onChipUp}
-        onpointercancel={onChipUp}
-        onpointerleave={onChipLeave}
-      >{note.name}</button>
-    {/each}
-    {#each NATURALS as note (note.offset)}
-      {@const midi = midiOf(note.offset)}
-      <button
-        class="chip"
-        class:held={held.has(midi)}
-        disabled={!ready}
-        style="grid-row: 2; grid-column: {note.col} / span 2;"
-        aria-label="{note.name} octave {octave}"
-        onpointerdown={(e) => onChipDown(e, midi)}
-        onpointerup={onChipUp}
-        onpointercancel={onChipUp}
-        onpointerleave={onChipLeave}
-      >{note.name}</button>
-    {/each}
-  </div>
+    <div class="chips">
+      {#each ACCIDENTALS as note (note.offset)}
+        {@const midi = midiOf(note.offset)}
+        <button
+          class="chip black"
+          class:held={held.has(midi)}
+          disabled={!ready}
+          style="grid-row: 1; grid-column: {note.col} / span 2;"
+          aria-label="{note.name} octave {octave}"
+          onpointerdown={(e) => onChipDown(e, midi)}
+          onpointerup={onChipUp}
+          onpointercancel={onChipUp}
+          onpointerleave={onChipLeave}
+        >{note.name}</button>
+      {/each}
+      {#each NATURALS as note (note.offset)}
+        {@const midi = midiOf(note.offset)}
+        <button
+          class="chip"
+          class:held={held.has(midi)}
+          disabled={!ready}
+          style="grid-row: 2; grid-column: {note.col} / span 2;"
+          aria-label="{note.name} octave {octave}"
+          onpointerdown={(e) => onChipDown(e, midi)}
+          onpointerup={onChipUp}
+          onpointercancel={onChipUp}
+          onpointerleave={onChipLeave}
+        >{note.name}</button>
+      {/each}
+    </div>
 
-  <button class="oct" aria-label="Octave up"
-    onclick={() => { octave = Math.min(8, octave + 1); }}
-    disabled={!ready || octave === 8}>▶</button>
+    <button class="oct" aria-label="Octave up"
+      onclick={() => { octave = Math.min(8, octave + 1); }}
+      disabled={!ready || octave === 8}>▶</button>
+    <button class="oct collapse" aria-label="Hide note keys" title="Hide note keys"
+      onclick={() => (collapsed = true)}>▾</button>
+  {/if}
 </div>
 
 <style>
@@ -232,4 +240,26 @@
     color: var(--signal-ink);
     font-weight: 600;
   }
+
+  /* Collapse affordance — a slim chevron matching the octave buttons, plus the
+     full-width "reveal" bar shown once the keys are tucked away. */
+  .oct.collapse {
+    min-width: 40px;
+    font-size: 0.85rem;
+  }
+  .note-strip.collapsed { padding: 4px 8px; }
+  .reveal {
+    flex: 1 1 auto;
+    min-height: 32px;
+    padding: 6px 10px;
+    background: var(--surface-raised);
+    border: var(--hairline-w) solid var(--hairline);
+    border-radius: var(--radius-md);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    transition: color var(--t-fast), border-color var(--t-fast);
+  }
+  .reveal:hover { color: var(--text); border-color: var(--signal); }
 </style>

@@ -6,6 +6,7 @@
   import ParamPanel from "./ui/ParamPanel.svelte";
   import ExplainPanel from "./ui/ExplainPanel.svelte";
   import PatchToolbar from "./ui/PatchToolbar.svelte";
+  import ToolsMenu from "./ui/ToolsMenu.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
@@ -47,13 +48,14 @@
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Parallax</span>
-    <span class="brand-sub">M3 → Grid</span>
   </div>
   <div class="topbar-right">
-    <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
-      title="Load a track and recreate one of its sounds">◎ Match a sound</button>
-    <PatchToolbar />
-    <ThemeSwitcher />
+    <ToolsMenu>
+      <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
+        title="Load a track and recreate one of its sounds">◎ Match a sound</button>
+      <PatchToolbar />
+      <ThemeSwitcher />
+    </ToolsMenu>
   </div>
 </header>
 
@@ -186,13 +188,6 @@
     font-weight: 600;
     color: var(--text);
     letter-spacing: -0.01em;
-  }
-  .brand-sub {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    text-transform: var(--label-case);
-    letter-spacing: var(--label-tracking);
   }
   .topbar-right {
     display: inline-flex;
@@ -496,31 +491,9 @@
     .scope { height: 26vh; min-height: 160px; overflow: hidden; }
     .staff { min-height: 340px; }
 
-    /* — Top bar: keep it to ONE tidy row. The brand stays fixed on the left;
-       the whole action cluster (Match · MIDI · Presets · Postcard · Share ·
-       theme) becomes a single horizontally-scrollable strip instead of wrapping
-       into a tall, overlapping stack. `min-width: 0` is what lets the flex child
-       shrink below its content width so `overflow-x` can actually scroll. */
+    /* Top bar stays a single tidy row on phones: brand on the left, everything
+       else collapsed behind ToolsMenu's `⋯` button (which owns its own popover).
+       No wrapping, no overflow. */
     .topbar { gap: 10px; padding: 8px 12px; }
-    .brand { flex: 0 0 auto; min-width: 0; }
-    /* "M3 → Grid" is an internal milestone tag, not something a phone user needs
-       — reclaim the width. */
-    .brand-sub { display: none; }
-    .topbar-right {
-      flex: 1 1 auto;
-      min-width: 0;
-      flex-wrap: nowrap;
-      justify-content: flex-start;
-      gap: 8px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;       /* Firefox — hide the scrollbar, keep scroll */
-      padding-bottom: 2px;
-    }
-    .topbar-right::-webkit-scrollbar { display: none; }
-    /* Don't let any item in the strip shrink — they scroll instead of squashing.
-       Targets the Match button plus the PatchToolbar and ThemeSwitcher roots. */
-    .topbar-right > :global(*) { flex: 0 0 auto; }
-    .match-entry { white-space: nowrap; }
   }
 </style>

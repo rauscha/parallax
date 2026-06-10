@@ -16,7 +16,7 @@ const ENGINE_THEME: Record<string, ThemeId> = {
 
 /** Browser chrome colour per theme — keeps the mobile status bar in step. */
 const THEME_COLOR: Record<ThemeId, string> = {
-  lab: "#1A1626",
+  lab: "#24232B",
   sandbox: "#E9E5DC",
   phosphor: "#0A0805",
 };

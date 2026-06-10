@@ -149,6 +149,8 @@
       <input
         class="tempo-input"
         type="number"
+        inputmode="numeric"
+        enterkeyhint="done"
         min="40"
         max="240"
         step="1"
@@ -349,7 +351,9 @@
     letter-spacing: var(--label-tracking);
   }
   @media (pointer: coarse) {
-    .tempo-input { padding: 6px 8px; min-height: 32px; width: 3.5em; }
+    /* 16px is the magic floor: a smaller font makes mobile browsers auto-zoom
+       the whole page on focus (and that zoom is a pain to undo inside a PWA). */
+    .tempo-input { padding: 6px 8px; min-height: 32px; width: 3.2em; font-size: 16px; }
   }
 
   .staff-header {
@@ -487,19 +491,33 @@
        Explain into unusable 46px slivers. */
     .region { overflow: visible; }
     .scope { height: 26vh; min-height: 160px; overflow: hidden; }
-    .staff { min-height: 340px; }
-    /* Flow the grid from the top of its frame instead of centering it. Centering
-       a grid taller than the frame let the overflow spill upward over the
-       Sequencer/Key labels; top-align + stretch keeps it within its own band. */
+    /* No 340px floor: it over-allocated the staff, so the frame's flex share
+       grew taller than the (short, single-octave) grid. Combined with the
+       desktop frame's `align-items:center` + `overflow:visible`, the grid
+       centred in that too-tall frame and spilled over the footer — the "covered
+       text on the side". Size the staff to content, and make the frame plain
+       block flow so the grid sits at its natural height with the footer right
+       below it (no centering, no flex over-allocation, no overflow). */
+    .staff { min-height: 0; }
     .staff-frame {
-      align-items: stretch;
-      justify-content: flex-start;
-      min-height: 0;
+      display: block;
+      flex: 0 0 auto;
+      padding: 4px 0 8px;
     }
 
     /* Top bar stays a single tidy row on phones: brand on the left, everything
        else collapsed behind ToolsMenu's `⋯` button (which owns its own popover).
-       No wrapping, no overflow. */
-    .topbar { gap: 10px; padding: 8px 12px; }
+       No wrapping, no overflow. Honour the notch/status-bar inset when installed. */
+    .topbar {
+      gap: 10px;
+      padding: 8px 12px;
+      padding-top: calc(8px + env(safe-area-inset-top));
+    }
+    /* Fill the home-indicator / gesture-bar area with the transport's own
+       surface so there's no mismatched colour band at the very bottom
+       (viewport-fit=cover extends the page under the system bars). */
+    .transport {
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
   }
 </style>

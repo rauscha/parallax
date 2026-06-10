@@ -130,12 +130,21 @@
      auto-filled grid instead of a ragged flex wrap — denser and tidier, with
      less wasted vertical space between groups. */
   @media (max-width: 720px) {
-    .param-panel { gap: 10px; }
-    .group { gap: 4px; }
+    /* Two-up groups: most groups hold only 1–3 knobs, so a single column wasted
+       a whole row each. Pack them into two columns and top-align, halving the
+       vertical space the control stack eats. Each group's knobs still auto-fill
+       within its half. */
+    .param-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
+      align-items: start;
+    }
+    .group { gap: 4px; min-width: 0; }
     .group-label { padding-bottom: 2px; }
     .knob-row {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(3.1rem, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(2.9rem, 1fr));
       gap: 4px 2px;
       justify-items: center;
     }

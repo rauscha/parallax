@@ -28,28 +28,38 @@
   melodyStore.subscribe((mel) => {
     if (remapping) { events = mel.events; return; }
 
-    const keyChanged   = mel.key   !== prevKey;
-    const scaleChanged = mel.scale !== prevScale;
+    // Wrapped so a remap/tonal hiccup can't throw out of this listener and break
+    // nanostores' notification of every later melodyStore subscriber. On any
+    // error we fall back to a plain sync and clear the re-entrancy guard.
+    try {
+      const keyChanged   = mel.key   !== prevKey;
+      const scaleChanged = mel.scale !== prevScale;
 
-    if ((keyChanged || scaleChanged) && foldToScale && mel.scale !== "chromatic") {
-      const remapped = remapByDegree(events, prevKey, prevScale, mel.key, mel.scale);
+      if ((keyChanged || scaleChanged) && foldToScale && mel.scale !== "chromatic") {
+        const remapped = remapByDegree(events, prevKey, prevScale, mel.key, mel.scale);
+        prevKey   = mel.key;
+        prevScale = mel.scale;
+        events    = remapped;
+        key       = mel.key;
+        scale     = mel.scale;
+        // Write remapped events back — triggers recursion, guarded by `remapping`.
+        remapping = true;
+        melodyStore.setKey("events", remapped);
+        remapping = false;
+        return;
+      }
+
       prevKey   = mel.key;
       prevScale = mel.scale;
-      events    = remapped;
+      events    = mel.events;
       key       = mel.key;
       scale     = mel.scale;
-      // Write remapped events back — triggers recursion, guarded by `remapping`.
-      remapping = true;
-      melodyStore.setKey("events", remapped);
+    } catch (e) {
+      console.error("[grid] key/scale remap failed — keeping notes as-is", e);
       remapping = false;
-      return;
+      prevKey = mel.key; prevScale = mel.scale;
+      events = mel.events; key = mel.key; scale = mel.scale;
     }
-
-    prevKey   = mel.key;
-    prevScale = mel.scale;
-    events    = mel.events;
-    key       = mel.key;
-    scale     = mel.scale;
   });
 
   gridBaseOctaveStore.subscribe(v => { baseOctave   = v; });
@@ -85,6 +95,10 @@
   let barPage = $state(0);
   let editorWidth = $state(0);
   let gridHeight = $state(0);
+  // While playing, the playhead auto-scrolls barPage to the bar it's in. A
+  // manual bar tap/swipe turns that off so you can inspect/edit another bar
+  // without it being yanked back every frame; pressing play re-enables it.
+  let autoFollow = $state(true);
 
   /** Scale the pitch-label font to the row height so letters fit their rows and
    *  stay aligned on short (laptop) screens. null before the height is measured
@@ -350,8 +364,8 @@
     const stepInt  = Math.floor(step);
     const currentBar = Math.floor(stepInt / COLS_PER_BAR);
 
-    // Auto-follow the active bar
-    if (currentBar !== barPage) barPage = currentBar;
+    // Auto-follow the active bar — unless the user has manually navigated.
+    if (autoFollow && currentBar !== barPage) barPage = currentBar;
 
     // Position within the (possibly 2-bar) visible window — computed from
     // currentBar directly so it stays consistent regardless of derived timing.
@@ -362,6 +376,7 @@
 
   isPlayingStore.subscribe((playing) => {
     if (playing && !raf) {
+      autoFollow = true;   // a fresh play resumes follow-the-playhead
       raf = requestAnimationFrame(tickPlayhead);
     } else if (!playing) {
       if (raf) cancelAnimationFrame(raf);
@@ -486,6 +501,7 @@
     if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
       // swipe left → next page, swipe right → previous page (a page = 1 or 2 bars)
       barPage = Math.max(0, Math.min(BARS - 1, barPage + (dx < 0 ? 1 : -1) * barsPerView));
+      autoFollow = false;   // manual navigation wins over playhead follow
       swipeHandled = true;
     }
   }
@@ -493,6 +509,7 @@
   function selectBar(bar: number): void {
     if (swipeHandled) { swipeHandled = false; return; }   // was a swipe, not a tap
     barPage = bar;
+    autoFollow = false;   // manual navigation wins over playhead follow
   }
 </script>
 

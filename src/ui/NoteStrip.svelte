@@ -187,6 +187,15 @@
     grid-template-rows: 1fr 1fr;
     gap: 3px;
   }
+  /* Suppress the long-press callout/selection menu (Android "download/select"
+     popup, iOS magnifier) on the key + octave buttons — they're instruments,
+     not text. touch-action:none also keeps a held key from scrolling/zooming. */
+  .chip, .oct, .reveal {
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
   .chip {
     min-height: 48px;
     min-width: 0;

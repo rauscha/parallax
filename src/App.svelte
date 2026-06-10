@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ThemeSwitcher from "./ui/ThemeSwitcher.svelte";
   import TapToStart from "./ui/TapToStart.svelte";
   import EnginePicker from "./ui/EnginePicker.svelte";
   import ModelPicker from "./ui/ModelPicker.svelte";
@@ -54,7 +53,6 @@
       <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
         title="Load a track and recreate one of its sounds">◎ Match a sound</button>
       <PatchToolbar />
-      <ThemeSwitcher />
     </ToolsMenu>
   </div>
 </header>

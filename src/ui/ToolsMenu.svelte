@@ -109,10 +109,5 @@
       width: 100%;
     }
     .tools-panel :global(.io-bar) > :global(*) { flex: 1 1 auto; }
-    .tools-panel :global(.theme-switcher) {
-      width: 100%;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-    }
   }
 </style>

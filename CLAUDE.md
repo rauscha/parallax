@@ -17,7 +17,7 @@ Personal web synth: real Mutable Instruments **Braids** macro-oscillator in the 
 
 ## Locked decisions (do not re-litigate)
 - **Authentic Braids first** — real WASM engine before any UI flesh. No placeholder oscillator.
-- **All three themes** (Lab Instrument = default; Sandbox; Phosphor) built from CSS custom-property tokens, runtime-switchable.
+- **All three themes** (Lab Instrument [SNES-inspired]; Sandbox; Phosphor) built from CSS custom-property tokens. **Theme follows the engine** (chosen 2026-06-09, superseding the manual runtime switcher): braids → phosphor, plaits → sandbox, laxsynth → lab. There is no manual theme control; selecting an engine switches the skin. Braids boots first, so phosphor is the landing theme.
 - **Single responsive PWA.** No native wrapper.
 - **v1 scope** = MIDI file import/export + shareable URL links. **Deferred:** Web MIDI input, audio recording, insert FX.
 - **Snap-to-scale on by default.** Monophonic. Treble clef. 120 BPM default.

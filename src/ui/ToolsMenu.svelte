@@ -99,7 +99,8 @@
     /* Lay the slotted controls out as tidy full-width rows. The Match button
        and the I/O / theme clusters each take their own line and wrap within it
        rather than overflowing the narrow panel. */
-    .tools-panel :global(.match-entry) {
+    .tools-panel :global(.match-entry),
+    .tools-panel :global(.surprise-entry) {
       width: 100%;
       text-align: center;
     }

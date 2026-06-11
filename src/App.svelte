@@ -19,6 +19,7 @@
   import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
   import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
+  import { surpriseMe } from "./state/surprise";
 
   let ready = $state(false);
   audioReadyStore.subscribe((v) => { ready = v; });
@@ -37,6 +38,15 @@
     if (playing) stopTransport();
     else playTransport();
   }
+
+  let rolling = $state(false);
+  async function roll() {
+    if (rolling || !ready) return;
+    rolling = true;
+    try { await surpriseMe(); }
+    catch (e) { console.error("[surprise] roll failed", e); }
+    finally { rolling = false; }
+  }
 </script>
 
 {#if !ready}
@@ -50,6 +60,8 @@
   </div>
   <div class="topbar-right">
     <ToolsMenu>
+      <button class="surprise-entry" onclick={roll} disabled={!ready || rolling}
+        title="Roll a random engine, sound, and melody">{rolling ? "⚄ Rolling…" : "⚄ Surprise me"}</button>
       <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
         title="Load a track and recreate one of its sounds">◎ Match a sound</button>
       <PatchToolbar />
@@ -212,6 +224,27 @@
   .match-entry:disabled { opacity: 0.4; cursor: not-allowed; }
   @media (pointer: coarse) {
     .match-entry { padding: 8px 12px; min-height: 36px; }
+  }
+
+  /* Surprise is the playful hero action — give it the signal accent so it pops. */
+  .surprise-entry {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    color: var(--bg);
+    background: var(--signal);
+    border: var(--hairline-w) solid var(--signal);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    transition: filter var(--t-fast);
+  }
+  .surprise-entry:hover:not(:disabled) { filter: brightness(1.08); }
+  .surprise-entry:disabled { opacity: 0.5; cursor: progress; }
+  @media (pointer: coarse) {
+    .surprise-entry { padding: 8px 12px; min-height: 36px; }
   }
 
   .grid {

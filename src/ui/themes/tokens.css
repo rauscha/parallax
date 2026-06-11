@@ -40,6 +40,7 @@
   --scope-glow:       var(--signal-glow);
   --scope-grid:       rgba(79, 214, 196, 0.08);
   --scope-persist:    0.85;           /* prior-frame alpha (closer to 1 = more persistence) */
+  --scope-bloom:      0.45;           /* SNES: crisp vector trace, minimal halo/blur */
 
   /* Knob */
   --knob-track:       #383640;
@@ -98,6 +99,7 @@
   --scope-glow:       rgba(255, 138, 79, 0.4);
   --scope-grid:       rgba(255, 138, 79, 0.06);
   --scope-persist:    0.78;
+  --scope-bloom:      1.0;            /* Sandbox: warm, moderate glow */
 
   --knob-track:       #1A1A1A;
   --knob-fill:        var(--signal);
@@ -137,6 +139,7 @@
   --scope-glow:       var(--signal-glow);
   --scope-grid:       rgba(125, 255, 107, 0.06);
   --scope-persist:    0.92;            /* heaviest persistence */
+  --scope-bloom:      1.7;             /* Phosphor: heavy CRT bloom */
 
   --knob-track:       #100C07;
   --knob-fill:        var(--signal);

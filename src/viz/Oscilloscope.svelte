@@ -89,6 +89,9 @@
     const gridColor = readToken("--scope-grid", "rgba(52,225,196,0.08)");
     const bg = readToken("--scope-bg", "#07090B");
     const lineW = tokenFloat("--scope-trace-w", 1.5) * dpr();
+    // Per-theme glow intensity: crisp vector on SNES Lab, heavy CRT bloom on
+    // Phosphor, warm middle on Sandbox. Scales the halo width + shadowBlur.
+    const bloom = tokenFloat("--scope-bloom", 1);
 
     // Persistence: paint a slightly-opaque background each frame so prior traces
     // fade rather than vanish — cheaper than a full-frame composite.
@@ -172,7 +175,7 @@
         ctx2.stroke();
       };
       ctx2.strokeStyle = glow;
-      ctx2.lineWidth = lineW * 3;
+      ctx2.lineWidth = lineW * (1 + 2 * bloom);
       drawTrace();
 
       // Core trace + real shadowBlur bloom — gated on amplitude so the
@@ -181,7 +184,7 @@
       ctx2.lineWidth = lineW;
       if (peak > 0.05) {
         ctx2.shadowColor = glow;
-        ctx2.shadowBlur = 8 * dpr();
+        ctx2.shadowBlur = 8 * dpr() * bloom;
       }
       drawTrace();
       ctx2.shadowBlur = 0;   // reset so it doesn't leak into the next frame's grid
@@ -199,7 +202,7 @@
         ctx2.lineWidth = 2 * dpr();
         ctx2.globalAlpha = (1 - t) * 0.9;
         ctx2.shadowColor = glow;
-        ctx2.shadowBlur = 18 * dpr() * (1 - t * 0.5);
+        ctx2.shadowBlur = 18 * dpr() * bloom * (1 - t * 0.5);
         ctx2.beginPath();
         ctx2.moveTo(x, 0);
         ctx2.lineTo(x, H);
@@ -234,6 +237,7 @@
 <div class="scope-wrap" bind:this={wrap}>
   <canvas bind:this={canvas} aria-label="Oscilloscope"></canvas>
   <div class="scope-overlay scanlines"></div>
+  <div class="scope-overlay vignette"></div>
 </div>
 
 <style>
@@ -252,5 +256,14 @@
   .scope-overlay {
     position: absolute; inset: 0;
     pointer-events: none;
+  }
+  /* CRT screen falloff — only on Phosphor, to sell the curved-glass tube. */
+  .scope-overlay.vignette { display: none; }
+  :global([data-theme="phosphor"]) .scope-overlay.vignette {
+    display: block;
+    background: radial-gradient(ellipse at center,
+      transparent 52%,
+      rgba(0, 0, 0, 0.28) 82%,
+      rgba(0, 0, 0, 0.55) 100%);
   }
 </style>

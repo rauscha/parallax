@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import type { ParameterDescriptor } from '../audio/types';
   import { activeParamStore } from '../state/stores';
+  import { hapticTick } from './haptics';
 
   let { spec, value, onchange }: {
     spec: ParameterDescriptor;
@@ -12,6 +13,15 @@
   const SWEEP = 270;   // total dial travel, in degrees
   const START = -135;  // angle at min (measured clockwise from 12 o'clock)
   const DRAG_PX = 200; // vertical pixels for a full min→max sweep
+
+  // ── Detent at the factory default ──
+  // A magnetic notch as you drag past `spec.default`: the value sticks there
+  // until you pull beyond a wider break-away (hysteresis, so it can't chatter),
+  // with a haptic tick on catch. For bipolar params (FM, default 0) this *is*
+  // the classic centre detent; for the rest it's a "snaps back to home" feel.
+  const DETENT_CATCH   = 0.025;  // enter the notch within ±2.5% of range
+  const DETENT_RELEASE = 0.05;   // must travel ±5% past default to escape it
+  let detentHeld = $state(false);
 
   let dragging = $state(false);
   let startY = 0;
@@ -86,23 +96,40 @@
     if (activeParamStore.get() === spec.id) activeParamStore.set(null);
   });
 
+  /** Stick the raw drag value to `spec.default` inside the detent zone. */
+  function applyDetent(raw: number): number {
+    if (range === 0) return raw;
+    const dist = Math.abs(raw - spec.default) / range;
+    const threshold = detentHeld ? DETENT_RELEASE : DETENT_CATCH;
+    if (dist < threshold) {
+      if (!detentHeld) { detentHeld = true; hapticTick(); }   // tick only on catch
+      return spec.default;
+    }
+    detentHeld = false;
+    return raw;
+  }
+
   // ── Vertical-drag interaction ──
   function onPointerDown(e: PointerEvent) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragging = true;
     startY = e.clientY;
     startVal = value;
+    // If we grab the knob already sitting on its default, treat the detent as
+    // pre-held so the first nudge doesn't fire a spurious tick.
+    detentHeld = range !== 0 && Math.abs(startVal - spec.default) / range < DETENT_RELEASE;
     e.preventDefault();
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
     const dy = startY - e.clientY;        // drag up → increase
     const fine = e.shiftKey ? 0.2 : 1;    // hold shift for fine control
-    commit(startVal + (dy / DRAG_PX) * range * fine);
+    commit(applyDetent(startVal + (dy / DRAG_PX) * range * fine));
   }
   function endDrag(e: PointerEvent) {
     if (!dragging) return;
     dragging = false;
+    detentHeld = false;
     // Flush any RAF-pending value so the engine sees the exact release point.
     if (pendingValue !== null) commitNow(pendingValue);
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
@@ -142,6 +169,19 @@
   const trackPath = $derived(arc(START, START + SWEEP));
   const valuePath = $derived(arc(START, angle));
   const tip = $derived(pt(angle));
+
+  // Detent tick — a small notch on the track at the default position.
+  const defaultNorm = $derived(range === 0 ? 0 : (spec.default - spec.min) / range);
+  const defaultAngle = $derived(START + defaultNorm * SWEEP);
+  function ptR(a: number, r: number): [number, number] {
+    const rad = (a * Math.PI) / 180;
+    return [CX + r * Math.sin(rad), CY - r * Math.cos(rad)];
+  }
+  const detentTick = $derived.by(() => {
+    const [x1, y1] = ptR(defaultAngle, 13);
+    const [x2, y2] = ptR(defaultAngle, 18);
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  });
 </script>
 
 <div
@@ -170,6 +210,7 @@
   <span class="knob-label">{spec.label}</span>
   <svg class="dial" viewBox="0 0 40 40" aria-hidden="true">
     <path class="track" d={trackPath} />
+    <path class="detent-tick" class:snapped={detentHeld && dragging} d={detentTick} />
     <path class="value" d={valuePath} />
     <line class="needle" x1={CX} y1={CY} x2={tip[0]} y2={tip[1]} />
     <circle class="hub" cx={CX} cy={CY} r="2.5" />
@@ -221,6 +262,18 @@
     stroke: var(--knob-pointer);
     stroke-width: 2;
     stroke-linecap: round;
+  }
+  /* Notch at the default value. Lights up while the drag is caught in it. */
+  .detent-tick {
+    stroke: var(--knob-tick);
+    stroke-width: 1;
+    stroke-linecap: round;
+    opacity: 0.6;
+    transition: stroke var(--t-fast), opacity var(--t-fast);
+  }
+  .detent-tick.snapped {
+    stroke: var(--signal);
+    opacity: 1;
   }
   .hub {
     fill: var(--knob-pointer);

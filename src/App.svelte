@@ -7,6 +7,7 @@
   import PatchToolbar from "./ui/PatchToolbar.svelte";
   import ToolsMenu from "./ui/ToolsMenu.svelte";
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
+  import MidiInput from "./ui/MidiInput.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
   import PwaToast from "./ui/PwaToast.svelte";
@@ -91,6 +92,8 @@
     <ModelPicker />
     <div class="divider"></div>
     <ParamPanel />
+    <div class="divider"></div>
+    <MidiInput />
     <div class="divider"></div>
     <KeyboardHarness />
   </section>

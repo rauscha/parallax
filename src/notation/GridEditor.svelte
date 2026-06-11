@@ -11,6 +11,8 @@
     gridBaseOctaveStore, setGridBaseOctave,
     foldToScaleStore, setFoldToScale,
   } from "./editorMode";
+  import { audioEngine } from "../audio/AudioEngine";
+  import { hapticTick } from "../ui/haptics";
 
   /* ——— Store subscriptions ——————————————————————————————————————— */
 
@@ -118,6 +120,31 @@
   /* ——— Interaction constants ——————————————————————————————————— */
 
   const DEFAULT_DURATION = 4;   // quarter note
+
+  /* ——— Note-entry feedback — hear (and feel) the pitch you place ————
+     A tap always gives a haptic tick. The audible preview is suppressed while
+     the transport is running, since the engine is monophonic and a preview
+     would steal the voice mid-loop and glitch playback. */
+
+  let isPlaying = $state(false);
+  let previewTimer = 0;
+  let previewMidi: number | null = null;
+
+  function previewNote(midi: number): void {
+    hapticTick(6);
+    if (isPlaying) return;
+    const eng = audioEngine.currentEngine;
+    if (!eng) return;
+    // Release any still-ringing preview first — one mono voice.
+    if (previewMidi !== null) { try { eng.noteOff(previewMidi); } catch {} }
+    clearTimeout(previewTimer);
+    eng.noteOn(midi, { velocity: 0.7 });
+    previewMidi = midi;
+    previewTimer = window.setTimeout(() => {
+      try { eng.noteOff(midi); } catch {}
+      previewMidi = null;
+    }, 220);
+  }
 
   function clampMidi(n: number): number {
     return Math.max(MIDI_MIN, Math.min(MIDI_MAX, n));
@@ -272,6 +299,7 @@
       durationSteps: defDur,
       maxDur, pointerId: evt.pointerId, userDragged: false,
     };
+    previewNote(midi);   // hear + feel the pitch you're placing
   }
 
   function onPointerMove(evt: PointerEvent): void {
@@ -375,6 +403,7 @@
   }
 
   isPlayingStore.subscribe((playing) => {
+    isPlaying = playing;
     if (playing && !raf) {
       autoFollow = true;   // a fresh play resumes follow-the-playhead
       raf = requestAnimationFrame(tickPlayhead);
@@ -387,6 +416,8 @@
 
   onDestroy(() => {
     if (raf) cancelAnimationFrame(raf);
+    clearTimeout(previewTimer);
+    if (previewMidi !== null) { try { audioEngine.currentEngine?.noteOff(previewMidi); } catch {} }
   });
 
   /* ——— G4: Randomize ————————————————————————————————————————————— */
@@ -435,6 +466,7 @@
     const next   = nextNoteAfterStep(step);
     const maxDur = next ? Math.max(1, next.startStep - step) : TOTAL_STEPS - step;
     placeNote(step, midi, Math.min(DEFAULT_DURATION, maxDur));
+    previewNote(midi);
   }
 
   function onKeyDown(evt: KeyboardEvent): void {

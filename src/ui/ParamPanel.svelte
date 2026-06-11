@@ -101,15 +101,28 @@
 </section>
 
 <style>
+  /* Banks flow left-to-right and wrap, so two or three small banks share a row
+     instead of each eating a full-width line (Filter + Drive + Output used to
+     leave most of the row empty). Each bank is sized to its own knobs and gets a
+     faint left divider so the banks stay visually distinct. */
   .param-panel {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    column-gap: 14px;
+    row-gap: 12px;
   }
   .group {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-left: 14px;
+    border-left: var(--hairline-w) solid var(--hairline-soft);
+  }
+  /* First bank hugs the left edge; a divider there would float against nothing. */
+  .group:first-child {
+    padding-left: 0;
+    border-left: none;
   }
   .group-label {
     font-family: var(--font-mono);
@@ -117,36 +130,13 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-dim);
-    padding-bottom: 4px;
-    border-bottom: var(--hairline-w) solid var(--hairline-soft);
+    white-space: nowrap;
   }
+  /* Knobs stay on one line so each bank reads as a tidy cluster; the bank wraps
+     as a unit, not knob-by-knob. */
   .knob-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.1rem;
-  }
-
-  /* On phones the controls column is full-width, so pack the knobs into an even
-     auto-filled grid instead of a ragged flex wrap — denser and tidier, with
-     less wasted vertical space between groups. */
-  @media (max-width: 720px) {
-    /* Two-up groups: most groups hold only 1–3 knobs, so a single column wasted
-       a whole row each. Pack them into two columns and top-align, halving the
-       vertical space the control stack eats. Each group's knobs still auto-fill
-       within its half. */
-    .param-panel {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px 12px;
-      align-items: start;
-    }
-    .group { gap: 4px; min-width: 0; }
-    .group-label { padding-bottom: 2px; }
-    .knob-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(2.9rem, 1fr));
-      gap: 4px 2px;
-      justify-items: center;
-    }
   }
 </style>

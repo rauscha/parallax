@@ -89,14 +89,21 @@ export class AudioEngine {
     }
 
     const prev = this._engine;
-    if (prev) prev.allNotesOff();
+    if (prev) prev.allNotesOff();   // schedules a 40 ms gain ramp to silence
 
     if (next.output) next.output.connect(this.masterGain);
     this._engine = next;
 
     if (prev) {
-      if (prev.output) try { prev.output.disconnect(); } catch { /* already gone */ }
-      await prev.dispose();
+      // Defer the old engine's disconnect + dispose past its fade. Disconnecting
+      // synchronously here removed the node before the 40 ms ramp played a single
+      // quantum, hard-cutting any ringing note → an audible pop on swap. The new
+      // engine is already connected, so this delay is inaudible; the old one
+      // finishes its fade first, then dispose() posts the worklet kill message.
+      setTimeout(() => {
+        if (prev.output) try { prev.output.disconnect(); } catch { /* already gone */ }
+        void prev.dispose();
+      }, 60);
     }
   }
 

@@ -9,6 +9,8 @@
  */
 import { registerSW } from "virtual:pwa-register";
 import { offlineReadyStore } from "./pwa";
+import { writeShareUrl } from "./share-url";
+import { isPlayingStore } from "./stores";
 
 export function registerPwa(): void {
   if ("serviceWorker" in navigator) {
@@ -19,10 +21,29 @@ export function registerPwa(): void {
     // nothing stale to replace) and never reload more than once.
     const hadController = !!navigator.serviceWorker.controller;
     let reloading = false;
+
+    function reloadForUpdate() {
+      if (reloading) return;
+      reloading = true;
+      // A deploy landing mid-jam would reload the page and lose the melody +
+      // patch (they live only in memory). Stamp the full state into the URL hash
+      // first — the same wire share-links use — so TapToStart rehydrates it on
+      // the refreshed page. (code-quality §3)
+      try { writeShareUrl(); } catch { /* best-effort; reload anyway */ }
+      window.location.reload();
+    }
+
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloading || !hadController) return;
-      reloading = true;
-      window.location.reload();
+      // Don't yank the page out from under an active performance: if the
+      // transport is running, defer the reload until it stops.
+      if (isPlayingStore.get()) {
+        const unsub = isPlayingStore.subscribe((playing) => {
+          if (!playing) { unsub(); reloadForUpdate(); }
+        });
+      } else {
+        reloadForUpdate();
+      }
     });
   }
 

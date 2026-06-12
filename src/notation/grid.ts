@@ -113,10 +113,22 @@ export function remapByDegree(
     const deg = oldNotes.findIndex(n => Note.chroma(n) === chroma);
     if (deg === -1 || deg >= newNotes.length) return ev;   // not in scale → keep
 
-    // Preserve octave: MIDI octave = Math.floor(midi / 12) - 1
-    const octave = Math.floor(ev.midi / 12) - 1;
-    const newMidi = Note.midi(`${newNotes[deg]}${octave}`);
-    if (newMidi === undefined || newMidi === null) return ev;
+    // Keep the note near where it was, not on the same *letter*-octave. Naming
+    // the degree's pitch class at `Math.floor(midi/12)-1` preserved the octave
+    // by label, which dives across the B/C boundary: in C→Db, B4 (degree 7,
+    // pitch class C) became "C4" — 11 semitones down — instead of C5, 1 up. Try
+    // the candidate pitch class in the octave below / at / above and keep the
+    // one nearest the original midi.
+    const baseOctave = Math.floor(ev.midi / 12) - 1;
+    let newMidi: number | null = null;
+    for (const oct of [baseOctave - 1, baseOctave, baseOctave + 1]) {
+      const cand = Note.midi(`${newNotes[deg]}${oct}`);
+      if (cand === undefined || cand === null) continue;
+      if (newMidi === null || Math.abs(cand - ev.midi) < Math.abs(newMidi - ev.midi)) {
+        newMidi = cand;
+      }
+    }
+    if (newMidi === null) return ev;
     return { ...ev, midi: Math.max(MIDI_MIN, Math.min(MIDI_MAX, newMidi)) };
   });
 }

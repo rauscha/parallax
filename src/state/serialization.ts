@@ -1,8 +1,9 @@
 /**
  * Patch + melody (de)serialization — the canonical wire form shared by both
  * the share-URL links (M5) and the local preset library. PURE and DOM-free:
- * it imports only *types* from `stores`, so it has no runtime imports at all
- * and is safe to unit-test under Node.
+ * it imports only *types* from `stores` plus the `DEFAULT_ENGINE_ID` constant
+ * from the (Node-safe) registry, so it touches no browser APIs and is safe to
+ * unit-test under Node.
  *
  * The wire form is a small JSON object with short keys + event tuples, kept
  * compact because share-URLs put it in `location.hash`. lz-string compression
@@ -12,11 +13,12 @@
  * coerced/clamped and bad events are dropped rather than trusted.
  *
  * Engine-agnostic by design: `engineId` is carried as an opaque string. An
- * unknown engine falls back to "braids" here; the apply path
+ * unknown engine falls back to DEFAULT_ENGINE_ID here; the apply path
  * (`engineEntryOrDefault`) makes the same choice, so a link minted by a build
  * that has an engine this build lacks degrades gracefully instead of breaking.
  */
 import type { Patch, Melody, MelodyEvent } from "./stores";
+import { DEFAULT_ENGINE_ID } from "../audio/registry";
 
 /** Bump when the wire shape changes incompatibly. `decodeState` rejects
  *  versions it doesn't understand (a future reader adds migration here). */
@@ -157,7 +159,7 @@ export function decodeState(json: string): SharedState | null {
 
   const patch: Patch = {
     version: 1,
-    engineId: typeof p.e === "string" && p.e ? p.e : "braids",
+    engineId: typeof p.e === "string" && p.e ? p.e : DEFAULT_ENGINE_ID,
     modelId: typeof p.m === "string" ? p.m : null,
     params: sanitizeParams(p.pr),
   };

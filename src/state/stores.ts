@@ -1,7 +1,8 @@
 import { atom, map } from "nanostores";
+import { DEFAULT_ENGINE_ID } from "../audio/registry";
 
 /** Engine identity (which ISynthEngine is loaded). */
-export const engineIdStore = atom<string>("braids");
+export const engineIdStore = atom<string>(DEFAULT_ENGINE_ID);
 
 /** Patch = engine + parameters. Versioned so v1 share-URLs migrate cleanly. */
 export interface Patch {
@@ -12,7 +13,7 @@ export interface Patch {
 }
 export const patchStore = map<Patch>({
   version: 1,
-  engineId: "braids",
+  engineId: DEFAULT_ENGINE_ID,
   modelId: null,
   params: {},
 });

@@ -70,11 +70,6 @@ export function buildRowMidis(
   return result;
 }
 
-/** Map a column index + bar page to the global step number (0..63). */
-export function colToStep(col: number, barPage: number): number {
-  return barPage * COLS_PER_BAR + col;
-}
-
 /** True if the MIDI note is the root of the given key (tinted as "home" row). */
 export function isRoot(midi: number, key: string): boolean {
   const rc = Note.chroma(key);

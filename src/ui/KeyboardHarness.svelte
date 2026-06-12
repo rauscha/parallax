@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore, activeNotesStore } from "../state/stores";
+  import { audioReadyStore, publishActiveNotes } from "../state/stores";
 
   // QWERTY → MIDI note offset (standard Ableton/web layout, A = C of the current octave)
   // Lower row: Z S X D C V G B H N J M , — bottom octave
@@ -56,7 +56,7 @@
     codeToMidi.set(e.code, midi);
     // Svelte 5 runes don't track Set mutation — reassign with a fresh Set.
     held = new Set(held).add(midi);
-    activeNotesStore.set(held);
+    publishActiveNotes("qwerty", held);
     e.preventDefault();
   }
 
@@ -68,7 +68,7 @@
     const next = new Set(held);
     next.delete(midi);
     held = next;
-    activeNotesStore.set(held);
+    publishActiveNotes("qwerty", held);
     e.preventDefault();
   }
 
@@ -84,7 +84,7 @@
     }
     codeToMidi.clear();
     held = new Set();
-    activeNotesStore.set(held);
+    publishActiveNotes("qwerty", held);
   }
 
   function onVisibilityChange() {

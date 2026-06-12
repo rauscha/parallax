@@ -54,8 +54,24 @@ export const activeParamStore = atom<string | null>(null);
 /** Audio system status — drives the tap-to-start overlay. */
 export const audioReadyStore = atom<boolean>(false);
 
-/** Which MIDI notes are currently sounding (UI lights, scope phase-lock hint). */
+/** Which MIDI notes are currently sounding (UI lights, scope phase-lock hint).
+ *  Read-only for consumers — write through `publishActiveNotes` so independent
+ *  sources (QWERTY, touch NoteStrip, MIDI input) union rather than clobber. */
 export const activeNotesStore = atom<Set<number>>(new Set());
+
+// Per-source held-note sets. Three input paths shipped at different times each
+// used to `activeNotesStore.set(theirOwnSet)`, so holding a MIDI key and pressing
+// a QWERTY key erased the MIDI note from the store — a stale-light + sounding-voice
+// collision (code-quality §2.7). Keep each source's set separately and publish
+// the union.
+const activeBySource = new Map<string, Set<number>>();
+export function publishActiveNotes(source: string, notes: Set<number>): void {
+  if (notes.size === 0) activeBySource.delete(source);
+  else activeBySource.set(source, new Set(notes));
+  const union = new Set<number>();
+  for (const set of activeBySource.values()) for (const n of set) union.add(n);
+  activeNotesStore.set(union);
+}
 
 /** Sequencer transport state. True while Tone.Transport is running. */
 export const isPlayingStore = atom<boolean>(false);

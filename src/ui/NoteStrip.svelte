@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore, activeNotesStore } from "../state/stores";
+  import { audioReadyStore, publishActiveNotes } from "../state/stores";
 
   /**
    * Mobile-only tappable note strip — interim playability for phones until the
@@ -54,7 +54,7 @@
     if (!held.has(midi)) {
       eng.noteOn(midi, { velocity: 0.85 });
       held = new Set(held).add(midi);
-      activeNotesStore.set(held);
+      publishActiveNotes("notestrip", held);
     }
   }
 
@@ -69,7 +69,7 @@
     if (!stillHeld) {
       eng?.noteOff(midi);
       const next = new Set(held); next.delete(midi); held = next;
-      activeNotesStore.set(held);
+      publishActiveNotes("notestrip", held);
     }
   }
 
@@ -79,7 +79,7 @@
     owned.clear();
     if (eng) { for (const m of held) eng.noteOff(m); eng.allNotesOff(); }
     held = new Set();
-    activeNotesStore.set(held);
+    publishActiveNotes("notestrip", held);
   }
 
   function onChipDown(e: PointerEvent, midi: number) {

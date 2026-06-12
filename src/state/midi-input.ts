@@ -14,7 +14,7 @@
  */
 import { atom, map } from "nanostores";
 import { audioEngine } from "../audio/AudioEngine";
-import { activeNotesStore } from "./stores";
+import { publishActiveNotes } from "./stores";
 
 export interface MidiInputInfo { id: string; name: string; }
 
@@ -42,7 +42,7 @@ let currentSounding: number | null = null;
 function engine() { return audioEngine.currentEngine; }
 
 function refreshActive() {
-  activeNotesStore.set(new Set(heldStack));
+  publishActiveNotes("midi", new Set(heldStack));
 }
 
 /** Make the engine voice match the top of the stack (or release it if empty). */

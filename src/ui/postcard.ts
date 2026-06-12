@@ -8,6 +8,7 @@
  * the layout is deterministic and the same inputs always produce the same card.
  * 1200×630 is the conventional social-card size.
  */
+import qrcode from "qrcode-generator";
 
 export interface PostcardColors {
   bg: string;
@@ -31,6 +32,9 @@ export interface PostcardData {
   keyName: string;
   scale: string;
   events: Array<{ startStep: number; durationSteps: number; midi: number }>;
+  /** The full share URL — encoded into the footer QR so the card is a working
+   *  invitation, not just a picture of a sound. */
+  shareUrl: string;
 }
 
 export const POSTCARD_W = 1200;
@@ -83,6 +87,41 @@ function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: num
   wave(16, 10);
   ctx.stroke();
   ctx.restore();
+}
+
+// A scannable QR of the share URL, drawn into a white rounded panel (so it
+// scans on any theme's background) with a quiet zone. Auto-sizes the QR version
+// to the URL length at error-correction level M.
+function drawQr(
+  ctx: CanvasRenderingContext2D,
+  url: string, x: number, y: number, size: number, quiet: number,
+): void {
+  let qr;
+  try {
+    qr = qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+  } catch {
+    return; // URL too long for a QR, or generator failure — skip it gracefully
+  }
+  const count = qr.getModuleCount();
+
+  // White panel behind the code.
+  roundRectPath(ctx, x, y, size, size, 8);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fill();
+
+  const inner = size - quiet * 2;
+  const cell = inner / count;
+  ctx.fillStyle = "#000000";
+  for (let r = 0; r < count; r++) {
+    for (let c = 0; c < count; c++) {
+      if (qr.isDark(r, c)) {
+        // Ceil the cell so adjacent modules tile with no hairline gaps.
+        ctx.fillRect(x + quiet + c * cell, y + quiet + r * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+  }
 }
 
 // A single macro-knob dial: a 270° track with the value arc + label + percent.
@@ -233,16 +272,24 @@ export function renderPostcard(
     drawDial(ctx, cx, 228, dialR, k.value, k.label, colors);
   }
 
-  // Melody piano-roll across the lower third.
-  drawPianoRoll(ctx, PAD, 372, POSTCARD_W - PAD * 2, 168, data.events, colors);
+  // Melody piano-roll across the lower third (shortened to clear the footer QR).
+  drawPianoRoll(ctx, PAD, 372, POSTCARD_W - PAD * 2, 132, data.events, colors);
 
-  // Footer.
+  // Footer-right: a QR of the share URL so the card actually carries its sound.
+  const QR_SIZE = 100;
+  const qrX = POSTCARD_W - 40 - QR_SIZE;
+  drawQr(ctx, data.shareUrl, qrX, 512, QR_SIZE, 8);
+  ctx.fillStyle = colors.textDim;
+  ctx.font = `500 16px ${MONO}`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillText("scan to open", qrX - 16, 562);
+
+  // Footer-left: the bespoke wave mark (replacing the ◐ placeholder) + the URL.
+  drawMark(ctx, PAD, POSTCARD_H - 64, 26, colors.signal, colors.textDim);
   ctx.fillStyle = colors.textDim;
   ctx.font = `500 20px ${MONO}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("andrewrausch.com/parallax", PAD, POSTCARD_H - 40);
-  ctx.fillStyle = colors.signal;
-  ctx.textAlign = "right";
-  ctx.fillText("◐", POSTCARD_W - PAD, POSTCARD_H - 38);
+  ctx.fillText("andrewrausch.com/parallax", PAD + 38, POSTCARD_H - 40);
 }

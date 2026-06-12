@@ -7,6 +7,7 @@
    */
   import { onDestroy } from "svelte";
   import { trapFocus } from "./trapFocus";
+  import { buildShareUrl } from "../state/share-url";
   import { patchStore, melodyStore } from "../state/stores";
   import { engineEntryOrDefault } from "../audio/registry";
   import {
@@ -75,6 +76,7 @@
         durationSteps: e.durationSteps,
         midi: e.midi,
       })),
+      shareUrl: buildShareUrl(),
     };
   }
 
@@ -132,6 +134,34 @@
       status = "Copy unavailable — use Download";
     }
   }
+
+  // Native share sheet (mobile + some desktops). Sends the PNG *and* the share
+  // URL together, so the recipient gets a picture they can open and hear — the
+  // whole point of C1. Download/Copy stay as the fallbacks.
+  const canShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function";
+
+  async function shareCard() {
+    const blob = await toBlob();
+    if (!blob) return;
+    const file = new File([blob], "parallax-postcard.png", { type: "image/png" });
+    const url = buildShareUrl();
+    if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+      status = "Sharing unavailable — use Download";
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], url, title: "Parallax", text: "A sound I made in Parallax" });
+      status = "Shared";
+    } catch (e) {
+      // A user cancel rejects with AbortError — not an error worth surfacing.
+      if ((e as { name?: string })?.name !== "AbortError") {
+        status = "Sharing unavailable — use Download";
+      }
+    }
+  }
 </script>
 
 {#if open}
@@ -160,7 +190,10 @@
         <span class="status" role="status">{status ?? ""}</span>
         <div class="btns">
           <button class="act" onclick={copyImage}>Copy image</button>
-          <button class="act primary" onclick={download}>Download PNG</button>
+          <button class="act" class:primary={!canShare} onclick={download}>Download PNG</button>
+          {#if canShare}
+            <button class="act primary" onclick={shareCard}>Share…</button>
+          {/if}
         </div>
       </div>
     </div>

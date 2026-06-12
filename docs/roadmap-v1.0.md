@@ -176,24 +176,24 @@ Agreed direction from the review, in order: ① patch-lineage breadcrumb (extend
 
 ## Checklist (tick as you commit)
 
-- [ ] A1 subscription sweep
-- [ ] A2 worklet dispose
-- [ ] A3 deferred disconnect
-- [ ] A4 startEngine lock
-- [ ] A5 remapByDegree octave
-- [ ] A6 serialization clamps
-- [ ] A7 shim envelope clamp (+ wasm rebuild done / flagged)
-- [ ] A8 brand strings + RING copy
-- [ ] B1 --on-signal / contrast (+ --danger)
-- [ ] B2 trapFocus
-- [ ] B3 16px inputs
-- [ ] B4 Surprise on phone
-- [ ] B5 single-slot undo
-- [ ] B6 demo riff + first-run nudge
-- [ ] C1 postcard QR + share + mark
-- [ ] C2 vitest + CI
-- [ ] C3 PROVENANCE.md
-- [ ] C4 self-hosted fonts
-- [ ] C5 dead code / constants
-- [ ] C6 stretch (optional)
+- [x] A1 subscription sweep
+- [x] A2 worklet dispose
+- [x] A3 deferred disconnect
+- [x] A4 startEngine lock
+- [x] A5 remapByDegree octave
+- [x] A6 serialization clamps
+- [x] A7 shim envelope clamp (+ wasm rebuild **flagged** — emcc unavailable; JS guards ship it safely)
+- [x] A8 brand strings + RING copy
+- [x] B1 --on-signal / contrast (+ --danger)
+- [x] B2 trapFocus
+- [x] B3 16px inputs
+- [x] B4 Surprise on phone
+- [x] B5 single-slot undo
+- [x] B6 demo riff + first-run nudge
+- [x] C1 postcard QR + share + mark
+- [x] C2 vitest + CI
+- [x] C3 PROVENANCE.md
+- [x] C4 self-hosted fonts
+- [x] C5 dead code / constants
+- [x] C6 stretch — activeNotes union + PWA-reload jam-preservation done; Tone code-split deferred (too risky to land unverified, optional per code-quality §5.5)
 - [ ] D1–D3 human gate · [ ] D4 tag v1.0.0

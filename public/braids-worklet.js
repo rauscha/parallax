@@ -133,10 +133,16 @@ class BraidsProcessor extends AudioWorkletProcessor {
       case "setDrift":
         if (this.ready) this.module._braids_set_drift(msg.value | 0);
         break;
-      case "setEnvelopeShape":
-        // msg.attack and msg.decay are 0..127 (LUT indices).
-        if (this.ready) this.module._braids_set_envelope_shape(msg.attack | 0, msg.decay | 0);
+      case "setEnvelopeShape": {
+        // attack/decay are 0..15 portamento-increment indices. The shim owns
+        // this contract (it multiplies by 8 into a 128-entry LUT); clamp here
+        // too as the live guard since the shipped .wasm is prebuilt.
+        if (this.ready) {
+          const clamp15 = (x) => { x = x | 0; return x < 0 ? 0 : x > 15 ? 15 : x; };
+          this.module._braids_set_envelope_shape(clamp15(msg.attack), clamp15(msg.decay));
+        }
         break;
+      }
       case "setAdAmounts":
         // Each amount is 0..127, matching the firmware setting range.
         if (this.ready) {

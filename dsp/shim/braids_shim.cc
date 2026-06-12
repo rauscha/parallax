@@ -169,13 +169,17 @@ void braids_set_drift(int amt) {                  // 0..255 — VCO jitter inten
   g_drift_amt = static_cast<uint8_t>(amt);
 }
 
-// AD envelope shape — `a` and `d` are direct indices into
-// `lut_env_portamento_increments` (firmware uses 0..15 × 8 = 0..120; we accept
-// the full 0..127 range so a UI knob can sweep it smoothly).
+// AD envelope shape — `a` and `d` select a portamento-increment rate. Valid
+// range is 0..15: braids_render multiplies each by 8 (firmware order) and
+// Envelope::Update indexes lut_env_portamento_increments[a*8], a 128-entry LUT.
+// Accepting >15 (the old "0..127 so a knob can sweep" contract) made a*8 reach
+// 1016 → an out-of-bounds heap read producing garbage envelope rates. The shim
+// is the contract owner, so it clamps to 0..15 here; the worklet + engine keep
+// matching guards in depth.
 EMSCRIPTEN_KEEPALIVE
 void braids_set_envelope_shape(int a, int d) {
-  if (a < 0)   a = 0;   if (a > 127) a = 127;
-  if (d < 0)   d = 0;   if (d > 127) d = 127;
+  if (a < 0)   a = 0;   if (a > 15) a = 15;
+  if (d < 0)   d = 0;   if (d > 15) d = 15;
   g_env_attack = static_cast<uint8_t>(a);
   g_env_decay  = static_cast<uint8_t>(d);
 }

@@ -1,8 +1,12 @@
 import { mount } from "svelte";
 import "./ui/themes/tokens.css";
 import "./ui/themes/base.css";
+import { loadUiFonts } from "./ui/themes/fonts";
 import "./state/theme";       // attach theme → <html data-theme=…> subscriber
 import App from "./App.svelte";
+
+// Self-hosted webfonts (replaces the Google Fonts <link> — true offline type).
+loadUiFonts();
 
 const target = document.getElementById("app");
 if (!target) throw new Error("#app root element missing from index.html");

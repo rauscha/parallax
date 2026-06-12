@@ -9,9 +9,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 //
 //   script-src  'wasm-unsafe-eval' — Braids compiles/instantiates WASM (main
 //               thread + the AudioWorklet, which inherits the document CSP).
-//   style-src   'unsafe-inline' — Svelte writes inline style="--var:…" bindings;
-//               fonts.googleapis.com — the Inter/Space-Grotesk/Mono stylesheet.
-//   font-src    fonts.gstatic.com — those web fonts (Bravura is self-hosted).
+//   style-src   'unsafe-inline' — Svelte writes inline style="--var:…" bindings.
+//   font-src    'self' — all webfonts are self-hosted under public/fonts/
+//               (loaded via the FontFace API); no Google Fonts dependency.
 //   worker-src  'self' blob: — 'self' covers the same-origin braids-worklet.js
 //               module; `blob:` is REQUIRED by Tone.js, whose Transport clock
 //               ticker runs in a Web Worker created from a Blob URL
@@ -29,8 +29,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "worker-src 'self' blob:",

@@ -117,10 +117,17 @@ function decodeEvent(raw: unknown): MelodyEvent | null {
   if (!Number.isFinite(dur) || dur < 1) return null;
   if (!Number.isFinite(note) || note < 0 || note > 127) return null;
 
-  const ev: MelodyEvent = { startStep: start, durationSteps: dur, midi: note };
+  // Clamp duration to the loop length. The module's contract says every field
+  // is coerced/clamped, but dur was only checked >= 1, so a hostile/corrupt
+  // link's giant dur survived into the store and out through .mid export and the
+  // staff's durationSpan (huge SVG geometry). (A6 / security L-1)
+  const ev: MelodyEvent = { startStep: start, durationSteps: Math.min(dur, TOTAL_STEPS), midi: note };
 
   if (position != null && Number.isFinite(Number(position))) {
-    ev.position = Math.round(Number(position));
+    // Clamp to the staff's plausible range. An unclamped position drove a
+    // ~10^9-iteration ledger-line render loop that froze the tab from a ~125-char
+    // hostile share link. (A6 / security M-1)
+    ev.position = Math.max(-40, Math.min(40, Math.round(Number(position))));
   }
   const acc = Math.round(Number(accCode));
   if (acc >= 1 && acc <= 3) ev.accidental = ACC_NAME[acc] as MelodyEvent["accidental"];
@@ -159,8 +166,11 @@ export function decodeState(json: string): SharedState | null {
     tempo: clampTempo(s.t),
     key: typeof s.k === "string" && s.k ? s.k : "C",
     scale: isScale(s.sc) ? s.sc : "major",
+    // Cap the event count before mapping. A 35 KB link decoded to ~500k events
+    // (8 MB of objects) and froze the main thread — and persisted if saved. A
+    // legitimate 4-bar melody is well under 256 notes. (A6 / security M-2)
     events: Array.isArray(s.ev)
-      ? (s.ev.map(decodeEvent).filter(Boolean) as MelodyEvent[])
+      ? (s.ev.slice(0, 256).map(decodeEvent).filter(Boolean) as MelodyEvent[])
       : [],
   };
 

@@ -24,6 +24,8 @@
   import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
   import { surpriseMe } from "./state/surprise";
   import { captureUndo } from "./state/undo";
+  import { readSharedState } from "./state/share-url";
+  import { listPresets } from "./state/persistence";
 
   // Store subscriptions — captured and torn down in onDestroy. App is the root
   // (never unmounts in practice), but the unsubscribe-on-destroy rule is uniform
@@ -44,6 +46,20 @@
   unsubs.push(melodyStore.subscribe((m) => { tempo = m.tempo; eventCount = m.events.length; }));
 
   onDestroy(() => unsubs.forEach((u) => u()));
+
+  // First-run detection for the empty-state nudge: a genuinely fresh visit has
+  // no melody, no share-link in the URL, and no saved presets. We only need it
+  // to point newcomers at the two good first moves, so it's computed once and
+  // never re-armed (any edit/load flips eventCount and retires the nudge anyway).
+  let firstRun = $state(false);
+  $effect(() => {
+    let cancelled = false;
+    if (readSharedState()) return;            // arrived via a shared link
+    listPresets()
+      .then((p) => { if (!cancelled) firstRun = p.length === 0; })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  });
 
   function toggleTransport() {
     if (playing) stopTransport();
@@ -157,7 +173,9 @@
       {/if}
     </div>
     <div class="staff-footer">
-      {#if eventCount === 0}
+      {#if eventCount === 0 && firstRun}
+        <p class="hint">Empty sequencer — hear it go: <button class="link-btn" onclick={loadDemoMelody} disabled={!ready}>load a demo</button> or <button class="link-btn" onclick={roll} disabled={!ready || rolling}>⚄ surprise me</button>.</p>
+      {:else if eventCount === 0}
         <p class="hint">{surface === "staff" ? "Tap to place a note · drag right to extend · long-press to delete" : "Tap a cell to place a note · drag right to extend · tap again to delete"}</p>
         <button class="ghost-btn" onclick={loadDemoMelody} disabled={!ready}>Load demo</button>
       {:else}
@@ -504,6 +522,22 @@
   }
   .ghost-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
   .ghost-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* Inline text affordances inside the first-run nudge — link-styled, not pills,
+     so the one-line hint reads as a sentence pointing at two moves. */
+  .link-btn {
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--signal-ink);
+    font-weight: 600;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .link-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .link-btn:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
   @media (pointer: coarse) {
     .ghost-btn { padding: 8px 14px; min-height: 36px; }
   }

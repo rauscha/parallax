@@ -1,0 +1,76 @@
+# Provenance of the committed engine binaries
+
+Parallax ships a few engine artifacts **prebuilt and committed** under `public/`
+so GitHub Pages CI can publish the app with no Emscripten toolchain (see
+CLAUDE.md → Hosting). This is the one place trust isn't backed by a CI rebuild,
+so this file records exactly what those artifacts are and how to regenerate
+them. (security M-3)
+
+## What's opaque vs. readable
+
+- **Opaque (compiled):** `public/braids.wasm`, `public/plaits.wasm`, and their
+  Emscripten JS glue `public/braids.js`, `public/plaits.js`. These come out of
+  the Emscripten build of the C++ shim + vendored Mutable Instruments DSP and
+  can't be eyeballed — hence this file.
+- **Hand-maintained (readable):** the AudioWorklet processors
+  `public/braids-worklet.js`, `public/plaits-worklet.js`,
+  `public/laxsynth-worklet.js` are plain JS, edited by hand and reviewable in
+  the diff. Laxsynth is **pure JS** — it has no `.wasm` at all. They're listed
+  here only so their hashes are pinned alongside the binaries.
+
+## SHA-256 of the committed artifacts
+
+Recorded 2026-06-12. Regenerate with:
+
+```sh
+sha256sum public/braids.wasm public/braids.js \
+          public/plaits.wasm public/plaits.js \
+          public/braids-worklet.js public/plaits-worklet.js public/laxsynth-worklet.js
+```
+
+| File | SHA-256 |
+|------|---------|
+| `public/braids.wasm`         | `cdb1e768eb5340fd9f5b964ddd98ec29b3728c2230baf6c6aaec1d156fe56aa3` |
+| `public/braids.js`           | `ee0590665bfd77e41b3b512cea5160fa38633596768f512a351e614954b2d5e3` |
+| `public/plaits.wasm`         | `669906ba48c5168652e0d5a4fad2d93ef8ea0311416f403c33bd09462e52937d` |
+| `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
+| `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
+| `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
+| `public/laxsynth-worklet.js` | `17fe058a615677abb08338397892f2275cc562bda6447b92896f145314bc13c1` |
+
+> Note: `braids-worklet.js`, `plaits-worklet.js`, and `laxsynth-worklet.js` are
+> hand-edited JS, so their hashes change whenever those files are edited (e.g.
+> the A2 dispose path / A7 envelope clamp) — that's expected, not a rebuild.
+> The `.wasm` + glue `.js` hashes only change on an Emscripten rebuild.
+
+## Source
+
+- **Vendored DSP:** Émilie Gillet's open-source firmware (`pichenettes/eurorack`
+  → `braids/`, `plaits/`, `stmlib/`), vendored under `dsp/vendor/` as regular
+  files (not a git submodule). See `dsp/vendor/README.md` for the trimmed
+  subtree list and `LICENSE-Braids.txt` for the MIT license + attribution.
+  - **eurorack upstream commit:** *not recorded at the original vendoring — to be
+    pinned at the next rebuild* (run the rebuild from a known `eurorack` checkout
+    and record its `git rev-parse HEAD` here).
+- **Shim (our code, MIT):** `dsp/shim/braids_shim.cc`, `dsp/shim/plaits_shim.cc`.
+
+## Rebuild
+
+Requires Emscripten (`emcc`). PowerShell-only build scripts today (desktop):
+
+```powershell
+# once per shell, if emcc isn't on PATH:
+& "$env:USERPROFILE\emsdk\emsdk_env.ps1"
+
+npm run wasm          # -> dsp/shim/build.ps1        (braids.wasm + braids.js)
+npm run wasm:plaits   # -> dsp/shim/build-plaits.ps1 (plaits.wasm + plaits.js)
+```
+
+The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
+1. record the new SHA-256s in the table above,
+2. record the **emcc version** (`emcc --version`) here — *not recorded for the
+   current binaries; to be pinned at the next rebuild*,
+3. record the **eurorack commit** the build was made from (see Source above).
+
+Laxsynth has no rebuild step — it's authored directly in
+`public/laxsynth-worklet.js`.

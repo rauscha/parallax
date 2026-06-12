@@ -98,7 +98,7 @@
   .err {
     font-family: var(--font-mono);
     font-size: 0.7rem;
-    color: var(--accent);
+    color: var(--danger);
   }
 
   /* Touch sizing — keep the pills tappable. */

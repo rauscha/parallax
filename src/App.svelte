@@ -243,7 +243,7 @@
     font-size: 0.7rem;
     letter-spacing: 0.04em;
     padding: 5px 12px;
-    color: var(--bg);
+    color: var(--on-signal);
     background: var(--signal);
     border: var(--hairline-w) solid var(--signal);
     border-radius: var(--radius-sm);
@@ -302,7 +302,7 @@
   }
   .viz-btn.active {
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
     font-weight: 600;
   }
   /* Finger-class targets need at least 44px to be reliably tappable. */
@@ -357,7 +357,7 @@
   .play-btn:hover:not(:disabled) { filter: brightness(1.1); }
   .play-btn[aria-pressed="true"] {
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
     border-color: var(--signal);
   }
   .play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -436,7 +436,7 @@
   .surf-btn:hover:not(.active) { color: var(--text); }
   .surf-btn.active {
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
     font-weight: 600;
   }
   @media (pointer: coarse) {

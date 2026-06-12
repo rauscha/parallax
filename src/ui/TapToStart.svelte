@@ -87,7 +87,7 @@
     display: inline-block;
     padding: 12px 28px;
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
     font-family: var(--font-mono);
     font-size: 0.85rem;
     text-transform: var(--label-case);

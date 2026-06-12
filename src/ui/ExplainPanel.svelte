@@ -143,7 +143,7 @@
     font-size: 1.05rem;
     font-weight: 600;
     letter-spacing: 0.06em;
-    color: var(--signal);
+    color: var(--signal-ink);
     padding: 3px 8px;
     background: var(--surface-sunken);
     border: var(--hairline-w) solid var(--hairline);
@@ -234,7 +234,7 @@
   }
   .val {
     font-size: 0.66rem;
-    color: var(--signal);
+    color: var(--signal-ink);
     font-variant-numeric: tabular-nums;
   }
   .card-text {

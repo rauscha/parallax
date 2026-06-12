@@ -251,7 +251,7 @@
     transition: filter var(--t-fast), border-color var(--t-fast);
   }
   .act:hover { filter: brightness(1.1); border-color: var(--signal); }
-  .act.primary { color: var(--bg); background: var(--signal); border-color: var(--signal); }
+  .act.primary { color: var(--on-signal); background: var(--signal); border-color: var(--signal); }
   @media (pointer: coarse) {
     .act, .x { min-height: 38px; }
   }

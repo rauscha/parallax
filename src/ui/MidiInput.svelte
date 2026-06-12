@@ -83,7 +83,7 @@
     font-size: 0.7rem;
     letter-spacing: 0.04em;
     padding: 5px 12px;
-    color: var(--bg);
+    color: var(--on-signal);
     background: var(--signal);
     border: var(--hairline-w) solid var(--signal);
     border-radius: var(--radius-sm);

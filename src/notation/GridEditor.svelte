@@ -766,7 +766,7 @@
     padding-right: 2px;
     user-select: none;
   }
-  .row-label.root { color: var(--signal); font-weight: 600; }
+  .row-label.root { color: var(--signal-ink); font-weight: 600; }
   .row-label.in-scale { color: var(--text); }
 
   /* ─── Cell grid ─────────────────────────────────────────────── */
@@ -903,7 +903,7 @@
   .fold-btn:hover:not(.active) { color: var(--text); }
   .fold-btn.active {
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
     font-weight: 600;
   }
 

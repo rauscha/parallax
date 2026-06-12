@@ -209,7 +209,7 @@
     font-family: var(--font-mono);
     font-size: 0.7rem;
     padding: 5px 12px;
-    color: var(--bg);
+    color: var(--on-signal);
     background: var(--signal);
     border: none;
     border-radius: var(--radius-sm);
@@ -219,7 +219,7 @@
   .save-btn:hover:not(:disabled) { filter: brightness(1.08); }
   .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .err { margin: 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent); }
+  .err { margin: 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--danger); }
   .empty { margin: 2px 0; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
 
   .list {

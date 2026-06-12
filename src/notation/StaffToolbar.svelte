@@ -97,7 +97,7 @@
   .tool:hover:not(.active) { color: var(--text); background: var(--surface-raised); }
   .tool.active {
     background: var(--signal);
-    color: var(--bg);
+    color: var(--on-signal);
   }
   /* Rest glyph is taller — needs slight downward nudge to look centered */
   .rest-tool { font-size: 1.2rem; }

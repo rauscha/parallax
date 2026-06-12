@@ -32,6 +32,8 @@
   --signal-glow:      rgba(79, 214, 196, 0.55);
   --accent:           #F4C45A;        /* warm gold — record, active note */
   --accent-dim:       rgba(244, 196, 90, 0.35);
+  --on-signal:        var(--bg);       /* text/icon on a signal-filled control (8.7:1 here) */
+  --danger:           #FF7A7A;         /* error text — AA on --bg */
 
   /* Scope */
   --scope-bg:         #17161C;
@@ -84,13 +86,15 @@
   --text-muted:       #4A4A4A;
   --text-dim:         #5A5A5A;        /* was #7A7A7A (3.3:1) — now 5.7:1 */
 
-  --signal:           #FF5A1F;        /* hot orange — scope, knob fill, big pill code (>3:1 OK for graphics) */
-  --signal-ink:       #A8350F;        /* AA-safe rust for body text uses (5.3:1) */
+  --signal:           #FF5A1F;        /* hot orange — scope + knob fill only (2.5:1 on --bg: NOT for text) */
+  --signal-ink:       #8A2A0A;        /* AA-safe rust for text — >=4.9:1 on every surface tier */
   --signal-dim:       rgba(255, 90, 31, 0.35);
   --signal-deep:      rgba(255, 90, 31, 0.22);
   --signal-glow:      rgba(255, 90, 31, 0.45);
   --accent:           #1A1A1A;        /* charcoal as "active" against the warm body */
   --accent-dim:       rgba(26, 26, 26, 0.3);
+  --on-signal:        #1A1A1A;         /* charcoal on the orange fill — 5.58:1 */
+  --danger:           #911B11;         /* error text — deep red, >=5:1 on every surface tier */
 
   /* Scope is a dark inset screen on a bright body */
   --scope-bg:         #0D0D0D;
@@ -132,6 +136,8 @@
   --signal-glow:      rgba(125, 255, 107, 0.65);
   --accent:           #FFB347;        /* amber as secondary signal */
   --accent-dim:       rgba(255, 179, 71, 0.35);
+  --on-signal:        var(--bg);       /* text/icon on the green fill (15.6:1 here) */
+  --danger:           #FF6B5C;         /* error text — red-orange, AA on --bg */
 
   --scope-bg:         #050402;
   --scope-trace:      var(--signal);

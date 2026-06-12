@@ -505,7 +505,7 @@
     font-size: 0.72rem;
     letter-spacing: 0.06em;
     padding: 7px 14px;
-    color: var(--bg);
+    color: var(--on-signal);
     background: var(--signal);
     border: var(--hairline-w) solid var(--signal);
     border-radius: var(--radius-sm);
@@ -519,7 +519,7 @@
     color: var(--text-muted);
   }
   .hidden-file { display: none; }
-  .error { margin: 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
+  .error { margin: 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--danger); }
 
   .wave {
     width: 100%;
@@ -544,7 +544,7 @@
     cursor: pointer;
     transition: background var(--t-fast), color var(--t-fast);
   }
-  .loop-btn.active { background: var(--signal); color: var(--bg); border-color: var(--signal); }
+  .loop-btn.active { background: var(--signal); color: var(--on-signal); border-color: var(--signal); }
   .region-readout {
     font-family: var(--font-mono);
     font-size: 0.72rem;
@@ -595,7 +595,7 @@
     font-family: var(--font-heading);
     font-size: 1.15rem;
     font-weight: 600;
-    color: var(--signal);
+    color: var(--signal-ink);
     line-height: 1.1;
   }
   .detect-val.muted-val { color: var(--text-dim); }
@@ -641,7 +641,7 @@
     font-family: var(--font-heading);
     font-size: 1rem;
     font-weight: 600;
-    color: var(--signal);
+    color: var(--signal-ink);
   }
   .suggest-name .mdl-name {
     font-family: var(--font-mono);
@@ -653,7 +653,7 @@
     font-size: 0.72rem;
     letter-spacing: 0.06em;
     padding: 7px 14px;
-    color: var(--bg);
+    color: var(--on-signal);
     background: var(--signal);
     border: var(--hairline-w) solid var(--signal);
     border-radius: var(--radius-sm);

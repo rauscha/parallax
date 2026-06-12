@@ -5,11 +5,13 @@
    * Files never leave the browser. Import is lossy by design — it reduces to a
    * 4-bar monophonic grid and reports how many source notes were dropped.
    */
+  import { onDestroy } from "svelte";
   import { melodyStore } from "../state/stores";
   import { exportMelodyToFile, importMelodyFromFile } from "../sequencer/midi";
 
   let eventCount = $state(melodyStore.get().events.length);
-  melodyStore.subscribe((m) => { eventCount = m.events.length; });
+  const unsubCount = melodyStore.subscribe((m) => { eventCount = m.events.length; });
+  onDestroy(unsubCount);
 
   let open = $state(false);
   let busy = $state(false);

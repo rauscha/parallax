@@ -1,13 +1,15 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
   import { audioReadyStore, patchStore, engineIdStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import Knob from "./Knob.svelte";
 
+  const unsubs: Array<() => void> = [];
   let ready = $state(false);
   let engineId = $state<string>(engineIdStore.get());
-  audioReadyStore.subscribe((v) => { ready = v; });
-  engineIdStore.subscribe((v) => { engineId = v; });
+  unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
+  unsubs.push(engineIdStore.subscribe((v) => { engineId = v; }));
 
   // Controls are auto-generated from the live engine's parameter schema —
   // the schema holds non-serializable bits (format, describe) so it lives on
@@ -16,7 +18,8 @@
   // "model" is excluded — the ModelPicker owns model selection.
   let specs = $state<ParameterDescriptor[]>([]);
   let values = $state<Record<string, number>>(patchStore.get().params);
-  patchStore.subscribe((p) => { values = p.params; });
+  unsubs.push(patchStore.subscribe((p) => { values = p.params; }));
+  onDestroy(() => unsubs.forEach((u) => u()));
 
   // Pull the live engine's schema when audio comes up — and again whenever the
   // engine hot-swaps. Reading engineId registers it as an effect dependency so a

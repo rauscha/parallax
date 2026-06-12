@@ -16,16 +16,17 @@
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
   import { sweepingParamStore, startSweep, stopSweep } from "../state/show-me";
 
+  const unsubs: Array<() => void> = [];
   let engineId = $state<string>(engineIdStore.get());
   let modelId  = $state<string | null>(patchStore.get().modelId);
   let params   = $state<Record<string, number>>(patchStore.get().params);
-  engineIdStore.subscribe((v) => { engineId = v; });
-  patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; });
+  unsubs.push(engineIdStore.subscribe((v) => { engineId = v; }));
+  unsubs.push(patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; }));
 
   // "Show me" sweep state: which knob is being demonstrated, and whether audio
   // is up (the button is dead until the engine can make sound).
   let ready = $state(audioReadyStore.get());
-  audioReadyStore.subscribe((v) => { ready = v; });
+  unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
   let sweepingId = $state<string | null>(sweepingParamStore.get());
   const unsubSweep = sweepingParamStore.subscribe((v) => { sweepingId = v; });
 
@@ -55,7 +56,7 @@
   // drag still drives the card direction, which is the case that matters there.
   let activeId = $state<string | null>(activeParamStore.get());
   const unsub = activeParamStore.subscribe((v) => { activeId = v; });
-  onDestroy(() => { unsub(); unsubSweep(); stopSweep(); });
+  onDestroy(() => { unsub(); unsubSweep(); unsubs.forEach((u) => u()); stopSweep(); });
 
   function lift(id: string) { activeParamStore.set(id); }
   function drop(id: string) {

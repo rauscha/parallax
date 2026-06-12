@@ -5,15 +5,19 @@
    * Purely informational — updates apply silently (autoUpdate), so there's no
    * action to take.
    */
+  import { onDestroy } from "svelte";
   import { offlineReadyStore } from "../state/pwa";
 
   let show = $state(false);
-  offlineReadyStore.subscribe((v) => {
+  let hideTimer = 0;
+  const unsubOffline = offlineReadyStore.subscribe((v) => {
     if (v) {
       show = true;
-      setTimeout(() => { show = false; }, 4500);
+      clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(() => { show = false; }, 4500);
     }
   });
+  onDestroy(() => { clearTimeout(hideTimer); unsubOffline(); });
 </script>
 
 {#if show}

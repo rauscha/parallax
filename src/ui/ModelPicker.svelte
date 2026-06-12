@@ -13,14 +13,15 @@
   let pulseTimer = 0;
   let pickerEl: HTMLDivElement | undefined = $state();
   let listEl: HTMLDivElement | undefined = $state();
-  audioReadyStore.subscribe((v) => { ready = v; });
+  const unsubs: Array<() => void> = [];
+  unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
 
   // patchStore is the source of truth — modelIndex is derived from modelId.
   // Writes flow store → bindings → engine; the picker never touches the engine.
   let engineId = $state<string>(engineIdStore.get());
   let modelId = $state<string | null>(patchStore.get().modelId);
-  engineIdStore.subscribe((v) => { engineId = v; });
-  patchStore.subscribe((p) => { modelId = p.modelId; });
+  unsubs.push(engineIdStore.subscribe((v) => { engineId = v; }));
+  unsubs.push(patchStore.subscribe((p) => { modelId = p.modelId; }));
 
   // Catalogue for the active engine (registry-driven → adapts to Braids/Plaits).
   let entry = $derived(engineEntryOrDefault(engineId));
@@ -149,7 +150,7 @@
     }
   }
 
-  onDestroy(() => clearTimeout(pulseTimer));
+  onDestroy(() => { clearTimeout(pulseTimer); unsubs.forEach((u) => u()); });
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

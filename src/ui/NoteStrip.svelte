@@ -40,7 +40,7 @@
   // pointerId → midi note. Lets us release the right note on multitouch.
   const owned = new Map<number, number>();
 
-  audioReadyStore.subscribe((v) => { ready = v; });
+  const unsubReady = audioReadyStore.subscribe((v) => { ready = v; });
 
   function midiOf(offset: number): number {
     return 12 * octave + offset;
@@ -111,7 +111,7 @@
       document.removeEventListener("visibilitychange", onVisibility);
     };
   });
-  onDestroy(releaseAll);
+  onDestroy(() => { releaseAll(); unsubReady(); });
 </script>
 
 <div class="note-strip" class:collapsed role="group" aria-label="Touch note strip">

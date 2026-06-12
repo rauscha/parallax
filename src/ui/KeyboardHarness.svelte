@@ -25,7 +25,7 @@
   // while a key is held would noteOff the wrong midi and strand the original.
   const codeToMidi = new Map<string, number>();
 
-  audioReadyStore.subscribe((v) => { ready = v; });
+  const unsubReady = audioReadyStore.subscribe((v) => { ready = v; });
 
   function midiFor(code: string): number | null {
     const offset = KEY_MAP[code];
@@ -102,6 +102,7 @@
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("blur", releaseAllHeld);
     document.removeEventListener("visibilitychange", onVisibilityChange);
+    unsubReady();
   });
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { GLYPH } from "./glyphs";
   import {
     octaveShiftStore, setOctaveShift,
@@ -6,10 +7,12 @@
     type OctaveShift, type EditorTool,
   } from "./editorMode";
 
+  const unsubs: Array<() => void> = [];
   let octave = $state<OctaveShift>(octaveShiftStore.get());
-  octaveShiftStore.subscribe((v) => { octave = v; });
+  unsubs.push(octaveShiftStore.subscribe((v) => { octave = v; }));
   let tool = $state<EditorTool>(editorToolStore.get());
-  editorToolStore.subscribe((v) => { tool = v; });
+  unsubs.push(editorToolStore.subscribe((v) => { tool = v; }));
+  onDestroy(() => unsubs.forEach((u) => u()));
 
   function onOctaveChange(e: Event) {
     const v = (e.currentTarget as HTMLSelectElement).value === "-1" ? -1 : 0;

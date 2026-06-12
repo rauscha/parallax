@@ -9,6 +9,7 @@
    * bar (replaceState), so it's bookmarkable even when the clipboard is
    * unavailable (e.g. a non-secure context).
    */
+  import { onDestroy } from "svelte";
   import { audioReadyStore } from "../state/stores";
   import { writeShareUrl } from "../state/share-url";
   import PresetMenu from "./PresetMenu.svelte";
@@ -16,11 +17,12 @@
   import PostcardModal from "./PostcardModal.svelte";
 
   let ready = $state(audioReadyStore.get());
-  audioReadyStore.subscribe((v) => { ready = v; });
+  const unsubReady = audioReadyStore.subscribe((v) => { ready = v; });
 
   // Transient button feedback ("Share" → "Copied!" / "In address bar").
   let shareLabel = $state<"Share" | "Copied!" | "In address bar">("Share");
   let resetTimer = 0;
+  onDestroy(() => { clearTimeout(resetTimer); unsubReady(); });
   let postcardOpen = $state(false);
 
   async function share() {

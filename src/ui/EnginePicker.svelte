@@ -5,6 +5,7 @@
    * coarser choice. Swapping hot-reloads the engine's WASM/worklet and re-seeds
    * the patch with that engine's defaults; the melody + transport keep playing.
    */
+  import { onDestroy } from "svelte";
   import { ENGINES } from "../audio/registry";
   import { startEngine } from "../state/engine-control";
   import { audioReadyStore, engineIdStore } from "../state/stores";
@@ -13,8 +14,10 @@
   let engineId = $state<string>(engineIdStore.get());
   let swapping = $state<string | null>(null);   // id being swapped to, or null
   let error = $state<string | null>(null);
-  audioReadyStore.subscribe((v) => { ready = v; });
-  engineIdStore.subscribe((v) => { engineId = v; });
+  const unsubs: Array<() => void> = [];
+  unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
+  unsubs.push(engineIdStore.subscribe((v) => { engineId = v; }));
+  onDestroy(() => unsubs.forEach((u) => u()));
 
   async function choose(id: string) {
     if (!ready || swapping || id === engineId) return;

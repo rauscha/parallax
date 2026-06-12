@@ -5,6 +5,7 @@
    * you download or copy it as a PNG. The in-app preview is also the surface to
    * eyeball the design.
    */
+  import { onDestroy } from "svelte";
   import { patchStore, melodyStore } from "../state/stores";
   import { engineEntryOrDefault } from "../audio/registry";
   import {
@@ -19,6 +20,15 @@
 
   let canvasEl = $state<HTMLCanvasElement | null>(null);
   let status = $state<string | null>(null);
+
+  // Object-URL revoke timer. Tracked so a modal close mid-countdown still
+  // revokes the URL on destroy rather than leaking it (A1 sweep).
+  let revokeTimer = 0;
+  let pendingUrl: string | null = null;
+  onDestroy(() => {
+    clearTimeout(revokeTimer);
+    if (pendingUrl) { URL.revokeObjectURL(pendingUrl); pendingUrl = null; }
+  });
 
   function readColors(): PostcardColors {
     const cs = getComputedStyle(document.documentElement);
@@ -94,13 +104,18 @@
     const blob = await toBlob();
     if (!blob) return;
     const url = URL.createObjectURL(blob);
+    pendingUrl = url;
     const a = document.createElement("a");
     a.href = url;
     a.download = "parallax-postcard.png";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    clearTimeout(revokeTimer);
+    revokeTimer = window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+      if (pendingUrl === url) pendingUrl = null;
+    }, 1000);
     status = "Downloaded";
   }
 

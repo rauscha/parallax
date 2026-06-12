@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import TapToStart from "./ui/TapToStart.svelte";
   import EnginePicker from "./ui/EnginePicker.svelte";
   import ModelPicker from "./ui/ModelPicker.svelte";
@@ -22,18 +23,25 @@
   import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
   import { surpriseMe } from "./state/surprise";
 
+  // Store subscriptions — captured and torn down in onDestroy. App is the root
+  // (never unmounts in practice), but the unsubscribe-on-destroy rule is uniform
+  // across every component so a conditionally-mounted one can't regress (A1).
+  const unsubs: Array<() => void> = [];
+
   let ready = $state(false);
-  audioReadyStore.subscribe((v) => { ready = v; });
+  unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
   let viz = $state<"scope" | "spectrum">("scope");
   let matchOpen = $state(false);
   let surface = $state<Surface>(surfaceStore.get());
-  surfaceStore.subscribe((v) => { surface = v; });
+  unsubs.push(surfaceStore.subscribe((v) => { surface = v; }));
 
   let playing = $state(false);
-  isPlayingStore.subscribe((v) => { playing = v; });
+  unsubs.push(isPlayingStore.subscribe((v) => { playing = v; }));
   let tempo = $state(melodyStore.get().tempo);
   let eventCount = $state(melodyStore.get().events.length);
-  melodyStore.subscribe((m) => { tempo = m.tempo; eventCount = m.events.length; });
+  unsubs.push(melodyStore.subscribe((m) => { tempo = m.tempo; eventCount = m.events.length; }));
+
+  onDestroy(() => unsubs.forEach((u) => u()));
 
   function toggleTransport() {
     if (playing) stopTransport();

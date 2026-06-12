@@ -5,6 +5,7 @@
    * (IndexedDB) — nothing leaves the browser. Loading hot-swaps the engine if
    * the preset needs a different one (via loadState).
    */
+  import { onDestroy } from "svelte";
   import { audioReadyStore } from "../state/stores";
   import {
     savePreset,
@@ -17,7 +18,8 @@
   import { loadState } from "../state/engine-control";
 
   let ready = $state(audioReadyStore.get());
-  audioReadyStore.subscribe((v) => { ready = v; });
+  const unsubReady = audioReadyStore.subscribe((v) => { ready = v; });
+  onDestroy(unsubReady);
 
   let open = $state(false);
   let presets = $state<PresetSummary[]>([]);

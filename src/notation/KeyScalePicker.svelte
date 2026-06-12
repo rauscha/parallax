@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { melodyStore } from "../state/stores";
 
   const KEYS = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
@@ -6,7 +7,8 @@
 
   let key = $state(melodyStore.get().key);
   let scale = $state(melodyStore.get().scale);
-  melodyStore.subscribe((m) => { key = m.key; scale = m.scale; });
+  const unsubKey = melodyStore.subscribe((m) => { key = m.key; scale = m.scale; });
+  onDestroy(unsubKey);
 
   function onKeyChange(e: Event) {
     const v = (e.currentTarget as HTMLSelectElement).value;

@@ -14,7 +14,13 @@
   import { audioEngine } from "../audio/AudioEngine";
   import { hapticTick } from "../ui/haptics";
 
-  /* ——— Store subscriptions ——————————————————————————————————————— */
+  /* ——— Store subscriptions ———————————————————————————————————————
+     Captured and torn down in onDestroy. GridEditor is conditionally mounted
+     (Staff↔Grid toggle); a leaked melodyStore subscriber here is the confirmed
+     double-transpose-on-key-change bug (A1) — the live + leaked instances both
+     remap, so the melody moves twice. */
+
+  const unsubs: Array<() => void> = [];
 
   let events    = $state<MelodyEvent[]>(melodyStore.get().events);
   let key       = $state(melodyStore.get().key);
@@ -27,7 +33,7 @@
   let prevScale = melodyStore.get().scale;
   let remapping = false;   // guard against re-entrant store write
 
-  melodyStore.subscribe((mel) => {
+  unsubs.push(melodyStore.subscribe((mel) => {
     if (remapping) { events = mel.events; return; }
 
     // Wrapped so a remap/tonal hiccup can't throw out of this listener and break
@@ -62,10 +68,10 @@
       prevKey = mel.key; prevScale = mel.scale;
       events = mel.events; key = mel.key; scale = mel.scale;
     }
-  });
+  }));
 
-  gridBaseOctaveStore.subscribe(v => { baseOctave   = v; });
-  foldToScaleStore.subscribe(   v => { foldToScale  = v; });
+  unsubs.push(gridBaseOctaveStore.subscribe(v => { baseOctave   = v; }));
+  unsubs.push(foldToScaleStore.subscribe(   v => { foldToScale  = v; }));
 
   /* ——— Responsive octave span ————————————————————————————————————
      Two octaves of rows are too tall to show well on a phone — they overflow
@@ -402,7 +408,7 @@
     raf = requestAnimationFrame(tickPlayhead);
   }
 
-  isPlayingStore.subscribe((playing) => {
+  unsubs.push(isPlayingStore.subscribe((playing) => {
     isPlaying = playing;
     if (playing && !raf) {
       autoFollow = true;   // a fresh play resumes follow-the-playhead
@@ -412,12 +418,13 @@
       raf = 0;
       playheadCol = null;
     }
-  });
+  }));
 
   onDestroy(() => {
     if (raf) cancelAnimationFrame(raf);
     clearTimeout(previewTimer);
     if (previewMidi !== null) { try { audioEngine.currentEngine?.noteOff(previewMidi); } catch {} }
+    unsubs.forEach((u) => u());
   });
 
   /* ——— G4: Randomize ————————————————————————————————————————————— */

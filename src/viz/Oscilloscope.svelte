@@ -17,7 +17,7 @@
   const BOOT_SWEEP_MS = 700;
   let bootSweepStart = 0;
   let prevReady = false;
-  audioReadyStore.subscribe((v) => {
+  const unsubReady = audioReadyStore.subscribe((v) => {
     if (v && !prevReady) bootSweepStart = performance.now();
     prevReady = v;
   });
@@ -231,6 +231,7 @@
     cancelAnimationFrame(raf);
     resizeObs?.disconnect();
     motionMql?.removeEventListener("change", onMotionChange);
+    unsubReady();
   });
 </script>
 

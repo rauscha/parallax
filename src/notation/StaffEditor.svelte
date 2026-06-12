@@ -32,14 +32,19 @@
 
   const LINE_YS = [0, 1, 2, 3, 4].map((i) => TOP + i);
 
+  // Store subscriptions — captured and torn down in onDestroy. StaffEditor is
+  // conditionally mounted (Staff↔Grid toggle), so leaking these would keep dead
+  // copies updating after the surface swaps (A1).
+  const unsubs: Array<() => void> = [];
+
   let events = $state<MelodyEvent[]>(melodyStore.get().events);
   let key = $state(melodyStore.get().key);
   let scale = $state(melodyStore.get().scale);
-  melodyStore.subscribe((mel) => {
+  unsubs.push(melodyStore.subscribe((mel) => {
     events = mel.events;
     key = mel.key;
     scale = mel.scale;
-  });
+  }));
   let useFlats = $derived(preferFlats(key, scale));
 
   // Key signature drives the header width: more accidentals → music starts
@@ -51,9 +56,9 @@
   // Octave shift + active tool live in shared stores so the toolbar
   // component can read/write them. octaveShift persists across reloads.
   let octaveShift = $state(octaveShiftStore.get());
-  octaveShiftStore.subscribe((v) => { octaveShift = v; });
+  unsubs.push(octaveShiftStore.subscribe((v) => { octaveShift = v; }));
   let activeTool = $state<EditorTool>(editorToolStore.get());
-  editorToolStore.subscribe((v) => { activeTool = v; });
+  unsubs.push(editorToolStore.subscribe((v) => { activeTool = v; }));
 
   let clefGlyph = $derived(octaveShift === -1 ? GLYPH.gClef8vb : GLYPH.gClef);
 
@@ -497,7 +502,7 @@
     playheadStep = (within / loopSec) * TOTAL_STEPS;
     raf = requestAnimationFrame(tickPlayhead);
   }
-  isPlayingStore.subscribe((playing) => {
+  unsubs.push(isPlayingStore.subscribe((playing) => {
     if (playing && !raf) {
       raf = requestAnimationFrame(tickPlayhead);
     } else if (!playing) {
@@ -505,9 +510,10 @@
       raf = 0;
       playheadStep = null;
     }
-  });
+  }));
   onDestroy(() => {
     if (raf) cancelAnimationFrame(raf);
+    unsubs.forEach((u) => u());
   });
 </script>
 

@@ -4,23 +4,28 @@
    * watch incoming activity, and panic. Graceful message where Web MIDI isn't
    * available (Safari / iOS). Logic lives in state/midi-input.ts.
    */
+  import { onDestroy } from "svelte";
   import {
     midiSupported, midiStateStore, midiActivityStore,
     enableMidi, selectMidiInput, disableMidi, midiPanic,
   } from "../state/midi-input";
 
+  const unsubs: Array<() => void> = [];
+
   let midi = $state(midiStateStore.get());
-  midiStateStore.subscribe((v) => { midi = v; });
+  unsubs.push(midiStateStore.subscribe((v) => { midi = v; }));
 
   // Activity blip — flash the dot for ~150ms after each message.
   let active = $state(false);
   let blipTimer = 0;
-  midiActivityStore.subscribe((t) => {
+  unsubs.push(midiActivityStore.subscribe((t) => {
     if (!t) return;
     active = true;
     clearTimeout(blipTimer);
     blipTimer = window.setTimeout(() => { active = false; }, 150);
-  });
+  }));
+
+  onDestroy(() => { clearTimeout(blipTimer); unsubs.forEach((u) => u()); });
 
   function onSelect(e: Event) {
     selectMidiInput((e.currentTarget as HTMLSelectElement).value);

@@ -1,0 +1,25 @@
+name: CI
+
+# Type-check, test, and build on every push and PR. Deploy.yml runs the same
+# gates before publishing, but this catches regressions on branches/PRs that
+# never touch main — the project previously only ran `build` (no type-check,
+# no tests), so type errors and the pure-layer bugs this suite pins could ship
+# silently.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test
+      - run: npm run build

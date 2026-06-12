@@ -30,6 +30,7 @@ class BraidsProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.ready = false;
+    this.disposed = false;
     this.module = null;
     this.bufPtr = 0;
     this.bufView = null;
@@ -144,6 +145,18 @@ class BraidsProcessor extends AudioWorkletProcessor {
           );
         }
         break;
+      case "dispose":
+        // Engine swap: stop rendering and free the WASM heap buffer. Without
+        // this, process() returns true forever and Chromium keeps this disposed
+        // processor (+ its WASM instance) rendering on the audio thread — one
+        // leaked DSP per engine swap (Surprise = one tap each).
+        this.disposed = true;
+        if (this.module && this.bufPtr) {
+          try { this.module._braids_free(this.bufPtr); } catch {}
+          this.bufPtr = 0;
+          this.bufView = null;
+        }
+        break;
     }
   }
 
@@ -174,6 +187,10 @@ class BraidsProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs, outputs, parameters) {
+    // Disposed → return false so the node loses its active-source flag and is
+    // garbage-collected instead of rendering forever (engine-swap DSP leak).
+    if (this.disposed) return false;
+
     const output = outputs[0][0];
     if (!output) return true;
 

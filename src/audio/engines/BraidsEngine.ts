@@ -357,6 +357,12 @@ export class BraidsEngine implements ISynthEngine {
 
   async dispose(): Promise<void> {
     this.allNotesOff();
+    // Tell the worklet to stop: it sets disposed = true, frees its WASM heap
+    // buffer, and returns false from process() so the processor is collected
+    // instead of rendering forever on the audio thread (one leak per swap).
+    // Posted before disconnect; AudioEngine defers this whole call past the
+    // fade so allNotesOff's ramp is heard first (A3).
+    if (this.node) { try { this.node.port.postMessage({ type: "dispose" }); } catch { /* */ } }
     if (this.node) { try { this.node.disconnect(); } catch { /* */ } this.node = null; }
     if (this.gainNode) { try { this.gainNode.disconnect(); } catch { /* */ } this.gainNode = null; }
     this.ctx = null;

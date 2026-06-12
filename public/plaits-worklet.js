@@ -40,6 +40,7 @@ class PlaitsProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.ready = false;
+    this.disposed = false;
     this.module = null;
     this.bufPtr = 0;
     this.bufView = null;
@@ -132,6 +133,17 @@ class PlaitsProcessor extends AudioWorkletProcessor {
         this.pendingGates.length = 0;
         this.gateLevel = 0;
         break;
+      case "dispose":
+        // Engine swap: stop rendering and free the WASM heap buffer. Without
+        // this, process() returns true forever and Chromium keeps the disposed
+        // processor (+ WASM instance) on the audio thread — one leak per swap.
+        this.disposed = true;
+        if (this.module && this.bufPtr) {
+          try { this.module._plaits_free(this.bufPtr); } catch {}
+          this.bufPtr = 0;
+          this.bufView = null;
+        }
+        break;
     }
   }
 
@@ -202,6 +214,7 @@ class PlaitsProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs, outputs, parameters) {
+    if (this.disposed) return false;
     const output = outputs[0][0];
     if (!output) return true;
     if (!this.ready) { output.fill(0); return true; }

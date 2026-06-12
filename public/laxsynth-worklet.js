@@ -94,6 +94,8 @@ class LaxsynthProcessor extends AudioWorkletProcessor {
     // Scheduled gate events { t, on, velocity }, sorted ascending by time.
     this.pendingGates = [];
 
+    this.disposed = false;
+
     this.port.onmessage = (e) => this.onMessage(e.data);
   }
 
@@ -133,6 +135,12 @@ class LaxsynthProcessor extends AudioWorkletProcessor {
         } else {
           this.stage = 0;
         }
+        break;
+      case "dispose":
+        // Engine swap: stop rendering so process() returns false and the node
+        // is garbage-collected instead of being run on the audio thread forever
+        // (no WASM here — this engine is pure JS — so there's nothing to free).
+        this.disposed = true;
         break;
     }
   }
@@ -246,6 +254,7 @@ class LaxsynthProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs, outputs, parameters) {
+    if (this.disposed) return false;
     const output = outputs[0][0];
     if (!output) return true;
 

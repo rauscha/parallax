@@ -223,6 +223,9 @@ export class PlaitsEngine implements ISynthEngine {
 
   async dispose(): Promise<void> {
     this.allNotesOff();
+    // Stop the worklet (free WASM buffer + return false from process()) so the
+    // disposed processor is collected, not left rendering on the audio thread.
+    if (this.node) { try { this.node.port.postMessage({ type: "dispose" }); } catch { /* */ } }
     if (this.node) { try { this.node.disconnect(); } catch { /* */ } this.node = null; }
     if (this.gainNode) { try { this.gainNode.disconnect(); } catch { /* */ } this.gainNode = null; }
     this.ctx = null;

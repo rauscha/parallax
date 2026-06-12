@@ -6,6 +6,7 @@
    * 4-bar monophonic grid and reports how many source notes were dropped.
    */
   import { onDestroy } from "svelte";
+  import { trapFocus } from "./trapFocus";
   import { melodyStore } from "../state/stores";
   import { exportMelodyToFile, importMelodyFromFile } from "../sequencer/midi";
 
@@ -74,7 +75,7 @@
   >♪ MIDI</button>
 
   {#if open}
-    <div class="panel" role="dialog" aria-label="MIDI file import and export">
+    <div class="panel" role="dialog" aria-label="MIDI file import and export" tabindex="-1" use:trapFocus>
       <button class="row-btn" onclick={() => fileInput?.click()} disabled={busy}>
         ⤒ Import .mid…
       </button>

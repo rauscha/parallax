@@ -6,6 +6,7 @@
    * eyeball the design.
    */
   import { onDestroy } from "svelte";
+  import { trapFocus } from "./trapFocus";
   import { patchStore, melodyStore } from "../state/stores";
   import { engineEntryOrDefault } from "../audio/registry";
   import {
@@ -139,7 +140,7 @@
     class="overlay"
     onpointerdown={(e) => { if (e.target === e.currentTarget) open = false; }}
   >
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="Patch postcard" tabindex="-1">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Patch postcard" tabindex="-1" use:trapFocus>
       <div class="sheet-head">
         <span class="title">Patch postcard</span>
         <button class="x" onclick={() => (open = false)} aria-label="Close">×</button>

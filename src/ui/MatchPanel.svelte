@@ -9,6 +9,7 @@
   import { startEngine } from "../state/engine-control";
   import Spectrum from "../viz/Spectrum.svelte";
   import Knob from "./Knob.svelte";
+  import { trapFocus } from "./trapFocus";
 
   // "Match a sound from a song" — load a track, loop a region, and compare its
   // spectrum side-by-side with the live patch. Foundation tier: load + region +
@@ -276,7 +277,7 @@
 {#if open}
   <div class="overlay">
     <button class="backdrop" aria-label="Close match panel" onclick={close}></button>
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Match a sound">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Match a sound" tabindex="-1" use:trapFocus>
       <header class="match-header">
         <h2>Match a sound</h2>
         <button class="close" onclick={close} aria-label="Close">×</button>

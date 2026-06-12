@@ -6,6 +6,7 @@
    * the preset needs a different one (via loadState).
    */
   import { onDestroy } from "svelte";
+  import { trapFocus } from "./trapFocus";
   import { audioReadyStore } from "../state/stores";
   import {
     savePreset,
@@ -121,7 +122,7 @@
   >▤ Presets</button>
 
   {#if open}
-    <div class="panel" role="dialog" aria-label="Preset library">
+    <div class="panel" role="dialog" aria-label="Preset library" tabindex="-1" use:trapFocus>
       <form class="save-row" onsubmit={(e) => { e.preventDefault(); onSave(); }}>
         <input
           class="name-input"

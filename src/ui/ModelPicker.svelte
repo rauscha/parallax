@@ -389,7 +389,9 @@
     }
     .search {
       padding: 12px 12px;
-      font-size: 0.85rem;
+      /* 16px keeps iOS from zooming the whole PWA on focus (the App.svelte
+         tempo input does the same). Anything <16px triggers the zoom. */
+      font-size: 16px;
       min-height: 44px;
     }
     .list { max-height: 240px; }

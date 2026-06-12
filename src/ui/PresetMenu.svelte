@@ -285,5 +285,7 @@
   @media (pointer: coarse) {
     .io-btn { padding: 8px 12px; min-height: 36px; }
     .save-btn, .del { min-height: 34px; }
+    /* 16px stops iOS zooming the PWA when the name field is focused. */
+    .name-input { font-size: 16px; }
   }
 </style>

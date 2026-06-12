@@ -68,9 +68,14 @@
     <span class="brand-name">Parallax</span>
   </div>
   <div class="topbar-right">
+    <!-- Surprise lives OUTSIDE ToolsMenu so it stays visible on phones — it's the
+         hero "first move" for a first-time visitor and must not hide behind ⋯
+         (ux-ui M5, fun §7.3). On ≤720px the label collapses to the bare ⚄ icon;
+         Match/Share/Presets/MIDI still overflow into the menu. -->
+    <button class="surprise-entry" onclick={roll} disabled={!ready || rolling}
+      aria-label="Surprise me — roll a random engine, sound, and melody"
+      title="Roll a random engine, sound, and melody"><span class="dice" aria-hidden="true">⚄</span><span class="surprise-label">{rolling ? " Rolling…" : " Surprise me"}</span></button>
     <ToolsMenu>
-      <button class="surprise-entry" onclick={roll} disabled={!ready || rolling}
-        title="Roll a random engine, sound, and melody">{rolling ? "⚄ Rolling…" : "⚄ Surprise me"}</button>
       <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
         title="Load a track and recreate one of its sounds">◎ Match a sound</button>
       <PatchToolbar />
@@ -239,6 +244,8 @@
 
   /* Surprise is the playful hero action — give it the signal accent so it pops. */
   .surprise-entry {
+    display: inline-flex;
+    align-items: center;
     font-family: var(--font-mono);
     font-size: 0.7rem;
     letter-spacing: 0.04em;
@@ -556,6 +563,16 @@
       gap: 10px;
       padding: 8px 12px;
       padding-top: calc(8px + env(safe-area-inset-top));
+    }
+    /* Surprise stays in the phone top bar but as the bare ⚄ icon, so it reads as
+       a tidy single button next to ⋯ rather than a wide pill. */
+    .surprise-label { display: none; }
+    .surprise-entry {
+      min-width: 40px;
+      justify-content: center;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 6px 10px;
     }
     /* Fill the home-indicator / gesture-bar area with the transport's own
        surface so there's no mismatched colour band at the very bottom

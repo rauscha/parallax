@@ -153,7 +153,7 @@ export const BRAIDS_MODELS: BraidsModel[] = [
       goodFor: "Drawbar-organ voicings, clean additive chords, and sub-plus-harmonic stacks where purity matters." } },
 
   { index: 13, code: "RING", name: "Ring-Modulated Sines", family: "analog",
-    description: "Two sine waves multiplied — bell-like inharmonic metallic tones.",
+    description: "Three sine waves ring-modulated together — bell-like inharmonic metallic tones.",
     timbre: "Frequency of the second sine relative to the carrier.",
     color: "Frequency of the third sine relative to the carrier.",
     detail: {

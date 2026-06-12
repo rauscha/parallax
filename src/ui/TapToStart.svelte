@@ -44,7 +44,7 @@
 <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ttsTitle">
   <div class="card">
     <h1 id="ttsTitle">Parallax</h1>
-    <p class="subtitle">A web playground for the sounds of Braids.</p>
+    <p class="subtitle">A macro-oscillator playground — explained as you play.</p>
     <button class="cta" onclick={start} disabled={starting}>
       {starting ? "Starting…" : "Tap to start audio"}
     </button>

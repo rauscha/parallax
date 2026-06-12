@@ -43,7 +43,7 @@
     pitch: "Pitch",
     filter: "Filter",
     envelope: "Envelope",
-    lofi: "Lo-fi (the Braids crunch)",
+    lofi: "Lo-fi (bit crush & drift)",
     drive: "Drive & Crush",
     output: "Output",
   };

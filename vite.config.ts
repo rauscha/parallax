@@ -81,7 +81,7 @@ export default defineConfig(({ command, isPreview }) => ({
       manifest: {
         name: 'Parallax',
         short_name: 'Parallax',
-        description: 'A web playground for the sounds of Braids.',
+        description: 'A macro-oscillator playground — explained as you play.',
         theme_color: '#0B0E11',
         background_color: '#0B0E11',
         display: 'standalone',

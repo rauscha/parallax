@@ -12,6 +12,7 @@
   import NoteStrip from "./ui/NoteStrip.svelte";
   import MatchPanel from "./ui/MatchPanel.svelte";
   import PwaToast from "./ui/PwaToast.svelte";
+  import UndoToast from "./ui/UndoToast.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
@@ -22,6 +23,7 @@
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
   import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
   import { surpriseMe } from "./state/surprise";
+  import { captureUndo } from "./state/undo";
 
   // Store subscriptions — captured and torn down in onDestroy. App is the root
   // (never unmounts in practice), but the unsubscribe-on-destroy rule is uniform
@@ -46,6 +48,11 @@
   function toggleTransport() {
     if (playing) stopTransport();
     else playTransport();
+  }
+
+  function handleClear() {
+    captureUndo("Melody cleared");
+    clearMelody();
   }
 
   let rolling = $state(false);
@@ -155,7 +162,7 @@
         <button class="ghost-btn" onclick={loadDemoMelody} disabled={!ready}>Load demo</button>
       {:else}
         <span class="count">{eventCount} note{eventCount === 1 ? "" : "s"}</span>
-        <button class="ghost-btn" onclick={clearMelody}>Clear</button>
+        <button class="ghost-btn" onclick={handleClear}>Clear</button>
       {/if}
     </div>
   </section>
@@ -166,6 +173,7 @@
 <MatchPanel bind:open={matchOpen} />
 
 <PwaToast />
+<UndoToast />
 
 <footer class="transport">
   <div class="transport-left">

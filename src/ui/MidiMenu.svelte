@@ -9,6 +9,7 @@
   import { trapFocus } from "./trapFocus";
   import { melodyStore } from "../state/stores";
   import { exportMelodyToFile, importMelodyFromFile } from "../sequencer/midi";
+  import { captureUndo } from "../state/undo";
 
   let eventCount = $state(melodyStore.get().events.length);
   const unsubCount = melodyStore.subscribe((m) => { eventCount = m.events.length; });
@@ -49,6 +50,8 @@
     try {
       const res = await importMelodyFromFile(file);
       const cur = melodyStore.get();
+      // Snapshot before the replace so the import is one-tap reversible.
+      captureUndo("MIDI imported");
       // Replace the melody (events + tempo); keep the user's key/scale choice.
       melodyStore.set({ ...cur, tempo: res.tempo, events: res.events });
       status =

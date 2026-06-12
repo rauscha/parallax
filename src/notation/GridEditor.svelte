@@ -13,6 +13,7 @@
   } from "./editorMode";
   import { audioEngine } from "../audio/AudioEngine";
   import { hapticTick } from "../ui/haptics";
+  import { captureUndo } from "../state/undo";
 
   /* ——— Store subscriptions ———————————————————————————————————————
      Captured and torn down in onDestroy. GridEditor is conditionally mounted
@@ -430,6 +431,7 @@
   /* ——— G4: Randomize ————————————————————————————————————————————— */
 
   function handleRandomize(): void {
+    captureUndo("Melody randomized");
     const evs = randomizeMelody(key, scale, baseOctave, octaveSpan);
     melodyStore.setKey("events", evs);
   }

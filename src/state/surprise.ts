@@ -11,6 +11,7 @@ import { startEngine } from "./engine-control";
 import { patchStore, melodyStore, engineIdStore } from "./stores";
 import { gridBaseOctaveStore } from "../notation/editorMode";
 import { randomizeMelody } from "../notation/grid";
+import { captureUndo } from "./undo";
 
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const SCALES = ["major", "minor", "pentatonic"] as const;
@@ -55,6 +56,9 @@ function randomParamValue(d: ParameterDescriptor): number {
  */
 export async function surpriseMe(opts: { swapEngine?: boolean } = {}): Promise<void> {
   const swapEngine = opts.swapEngine ?? true;
+
+  // Snapshot the current instrument first so one tap is reversible.
+  captureUndo("New instrument rolled");
 
   if (swapEngine && ENGINES.length > 1) {
     const others = ENGINES.filter((e) => e.id !== engineIdStore.get());

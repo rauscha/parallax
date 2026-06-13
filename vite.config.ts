@@ -1,6 +1,20 @@
 import { defineConfig, type Plugin } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'node:child_process'
+
+// Build identifier shown in the footer so a deployed build is identifiable (and
+// "did my push land?" is answerable at a glance). Prefer the CI commit SHA;
+// fall back to a local `git rev-parse`, then "dev".
+function buildId(): string {
+  const sha = process.env.GITHUB_SHA
+  if (sha) return sha.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    return 'dev'
+  }
+}
 
 // Content-Security-Policy for the deployed app. GitHub Pages can't serve a
 // `_headers`/HTTP-header CSP, so we ship it as a <meta http-equiv> tag — but
@@ -63,6 +77,9 @@ export default defineConfig(({ command, isPreview }) => ({
   // the deploy path changes (root host → '/'). Runtime asset loads use
   // import.meta.env.BASE_URL.
   base: command === 'build' || isPreview ? '/parallax/' : '/',
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId()),
+  },
   plugins: [
     svelte(),
     cspMeta(command === 'build'),

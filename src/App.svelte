@@ -215,7 +215,10 @@
       <span class="bpm-unit">BPM</span>
     </label>
   </div>
-  <span class="status">audio <span class="dot" aria-hidden="true">{ready ? "●" : "○"}</span> <strong>{ready ? "READY" : "idle"}</strong></span>
+  <span class="footer-right">
+    <span class="status">audio <span class="dot" aria-hidden="true">{ready ? "●" : "○"}</span> <strong>{ready ? "READY" : "idle"}</strong></span>
+    <span class="build" title="build identifier (git short SHA)">build {__BUILD_ID__}</span>
+  </span>
 </footer>
 
 <style>
@@ -543,6 +546,8 @@
   }
   /* Status uses shape + text-case + weight, not color alone — ready/idle is
      readable in greyscale and remains accessible for colorblind users. */
+  .footer-right { display: inline-flex; align-items: baseline; gap: 12px; }
+  .build { font-size: 0.62rem; color: var(--text-dim); opacity: 0.7; letter-spacing: 0.03em; }
   .status { display: inline-flex; align-items: baseline; gap: 6px; }
   .status .dot {
     font-family: var(--font-mono);

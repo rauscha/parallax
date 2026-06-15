@@ -91,14 +91,19 @@ function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: num
 
 // A scannable QR of the share URL, drawn into a white rounded panel (so it
 // scans on any theme's background) with a quiet zone. Auto-sizes the QR version
-// to the URL length at error-correction level M.
+// to the URL length at error-correction level L — the lowest level packs the
+// most data per version, so the code needs fewer modules and each cell renders
+// larger. That density matters more here than damage tolerance: the card is a
+// clean on-screen image, and a dense 64-step melody pushes the URL past 570
+// chars, which at level M tiled into sub-pixel mush once a platform downscaled
+// the 1200×630 card.
 function drawQr(
   ctx: CanvasRenderingContext2D,
   url: string, x: number, y: number, size: number, quiet: number,
 ): void {
   let qr;
   try {
-    qr = qrcode(0, "M");
+    qr = qrcode(0, "L");
     qr.addData(url);
     qr.make();
   } catch {
@@ -272,18 +277,23 @@ export function renderPostcard(
     drawDial(ctx, cx, 228, dialR, k.value, k.label, colors);
   }
 
-  // Melody piano-roll across the lower third (shortened to clear the footer QR).
-  drawPianoRoll(ctx, PAD, 372, POSTCARD_W - PAD * 2, 132, data.events, colors);
+  // Lower band: the melody piano-roll (left) beside a large QR (right). The QR
+  // is sized generously so it still resolves after a social platform downscales
+  // the 1200×630 card — a small code tiles into mush once the image is halved.
+  const LOWER_Y = 360;
+  const QR_SIZE = 176;
+  const QR_QUIET = 10;
+  const qrX = POSTCARD_W - PAD - QR_SIZE;
+  const rollW = qrX - 24 - PAD; // 24px gutter between the roll and the QR
+  drawPianoRoll(ctx, PAD, LOWER_Y, rollW, 176, data.events, colors);
 
-  // Footer-right: a QR of the share URL so the card actually carries its sound.
-  const QR_SIZE = 100;
-  const qrX = POSTCARD_W - 40 - QR_SIZE;
-  drawQr(ctx, data.shareUrl, qrX, 512, QR_SIZE, 8);
+  // QR of the share URL so the card actually carries its sound.
+  drawQr(ctx, data.shareUrl, qrX, LOWER_Y, QR_SIZE, QR_QUIET);
   ctx.fillStyle = colors.textDim;
   ctx.font = `500 16px ${MONO}`;
-  ctx.textAlign = "right";
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("scan to open", qrX - 16, 562);
+  ctx.fillText("scan to open", qrX + QR_SIZE / 2, LOWER_Y + QR_SIZE + 16);
 
   // Footer-left: the bespoke wave mark (replacing the ◐ placeholder) + the URL.
   drawMark(ctx, PAD, POSTCARD_H - 64, 26, colors.signal, colors.textDim);

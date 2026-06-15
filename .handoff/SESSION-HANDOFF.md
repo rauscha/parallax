@@ -1,15 +1,25 @@
-# Session hand-off — 2026-06-12 (remote: v1.0 ship gate, Phases A–C)
+# Session hand-off — 2026-06-12→15 (remote: v1.0 ship gate, Phases A–C — MERGED + LIVE)
 
 ## STATE (read this first)
-- Branch: `claude/parallax-v1-ship-gate-s0trga` (the harness-designated ship-gate
-  branch; the roadmap's working name was `v1-ship-gate`). Pushed; PR
-  "v1.0 ship gate (Phases A–C)" opened as a draft.
-- **Phases A–C of `docs/roadmap-v1.0.md` are complete** — 21 task commits, one per
-  task with the `[v1-…]` id in the body. `npm run check` (0 errors), `npm run test`
-  (29 passing), and `npm run build` (clean, 25 precache entries) are all green.
-- **Phase D is the human gate — untouched, as instructed. Nothing is tagged.**
+- **Phases A–C of `docs/roadmap-v1.0.md` are complete, merged to `main`, and deployed live** at andrewrausch.com/parallax/. PR #15 ("v1.0 ship gate (Phases A–C)") was merged; `main` fast-forwarded to include all 21 task commits. Two Pages deploys ran green (runs #98 then #99).
+- **Live build id: `1045603`** — shown bottom-right of the transport bar (the new build stamp, see below). That's the "am I on the new code?" check; if a browser shows an older id or none, it's the **PWA service worker cache** — clear it (DevTools → Application → Service Workers → Unregister, then reload) to pick up the new build.
+- After the merge, one extra commit landed on `main`: **`1045603` build-stamp** (footer `build <git-sha>` via Vite `define __BUILD_ID__`), added so deploys are verifiable at a glance.
+- **Phase D is still the human gate — not started. Nothing is tagged.**
+- Branch: `claude/parallax-v1-ship-gate-s0trga` (== `main` at the merge; this hand-off commit may sit one ahead on the branch). **Heads-up:** the `1045603` commit shows **Unverified** on GitHub (direct `git push … HEAD:main` didn't get the harness signature). Left as-is rather than rewrite already-deployed `main` history for a cosmetic badge; rewrite only if you care (would change the live build id).
 
-## Done this session (every commit has its task id in the body)
+## Carry-forwards into Phase D (in priority order)
+1. **A7 WASM rebuild** — `emcc` was unavailable here, so `public/braids.wasm` is the pre-existing binary; the A7 envelope clamp is enforced by the worklet+engine **JS guards** (safe to ship/ear-test). Run `npm run wasm` on a desktop with Emscripten, recommit `public/braids.wasm`, and re-pin SHA/emcc/eurorack-commit in `dsp/PROVENANCE.md` (all flagged "to be pinned at next rebuild").
+2. **C6 Tone.js code-split** — deferred (would pull Tone out of GridEditor/StaffEditor playhead + the transport/part graph; unverifiable without a browser). 550 KB chunk warning stands — the acceptable option per code-quality §5.5. Good first follow-up on a machine with a browser.
+3. **Visual / ear / device pass** — ux-ui §6 checklist (Sandbox legibility after B1; postcard per theme incl. the QR + the shortened piano roll; first-run nudge; ⚄-on-phone; undo toast), engine-swap pop gone (A3), no audio-thread degradation after 10 Surprise rolls (A2), modal keyboard-walk (B2), iOS no-zoom (B3), demo-riff feel (B6).
+4. **QR scan check** — decode the postcard QR; must equal `buildShareUrl()` and scan at downscaled sizes (auto-sizes ~73 modules at 100px for a ~357-char URL).
+5. Then **tag `v1.0.0`** (subsumes the never-tagged `v0.5.0-m5`).
+
+## Note on "first-run fun" (came up in ear-testing)
+The A440 tap tone + scope boot-sweep predate this work — B6 did **not** add an intro sequence. B6 = a better **demo melody** (only on "load a demo") + a **one-line empty-state nudge** that shows **only on a genuinely fresh visit** (no melody, no `#p=` share link, **no saved presets**). Saved presets / a loaded share link suppress the nudge by design. The **undo toast after Surprise** is in this build.
+
+---
+
+## Earlier (the build-out session) — every commit has its task id in the body
 **Phase A — correctness**
 - A1 `8cdc12c` unsubscribe-on-destroy sweep across all `*.svelte` (fixes the
   double-transpose-on-key-change leak + dead RAF playheads + dangling timers).

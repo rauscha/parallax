@@ -20,7 +20,11 @@ them. (security M-3)
 
 ## SHA-256 of the committed artifacts
 
-Recorded 2026-06-12. Regenerate with:
+Recorded 2026-06-12; `braids.wasm` re-pinned 2026-06-15 after the A7 rebuild
+(envelope-range clamp landed in the shim). The Emscripten JS glue `braids.js` is
+byte-identical across that rebuild — the clamp only changed compiled DSP, not the
+loader — so only the `.wasm` row moved. Hashes are over the committed (LF) blobs;
+regenerate with:
 
 ```sh
 sha256sum public/braids.wasm public/braids.js \
@@ -30,7 +34,7 @@ sha256sum public/braids.wasm public/braids.js \
 
 | File | SHA-256 |
 |------|---------|
-| `public/braids.wasm`         | `cdb1e768eb5340fd9f5b964ddd98ec29b3728c2230baf6c6aaec1d156fe56aa3` |
+| `public/braids.wasm`         | `07d274371071e60cc9f079d009b21aa2a62fe01d514112e3c5d56cdb109e8145` |
 | `public/braids.js`           | `ee0590665bfd77e41b3b512cea5160fa38633596768f512a351e614954b2d5e3` |
 | `public/plaits.wasm`         | `669906ba48c5168652e0d5a4fad2d93ef8ea0311416f403c33bd09462e52937d` |
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
@@ -68,9 +72,14 @@ npm run wasm:plaits   # -> dsp/shim/build-plaits.ps1 (plaits.wasm + plaits.js)
 
 The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
 1. record the new SHA-256s in the table above,
-2. record the **emcc version** (`emcc --version`) here — *not recorded for the
-   current binaries; to be pinned at the next rebuild*,
-3. record the **eurorack commit** the build was made from (see Source above).
+2. record the **emcc version** (`emcc --version`) here — the current
+   `braids.wasm` was built 2026-06-15 with **emcc 5.0.7**
+   (`263db4cffa6f9fc2ec514a70abac81362ea41849`). The `plaits.wasm` binary
+   predates this rebuild and its emcc version was not captured at the time.
+3. record the **eurorack commit** the build was made from (see Source above) —
+   *still unrecorded:* the M1 vendoring didn't capture upstream `HEAD`, and it
+   can't be recovered from the vendored tree after the fact. Capture it at the
+   next re-vendoring.
 
 Laxsynth has no rebuild step — it's authored directly in
 `public/laxsynth-worklet.js`.

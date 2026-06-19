@@ -1,22 +1,21 @@
 # Waiting on you
 
-**No hard blockers.** Two **eyeball passes** are the only things gating the M5 /
-v1 tag (`v0.5.0-m5`) — both need a human, neither needs a decision from me:
+**Nothing pending — no open decisions.** `v1.0.0` shipped 2026-06-18.
 
-1. **Mobile pass on a real phone.** The top bar gained 4 I/O buttons this run
-   (MIDI · Presets · Postcard · Share). I added `flex-wrap` so it degrades and
-   capped the popovers/postcard modal at 86vw, but a phone-in-hand check at
-   ~375px is your call — does the wrapped bar look OK, do the menus fit?
-2. **Final aesthetic look across all 3 themes.** Token coverage is *verified*
-   complete (lab/sandbox/phosphor) and the postcard is confirmed in Lab +
-   Phosphor; give the whole app a once-over especially in **Sandbox** (the light
-   theme). Once both pass, tag `v0.5.0-m5`.
+Optional, never a gate (carry-forward nice-to-haves):
+- **PNG PWA icons** — the app installs fine with SVG icons; a future `sharp` pass
+  could add crisp PNG / Apple-touch variants for the broadest install/iOS coverage.
+- **Match-tool ear-pass on a real track** — the suggestion ranker is verified on
+  ground-truth clips; a real-track listen is polish, not a gate.
 
-Optional (not a gate): PNG PWA icons — the app installs fine with SVG icons, but
-no rasteriser is available in this toolchain; a future `sharp` pass could add
-crisp PNG/Apple-touch variants for the broadest install/iOS coverage. Also still
-open from before: the optional **Match-tool ear-pass on a real track** (nice-to-
-have, not a gate).
+## Resolved 2026-06-18 (v1.0.0 ship)
+The two eyeball passes that gated the tag are **done**:
+1. **Mobile pass on a real phone → DONE.** Checked on a Pixel; caught + fixed a
+   colour-seam through the Sequencer header (`auto`→`max-content` grid rows,
+   `d38974d`). Top bar wraps cleanly, no overflow at 375px.
+2. **Aesthetic look across all 3 themes → DONE.** Contrast verified AA in every
+   theme programmatically; on-device pass good. Tagged `v1.0.0` (subsumes the
+   never-cut `v0.5.0-m5`).
 
 ## Resolved 2026-06-08 (laptop session)
 - **Match Increment 1 eyeball → DONE.** Was the one open item here; the compare

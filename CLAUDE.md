@@ -24,7 +24,7 @@ Parallax exists because the M8's Macro synth couldn't be learned from the hardwa
 - **Authentic Braids first** — real WASM engine before any UI flesh. No placeholder oscillator.
 - **All three themes** (Lab Instrument [SNES-inspired]; Sandbox; Phosphor) built from CSS custom-property tokens. **Theme follows the engine** (chosen 2026-06-09, superseding the manual runtime switcher): braids → phosphor, plaits → sandbox, laxsynth → lab. There is no manual theme control; selecting an engine switches the skin. Braids boots first, so phosphor is the landing theme.
 - **Single responsive PWA.** No native wrapper.
-- **v1 scope** = MIDI file import/export + shareable URL links — shipped, plus more (presets, PWA, postcard, Web MIDI input, Surprise, Match tool). What stands between today and the v1.0.0 tag is the ship-gate punch list in `docs/roadmap-v1.0.md`. **Deferred:** audio recording/export (one-loop export is the agreed first un-deferral after v1.0), insert FX.
+- **v1 scope** = MIDI file import/export + shareable URL links — shipped, plus more (presets, PWA, postcard, Web MIDI input, Surprise, Match tool). **`v1.0.0` shipped 2026-06-18** — the ship-gate punch list in `docs/roadmap-v1.0.md` (Phases A–D) is complete; the tag subsumes the never-cut `v0.5.0-m5`. **Deferred:** audio recording/export (one-loop export is the agreed first un-deferral after v1.0), insert FX.
 - **Snap-to-scale on by default.** Monophonic. Treble clef. 120 BPM default.
 - **Product name = "Parallax"** (chosen 2026-05-31, replacing the working name "Macroscope"). The repo is `rauscha/parallax`.
 

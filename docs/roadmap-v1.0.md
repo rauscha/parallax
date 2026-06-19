@@ -182,7 +182,7 @@ Agreed direction from the review, in order: ① patch-lineage breadcrumb (extend
 - [x] A4 startEngine lock
 - [x] A5 remapByDegree octave
 - [x] A6 serialization clamps
-- [x] A7 shim envelope clamp (+ wasm rebuild **flagged** — emcc unavailable; JS guards ship it safely)
+- [x] A7 shim envelope clamp (+ wasm **rebuilt** 2026-06-18 with emcc 5.0.7; PROVENANCE re-pinned)
 - [x] A8 brand strings + RING copy
 - [x] B1 --on-signal / contrast (+ --danger)
 - [x] B2 trapFocus
@@ -196,4 +196,9 @@ Agreed direction from the review, in order: ① patch-lineage breadcrumb (extend
 - [x] C4 self-hosted fonts
 - [x] C5 dead code / constants
 - [x] C6 stretch — activeNotes union + PWA-reload jam-preservation done; Tone code-split deferred (too risky to land unverified, optional per code-quality §5.5)
-- [ ] D1–D3 human gate · [ ] D4 tag v1.0.0
+- [x] D1–D3 human gate — device + ear pass on 2026-06-18 (engine-swap pop gone, no audio degradation after repeated Surprise rolls, "want to show it off" grin, Korg NanoKey MIDI input plug-and-play on a phone)
+- [x] D4 **tag `v1.0.0`**
+
+Two extra fixes landed during the Phase-D pass (beyond the A–C list):
+- postcard QR enlarged 100→176px + EC L (was sub-pixel / unscannable once downscaled) — `15c654a`
+- mobile sequencer region collapsed into a `--hairline` colour seam through the Sequencer header (a Pixel catch, all themes) — `auto`→`max-content` rows — `d38974d`

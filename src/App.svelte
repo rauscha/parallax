@@ -570,7 +570,17 @@
        no intrinsic height of their own (the canvas viz and the editor). */
     .grid {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto;
+      /* max-content, NOT auto: the stacked content is always taller than a phone
+         viewport, so the grid is over-constrained and scrolls. With `auto` rows,
+         the track-sizing algorithm shrinks rows toward their min-content to fit
+         the box — and the staff region's min-content is just its one-line label
+         (its editor grid can collapse), so the last row caved to ~28px while its
+         content overflowed below. The region's background stopped at the label
+         and the grid's --hairline showed through behind the rest: a hard colour
+         seam slicing through the Sequencer header. `max-content` pins each row to
+         its full content height so the region paints behind all of it and the
+         grid simply scrolls. */
+      grid-template-rows: max-content max-content max-content max-content;
       grid-template-areas:
         "scope"
         "controls"

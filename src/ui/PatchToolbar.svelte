@@ -13,6 +13,7 @@
   import { audioReadyStore } from "../state/stores";
   import { writeShareUrl } from "../state/share-url";
   import PresetMenu from "./PresetMenu.svelte";
+  import RecentSoundsMenu from "./RecentSoundsMenu.svelte";
   import MidiMenu from "./MidiMenu.svelte";
   import PostcardModal from "./PostcardModal.svelte";
 
@@ -43,6 +44,7 @@
 <div class="io-bar">
   <MidiMenu />
   <PresetMenu />
+  <RecentSoundsMenu />
   <button
     class="io-btn"
     onclick={() => (postcardOpen = true)}

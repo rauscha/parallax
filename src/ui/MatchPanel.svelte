@@ -7,6 +7,7 @@
   import { analyzeRegion, type RegionAnalysis } from "../audio/sample-analysis";
   import { suggestPatches, type PatchSuggestion } from "../audio/suggest";
   import { startEngine } from "../state/engine-control";
+  import { recordSound } from "../state/lineage";
   import Spectrum from "../viz/Spectrum.svelte";
   import Knob from "./Knob.svelte";
   import { trapFocus } from "./trapFocus";
@@ -44,6 +45,7 @@
     applying = true;
     error = "";
     try {
+      recordSound("match");   // snapshot the outgoing sound for the Recent trail
       if (s.engineId !== engineIdStore.get()) await startEngine(s.engineId);
       const eng = audioEngine.currentEngine;
       const byId = new Map((eng?.getParameterSchema() ?? []).map((d) => [d.id, d]));

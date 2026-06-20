@@ -12,6 +12,7 @@ import { patchStore, melodyStore, engineIdStore } from "./stores";
 import { gridBaseOctaveStore } from "../notation/editorMode";
 import { randomizeMelody } from "../notation/grid";
 import { captureUndo } from "./undo";
+import { recordSound } from "./lineage";
 
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const SCALES = ["major", "minor", "pentatonic"] as const;
@@ -59,6 +60,7 @@ export async function surpriseMe(opts: { swapEngine?: boolean } = {}): Promise<v
 
   // Snapshot the current instrument first so one tap is reversible.
   captureUndo("New instrument rolled");
+  recordSound("surprise");   // ...and add it to the persistent Recent-sounds trail
 
   if (swapEngine && ENGINES.length > 1) {
     const others = ENGINES.filter((e) => e.id !== engineIdStore.get());

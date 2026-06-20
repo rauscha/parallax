@@ -1,57 +1,55 @@
-# Session hand-off — 2026-06-19 (machine: desktop · c:\parallax)
+# Session hand-off — 2026-06-20 (machine: desktop · c:\parallax)
 
 ## STATE (read this first)
-- Branch: `main`, **clean + synced** (HEAD `f29e045` == origin/main). One worktree
-  only — nothing stranded.
-- **🚀 Parallax `v1.0.0` is still the live release.** No code changed this session.
-- This was a **design session** for the first "After v1.0" item, **patch-lineage
-  breadcrumb ("Recent sounds")**. The spec is written, committed, and pushed —
-  **ready to build next session.** Nothing is mid-flight in code.
+- Branch: `main`, **clean + synced** (HEAD `ab0bb12` == origin/main). One worktree only.
+- **🚀 Parallax `v1.0.0` is still the live release.** The patch-lineage "Recent sounds" feature was **built and shipped this session** as four commits on top of v1.0.0.
+- **Two more features are now spec'd and plan'd**, ready to build in the next session: musical melody theory + transport UX. Both plans and specs are committed.
 
 ## Done this session
-Resumed via /pick-up (clean, synced). Picked roadmap "After v1.0" **#1 patch-lineage
-breadcrumb** and ran it through the full brainstorming flow:
-- **Design decided** (all questions resolved with the user):
-  - A persistent **"Recent sounds"** list (popover), not just a beefed-up toast.
-  - Captures **generative actions only** — Surprise rolls + Match-panel Apply. The
-    melody-only actions (Clear / MIDI / Randomize) keep today's transient undo toast,
-    untouched. Surprise *also* keeps its instant toast and additionally records to the ring.
-  - **Ring of 10**, newest-first, dedup against head. **Persisted** via `idb-keyval`
-    in its own `parallax-lineage` namespace (survives reload / PWA relaunch).
-  - **Restore** reuses the proven `loadState(decodeState(wire))` path (same as presets
-    / share-URLs); restoring is itself reversible.
-- **Designer sign-off** via the frontend-design skill: the new control is **one more
-  `io-btn` (`↺ Recent`) inside the existing `PatchToolbar` `.io-bar` cluster**, right
-  after Presets — NOT a new top-bar button (only Surprise is exposed; the rest already
-  live in the `⋯` ToolsMenu, so no crowding, mobile untouched). One distinguishing
-  signature: each row leads with a **source glyph (`⚄` roll / `◎` match)** + engine·model
-  + relative time. No save row, no per-row delete, just a "Clear history" link.
-- **Spec written + committed** (`f29e045`):
-  `docs/superpowers/specs/2026-06-19-patch-lineage-design.md` — self-contained, with
-  §8 "won't break v1" safety argument and §9 exact file-change list (2 new files,
-  3 tiny edits).
+
+Resumed via /pick-up (clean, synced). Executed the patch-lineage plan in full (4 tasks, TDD throughout) and then brainstormed + planned two new features:
+
+### 1. Patch-lineage "Recent sounds" — ✅ SHIPPED (`0fb7173`–`727a14f`)
+Four commits, 38/38 tests passing, pushed to main:
+- `f34d9ee` **Pure ring core** (`src/state/lineage-core.ts`): CAP=10, `pushSnapshot`, `mergeRing`, `buildEntry`, `isValidEntry`. 9 unit tests.
+- `0fb7173` **idb-backed shell** (`src/state/lineage.ts`): `recordSound`, `restoreSound`, `clearLineage`, `hydrateLineage`. Nanostores atom + `idb-keyval` in own `parallax-lineage` namespace. Fire-and-forget persist; restore reuses `loadState(decodeState(wire))` (same as presets/share-URLs).
+- `71f42b9` **`RecentSoundsMenu.svelte`**: focus-trapped popover, glyphs `⚄` surprise / `◎` match / `↩` restore, relative-time labels, "Clear history" link, empty state message.
+- `727a14f` **Wiring**: `surprise.ts` calls `recordSound("surprise")`, `MatchPanel.svelte` calls `recordSound("match")` in `applySuggestion`, `main.ts` calls `void hydrateLineage()` on boot, `PatchToolbar.svelte` adds `<RecentSoundsMenu />` after `<PresetMenu />`.
+
+**Browser verification pass:** Not yet done — dev server was running but only partially checked (the session ran out of context before a formal checklist pass). Manual to-do: roll Surprise → entries appear; click older entry → restores + ↩ appears; Match Apply → ◎ entry; reload → persists; clear → empties; undo toast still works; zero console errors.
+
+### 2. Design + spec: Musical melody theory (`docs/superpowers/specs/2026-06-20-musical-melody-and-transport-ux.md`)
+Committed `b6c75ed`. Problems diagnosed: `randomizeMelody` is mono-rhythmic (all quarter notes), fully random pitch, no contour, no tonic anchoring. Design approved: `buildRhythm` (DURS palette), `pickNext` (stepwise bias), `findTonicIdx` (chroma fix for non-C keys — `midis[0]` ≠ tonic in G major etc.).
+
+### 3. Implementation plan: Musical melody + transport UX (`docs/superpowers/plans/2026-06-20-musical-melody-and-transport-ux.md`)
+Committed `ab0bb12`. Three tasks, full code at every step, no placeholders:
+- **Task 1:** Add `buildRhythm`, `pickNext`, `findTonicIdx` as exported functions in `grid.ts` + 9 new unit tests.
+- **Task 2:** Replace `randomizeMelody` body (two-phrase arc contour, tonic anchors, rhythmic variety) + 7 integration tests.
+- **Task 3:** Bigger play button CSS in `App.svelte` + Space bar transport toggle in `KeyboardHarness.svelte` + hint text update.
 
 ## Next up
-**Execute the patch-lineage spec.** Start a fresh session, then:
-1. Read `docs/superpowers/specs/2026-06-19-patch-lineage-design.md`.
-2. Run **`npm ci` first** (see Watch out) before any check/test/build.
-3. Invoke **writing-plans** to turn the spec into a step-by-step plan.
-4. Build it — **TDD on the pure ring logic first** (`pushSnapshot` + entry builder),
-   then `src/state/lineage.ts`, then `src/ui/RecentSoundsMenu.svelte`, then the wiring
-   (PatchToolbar insert, `recordSound` calls in surprise.ts + MatchPanel, `hydrateLineage`
-   on boot). `npm run check` + vitest green, then a browser pass + commit.
 
-Then the rest of the "After v1.0" order: swing + generative melody tools → Parallax
-Daily → one-loop audio export → Rings (v1.2).
+**Pick either of these two items — both have plans ready to execute:**
+
+### A. Execute the musical melody + transport UX plan ← recommended first
+`docs/superpowers/plans/2026-06-20-musical-melody-and-transport-ux.md`
+- Run `npm ci` if on a fresh machine.
+- Use `superpowers:executing-plans` or `superpowers:subagent-driven-development`.
+- All code is in the plan — no gaps.
+- Verify: `npm run test -- grid` green after Task 1 + 2; `npm run check` 0 errors after Task 3.
+
+### B. Browser-verify "Recent sounds" (skipped lineage Task 5)
+Manual checklist (no automated test):
+1. Roll Surprise → `⚄` entry appears in Recent sounds popover.
+2. Click an older entry → patch restores, `↩` new entry appears.
+3. Match Apply → `◎` entry appears.
+4. Reload page → entries persist.
+5. "Clear history" → empties list.
+6. Undo (Ctrl+Z) after a roll → undo toast still works (lineage is separate).
+7. Zero console errors throughout.
 
 ## Watch out for
-- **`npm ci` on a fresh machine first.** Overnight deps (`qrcode-generator`, `vitest`)
-  post-dated some `node_modules`; check/test/build fail until a clean install. The
-  laptop will need it too after pulling.
-- **Preview screenshots don't work here** (backgrounded Claude preview tab → RAF paused,
-  `vh`/`%` layouts collapse in measurement). Verify the new popover via computed-style /
-  geometry evals + a real-device check, not screenshots.
-- **No code was written this session** — purely the spec. The implementation is the
-  whole point of the next session; the spec is the contract.
-- `.handoff/PENDING-DECISIONS.md` is empty — all lineage design questions were resolved
-  live, so there's nothing waiting on the user.
+- **`midis[0]` ≠ tonic** for non-C keys in `buildRowMidis` — the range starts at `C{baseOctave+1}` and filters by chroma. `findTonicIdx` (Task 1 of the plan) fixes this; Task 2 uses it. The spec §2.2 has the full explanation.
+- **`readonly LineageEntry[]` type** — nanostores atoms type their values as `readonly T[]`; Svelte 5 `$state` must use `$state<readonly T[]>()`. If you ever extend `RecentSoundsMenu.svelte`, keep the `readonly` qualifier.
+- **Preview screenshots still don't work** (backgrounded Claude preview tab → RAF paused). Verify the Recent sounds popover geometry via computed-style evals + a real-device check.
+- No `superpowers:hand-off` skill exists — this file IS the handoff.

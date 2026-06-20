@@ -7,11 +7,12 @@ Last reconciled: 2026-06-18 (desktop — **🚀 `v1.0.0` SHIPPED.** Resumed via 
 ## Now — After v1.0 (THE ACTIVE WORK) — v1.0.0 shipped 2026-06-18
 
 Parallax **`v1.0.0` is live** (annotated tag pushed, CI + Pages green, andrewrausch.com/parallax). The ship-gate punch list (`docs/roadmap-v1.0.md`, Phases A–D) is fully complete. The next work is the roadmap's **"After v1.0"** section — agreed order, start a fresh session per item:
-1. **patch-lineage breadcrumb ("Recent sounds")** — ✅ **design approved + spec written 2026-06-19** (`docs/superpowers/specs/2026-06-19-patch-lineage-design.md`, commit `f29e045`). **Ready to build** — next session: `npm ci`, then writing-plans → TDD the pure ring → `state/lineage.ts` + `ui/RecentSoundsMenu.svelte` + wiring. Persistent idb-backed ring of 10 capturing Surprise + Match Apply; `↺ Recent` button in the existing PatchToolbar cluster. Strictly additive (won't touch the existing undo toast / melody actions).
-2. **swing + Euclidean / arp / mutate** melody tools.
-3. **Parallax Daily** — date-seeded surprise; refactor `surprise.ts` / `randomizeMelody` to take an injected RNG when the time comes.
-4. **one-loop audio export** (MediaRecorder tap on the engine output) ← **agreed first un-deferral after v1.0**.
-5. **port Rings as engine #4** (v1.2 marquee).
+1. **patch-lineage breadcrumb ("Recent sounds")** — ✅ **SHIPPED 2026-06-20** (4 commits, `f34d9ee`–`727a14f`). Pure ring core + 9 tests, idb-backed shell, `RecentSoundsMenu.svelte`, wiring (surprise.ts + MatchPanel + main.ts + PatchToolbar). **Browser verification pass still pending** — see SESSION-HANDOFF for the 7-item manual checklist.
+2. **Musical melody + transport UX** — ✅ **spec + plan ready 2026-06-20**. Spec: `docs/superpowers/specs/2026-06-20-musical-melody-and-transport-ux.md`. Plan: `docs/superpowers/plans/2026-06-20-musical-melody-and-transport-ux.md`. Tasks: (1) pure helpers `buildRhythm`/`pickNext`/`findTonicIdx` + tests, (2) replace `randomizeMelody` body (arch contour + tonic anchors + rhythm variety) + tests, (3) bigger play button CSS + Space bar transport toggle. **Execute via `superpowers:executing-plans`.**
+3. **swing + Euclidean / arp / mutate** melody tools.
+4. **Parallax Daily** — date-seeded surprise; refactor `surprise.ts` / `randomizeMelody` to take an injected RNG when the time comes.
+5. **one-loop audio export** (MediaRecorder tap on the engine output) ← **agreed first un-deferral after v1.0**.
+6. **port Rings as engine #4** (v1.2 marquee).
 Detail + the do-NOT-build policy list: `reviews/2026-06-11-next-level-ideas.md`. Strategic framing (review consensus): the product is the *self-explaining instrument loop*, not the WASM port — lead with it.
 
 ## Done — v1.0 ship gate (Phases A–D complete; tagged `v1.0.0` 2026-06-18)

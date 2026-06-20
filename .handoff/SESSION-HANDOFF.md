@@ -1,59 +1,57 @@
-# Session hand-off — 2026-06-18 (machine: desktop · c:\parallax)
+# Session hand-off — 2026-06-19 (machine: desktop · c:\parallax)
 
 ## STATE (read this first)
-- Branch: `main`, **clean + synced** (HEAD `3c92acb` == origin/main). One worktree
+- Branch: `main`, **clean + synced** (HEAD `f29e045` == origin/main). One worktree
   only — nothing stranded.
-- **🚀 Parallax `v1.0.0` is SHIPPED.** Annotated tag pushed; CI + Pages deploy both
-  green; live at **andrewrausch.com/parallax**. The tag subsumes the never-cut
-  `v0.5.0-m5`. All of `docs/roadmap-v1.0.md` (Phases A–D) is complete.
-- Next work is the roadmap's **"After v1.0"** list — nothing is mid-flight.
+- **🚀 Parallax `v1.0.0` is still the live release.** No code changed this session.
+- This was a **design session** for the first "After v1.0" item, **patch-lineage
+  breadcrumb ("Recent sounds")**. The spec is written, committed, and pushed —
+  **ready to build next session.** Nothing is mid-flight in code.
 
 ## Done this session
-Resumed via /pick-up; the overnight ship-gate (Phases A–C, 21 commits) had already
-merged to `main`. Closed out **Phase D** end-to-end on this desktop:
-- **A7 WASM rebuild** (`73bb7ef`): rebuilt `public/braids.wasm` with **emcc 5.0.7**
-  (the remote box had no Emscripten); re-pinned the SHA + emcc version in
-  `dsp/PROVENANCE.md`. `braids.js` glue byte-identical (clamp only touched compiled
-  DSP). eurorack upstream commit still unrecoverable from the M1 vendoring — noted.
-- **Postcard QR** (`15c654a`): the 100px / EC-M QR was sub-pixel for busy melodies
-  (worst case 0.90 px/module) and unusable after a social downscale. Relaid the lower
-  band — piano-roll left, **176px QR right, EC level L** → 1.93 px/module worst case.
-  Verified offscreen in all 3 themes.
-- **Mobile colour-seam** (`d38974d`): on a real Pixel (all themes) a `--hairline` band
-  cut through the Sequencer header. Cause: mobile grid rows were `auto`, so the
-  over-constrained grid shrank the staff region to its label's min-content and its
-  `--bg` stopped short. Fix: **`auto` → `max-content` rows** so each region keeps full
-  height and the grid scrolls.
-- **Release** (`3c92acb`): ticked roadmap A–D, updated CLAUDE.md status line, tagged.
-- **Objective visual pass** (programmatic — see Watch out): WCAG-AA contrast in all 3
-  themes (tightest 4.67), self-hosted fonts loaded with **zero** Google refs, no
-  horizontal overflow at 375px, 720px boundary flips, first-run nudge present,
-  postcard renders in all themes. `check` 0 err · `test` 29 pass · `build` clean.
-- **Human gate** (Andrew, on device): engine-swap pop gone, no degradation after
-  repeated Surprise rolls, "want to show it off" grin, Korg NanoKey plug-and-play
-  MIDI on the phone.
+Resumed via /pick-up (clean, synced). Picked roadmap "After v1.0" **#1 patch-lineage
+breadcrumb** and ran it through the full brainstorming flow:
+- **Design decided** (all questions resolved with the user):
+  - A persistent **"Recent sounds"** list (popover), not just a beefed-up toast.
+  - Captures **generative actions only** — Surprise rolls + Match-panel Apply. The
+    melody-only actions (Clear / MIDI / Randomize) keep today's transient undo toast,
+    untouched. Surprise *also* keeps its instant toast and additionally records to the ring.
+  - **Ring of 10**, newest-first, dedup against head. **Persisted** via `idb-keyval`
+    in its own `parallax-lineage` namespace (survives reload / PWA relaunch).
+  - **Restore** reuses the proven `loadState(decodeState(wire))` path (same as presets
+    / share-URLs); restoring is itself reversible.
+- **Designer sign-off** via the frontend-design skill: the new control is **one more
+  `io-btn` (`↺ Recent`) inside the existing `PatchToolbar` `.io-bar` cluster**, right
+  after Presets — NOT a new top-bar button (only Surprise is exposed; the rest already
+  live in the `⋯` ToolsMenu, so no crowding, mobile untouched). One distinguishing
+  signature: each row leads with a **source glyph (`⚄` roll / `◎` match)** + engine·model
+  + relative time. No save row, no per-row delete, just a "Clear history" link.
+- **Spec written + committed** (`f29e045`):
+  `docs/superpowers/specs/2026-06-19-patch-lineage-design.md` — self-contained, with
+  §8 "won't break v1" safety argument and §9 exact file-change list (2 new files,
+  3 tiny edits).
 
 ## Next up
-v1.0 is done — work the roadmap's **"After v1.0"** section (`docs/roadmap-v1.0.md`),
-agreed order:
-1. patch-lineage breadcrumb (extends B5's single-slot undo into a ring)
-2. swing + Euclidean / arp / mutate melody tools
-3. Parallax Daily (date-seeded surprise — refactor `surprise.ts`/`randomizeMelody`
-   to take an injected RNG)
-4. **one-loop audio export** (MediaRecorder tap) ← **agreed first un-deferral**
-5. port **Rings** as engine #4 (v1.2 marquee)
-Start a fresh session for whichever you pick — this one is large.
+**Execute the patch-lineage spec.** Start a fresh session, then:
+1. Read `docs/superpowers/specs/2026-06-19-patch-lineage-design.md`.
+2. Run **`npm ci` first** (see Watch out) before any check/test/build.
+3. Invoke **writing-plans** to turn the spec into a step-by-step plan.
+4. Build it — **TDD on the pure ring logic first** (`pushSnapshot` + entry builder),
+   then `src/state/lineage.ts`, then `src/ui/RecentSoundsMenu.svelte`, then the wiring
+   (PatchToolbar insert, `recordSound` calls in surprise.ts + MatchPanel, `hydrateLineage`
+   on boot). `npm run check` + vitest green, then a browser pass + commit.
+
+Then the rest of the "After v1.0" order: swing + generative melody tools → Parallax
+Daily → one-loop audio export → Rings (v1.2).
 
 ## Watch out for
-- **`npm ci` on a fresh machine first.** This desktop's `node_modules` predated the
-  overnight deps (`qrcode-generator`, `vitest`) and check/test/build failed until a
-  clean install. The laptop will need the same after pulling.
-- **Preview screenshots don't work here.** The Claude preview tab runs backgrounded
-  (`window.innerHeight === 0`), which pauses RAF (wedges screenshots) and collapses
-  `vh`/`%`-height layouts in measurements. Verify mobile via computed-style/geometry
-  evals + real-device checks, not screenshots. (The 0-height quirk made the seam look
-  even worse than the real phone — but the seam WAS real on the Pixel.)
-- **Tone.js code-split still deferred** (C6): the ~577 KB index chunk warning stands;
-  accepted per code-quality §5.5, too risky to land without an audio verify.
-- Three remote `claude/...` branches (ship-gate, mobile-responsive, shipping-review)
-  are merged/stale — safe to delete on GitHub to tidy, not required.
+- **`npm ci` on a fresh machine first.** Overnight deps (`qrcode-generator`, `vitest`)
+  post-dated some `node_modules`; check/test/build fail until a clean install. The
+  laptop will need it too after pulling.
+- **Preview screenshots don't work here** (backgrounded Claude preview tab → RAF paused,
+  `vh`/`%` layouts collapse in measurement). Verify the new popover via computed-style /
+  geometry evals + a real-device check, not screenshots.
+- **No code was written this session** — purely the spec. The implementation is the
+  whole point of the next session; the spec is the contract.
+- `.handoff/PENDING-DECISIONS.md` is empty — all lineage design questions were resolved
+  live, so there's nothing waiting on the user.

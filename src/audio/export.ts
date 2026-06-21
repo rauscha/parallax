@@ -100,11 +100,18 @@ export class AudioExporter {
 
   /** Stop recording, disconnect the tap, and resolve with the assembled Blob. */
   stop(): Promise<Blob> {
-    return new Promise<Blob>((resolve) => {
-      this.recorder.onstop = () => {
+    return new Promise<Blob>((resolve, reject) => {
+      const releaseTap = () => {
         try { this.source.disconnect(this.tap); } catch { /* already disconnected */ }
+      };
+      this.recorder.onstop = () => {
+        releaseTap();
         const type = this.recorder.mimeType || this.mimeType || "audio/webm";
         resolve(new Blob(this.chunks, { type }));
+      };
+      this.recorder.onerror = () => {
+        releaseTap();
+        reject(new Error("MediaRecorder error during export."));
       };
       this.recorder.stop();
     });

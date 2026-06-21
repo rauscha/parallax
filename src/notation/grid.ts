@@ -194,6 +194,20 @@ export function findTonicIdx(midis: number[], key: string): number {
 }
 
 /**
+ * Arch-contour target index at phrase position `t` (0..1): rises from the tonic
+ * to the peak over the first half, then falls back to the tonic over the second.
+ * Resolving toward `tonicIdx` (rather than index 0, the lowest note in the row)
+ * keeps the descent in-key for non-C-rooted ranges — in C-rooted ranges the
+ * tonic *is* index 0, so behaviour there is unchanged.
+ * Exported for unit tests — internal to the melody generation feature.
+ */
+export function contourTargetIdx(t: number, tonicIdx: number, peakIdx: number): number {
+  return t < 0.5
+    ? Math.round(tonicIdx + (peakIdx - tonicIdx) * (t * 2))         // tonic → peak as t goes 0→0.5
+    : Math.round(peakIdx - (peakIdx - tonicIdx) * ((t - 0.5) * 2)); // peak → tonic as t goes 0.5→1
+}
+
+/**
  * Generate a musically-shaped in-scale melody:
  * - Varied rhythm (eighth, quarter, dotted-quarter, half).
  * - Phrase contour: rises to a peak around bar 2–3, resolves back to the tonic.
@@ -227,11 +241,9 @@ export function randomizeMelody(
     if (isFirst || isLast) {
       currentIdx = tonicIdx;   // anchor both ends on the tonic
     } else {
-      // Two-phrase contour: 0..0.5 rise toward peak, 0.5..1 fall back to tonic.
+      // Two-phrase arch: rise from tonic toward peak, then resolve back to tonic.
       const t = start / TOTAL_STEPS;              // 0..1
-      const targetIdx = t < 0.5
-        ? Math.round(peakIdx * (t * 2))           // 0 → peakIdx as t goes 0→0.5
-        : Math.round(peakIdx * (1 - (t - 0.5) * 2)); // peakIdx → 0 as t goes 0.5→1
+      const targetIdx = contourTargetIdx(t, tonicIdx, peakIdx);
       currentIdx = pickNext(midis, currentIdx, targetIdx);
     }
 

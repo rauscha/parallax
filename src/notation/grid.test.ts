@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { remapByDegree, buildRowMidis, buildRhythm, pickNext, findTonicIdx, randomizeMelody } from "./grid";
+import { remapByDegree, buildRowMidis, buildRhythm, pickNext, findTonicIdx, contourTargetIdx, randomizeMelody } from "./grid";
 
 describe("remapByDegree (A5 nearest-octave)", () => {
   it("moves B4 to the NEAREST Db-major degree, not the same letter-octave", () => {
@@ -158,6 +158,26 @@ describe("findTonicIdx", () => {
     const idx = findTonicIdx(midis, "G");
     expect(idx).toBeGreaterThan(0);
     expect(midis[idx] % 12).toBe(7); // G chroma
+  });
+});
+
+describe("contourTargetIdx (arch resolves to tonic, not lowest note)", () => {
+  it("starts at the tonic index, not 0, at t=0", () => {
+    expect(contourTargetIdx(0, 4, 10)).toBe(4);
+  });
+
+  it("reaches the peak at the midpoint t=0.5", () => {
+    expect(contourTargetIdx(0.5, 4, 10)).toBe(10);
+  });
+
+  it("falls back to the tonic index, not 0, at the end t=1", () => {
+    expect(contourTargetIdx(1, 4, 10)).toBe(4);
+  });
+
+  it("stays anchored at index 0 when the tonic is the lowest note (C-rooted range unchanged)", () => {
+    expect(contourTargetIdx(0, 0, 10)).toBe(0);
+    expect(contourTargetIdx(0.5, 0, 10)).toBe(10);
+    expect(contourTargetIdx(1, 0, 10)).toBe(0);
   });
 });
 

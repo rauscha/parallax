@@ -110,6 +110,7 @@ export class AudioEngine {
   get currentEngine(): ISynthEngine | null { return this._engine; }
   get audioContext(): AudioContext | null { return this.ctx; }
   get analyserNode(): AnalyserNode | null { return this.analyser; }
+  get masterGainNode(): GainNode | null { return this.masterGain; }
   get sampleAnalyserNode(): AnalyserNode | null { return this.sampleAnalyser; }
   get loadedSample(): AudioBuffer | null { return this.sampleBuffer; }
   get sampleRate(): number { return this.ctx?.sampleRate ?? 0; }

@@ -40,3 +40,73 @@ export function extForMimeType(mime: string): string {
   if (mime.includes("mp4") || mime.includes("mpeg") || mime.includes("aac")) return "mp4";
   return "webm";
 }
+
+/** Preferred capture mime types, best-first. Opus is transparent for synth material. */
+const PREFERRED_TYPES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/ogg;codecs=opus",
+  "audio/ogg",
+  "audio/mp4",
+];
+
+/** True when the browser can record audio at all. */
+export function isExportSupported(): boolean {
+  return typeof MediaRecorder !== "undefined";
+}
+
+/** First supported preferred mime type, or "" to let MediaRecorder pick its default. */
+export function pickMimeType(): string {
+  if (typeof MediaRecorder === "undefined") return "";
+  for (const t of PREFERRED_TYPES) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return "";
+}
+
+/**
+ * Taps a GainNode (the master bus) into a MediaStream and records it. The tap is
+ * a SECOND consumer of `source` — the existing `source → analyser → destination`
+ * path is untouched, so the user keeps hearing the loop while it records.
+ *
+ *   source → analyser → destination        (unchanged)
+ *        ↘ MediaStreamDestination → MediaRecorder
+ */
+export class AudioExporter {
+  private readonly tap: MediaStreamAudioDestinationNode;
+  private readonly recorder: MediaRecorder;
+  private readonly chunks: Blob[] = [];
+  readonly mimeType: string;
+
+  constructor(private readonly ctx: AudioContext, private readonly source: GainNode) {
+    if (typeof MediaRecorder === "undefined") {
+      throw new Error("Audio export is not supported in this browser.");
+    }
+    this.mimeType = pickMimeType();
+    this.tap = ctx.createMediaStreamDestination();
+    source.connect(this.tap);
+    this.recorder = this.mimeType
+      ? new MediaRecorder(this.tap.stream, { mimeType: this.mimeType })
+      : new MediaRecorder(this.tap.stream);
+    this.recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) this.chunks.push(e.data);
+    };
+  }
+
+  /** Begin recording immediately. */
+  start(): void {
+    this.recorder.start();
+  }
+
+  /** Stop recording, disconnect the tap, and resolve with the assembled Blob. */
+  stop(): Promise<Blob> {
+    return new Promise<Blob>((resolve) => {
+      this.recorder.onstop = () => {
+        try { this.source.disconnect(this.tap); } catch { /* already disconnected */ }
+        const type = this.recorder.mimeType || this.mimeType || "audio/webm";
+        resolve(new Blob(this.chunks, { type }));
+      };
+      this.recorder.stop();
+    });
+  }
+}

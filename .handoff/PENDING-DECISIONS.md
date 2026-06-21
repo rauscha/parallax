@@ -2,7 +2,18 @@
 
 _Overnight run 2026-06-20 — full write-up in `.handoff/OVERNIGHT-LOG-2026-06-20.md`._
 The melody + transport feature **shipped + verified** (no decision needed). Four
-items are waiting on you, ordered most-actionable first.
+items were waiting on you, ordered most-actionable first.
+
+## Resolved 2026-06-21 (pick-up session)
+All four decisions below were walked through with Andrew:
+1. **Melody contour → ADOPTED tonic-relative fall + SHIPPED** (`a8e34c5`).
+   `contourTargetIdx()` extracted as a pure fn, interpolates tonicIdx↔peakIdx.
+2. **One-loop audio export → chosen as the next build.** Sub-decisions take the
+   spec's recommendations: realtime MediaRecorder tap, fixed +2s tail, 1 loop,
+   export drives transport, runtime-negotiated WebM/Ogg, inline `⬇ Export`
+   button, download-only.
+3. **Melody tools → swing model = Tone transport (playback-only)** when built.
+4. **Parallax Daily → accept algorithm drift** (seed = date string) when built.
 
 ---
 

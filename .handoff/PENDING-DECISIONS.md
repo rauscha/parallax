@@ -1,12 +1,67 @@
 # Waiting on you
 
-**Nothing pending — no open decisions.** `v1.0.0` shipped 2026-06-18.
+_Overnight run 2026-06-20 — full write-up in `.handoff/OVERNIGHT-LOG-2026-06-20.md`._
+The melody + transport feature **shipped + verified** (no decision needed). Four
+items are waiting on you, ordered most-actionable first.
+
+---
+
+### 1. Melody contour — quick yes/no (5-line code change, do this first) ⭐
+**What:** Tonight's new `randomizeMelody` builds an arch contour. As written
+(per the approved spec), the descending half aims at MIDI index 0 — the *lowest*
+note in the row — and only the first/last notes are pinned to the tonic. For
+**C-rooted** ranges index 0 *is* the tonic, so it's perfect; for **non-C keys**
+(e.g. G major) the interior descent drifts to the lowest note instead of
+resolving toward the tonic pitch class. The final-review reviewer flagged this
+and proposed interpolating `tonicIdx ↔ peakIdx` so the fall resolves to the
+tonic in *every* key.
+**Why deferred, not auto-fixed:** it matches the spec as written and changes the
+character of every generated melody — your call (aesthetic), per the
+overnight rule. `findTonicIdx` already exists for exactly this.
+**Options:** (a) **Adopt the tonic-relative fall** *(recommended — more musical,
+matches the spec prose "lands on the tonic again", ~4 lines + 1 contour test)*;
+(b) keep as-is (only matters for non-C Surprise rolls). Detail: `.superpowers/sdd/progress.md` Task 2 note.
+
+### 2. One-loop audio export — spec ready, confirm approach
+**Spec:** [`docs/superpowers/specs/2026-06-20-one-loop-audio-export.md`](../docs/superpowers/specs/2026-06-20-one-loop-audio-export.md)
+**Headline finding:** the clean `OfflineAudioContext`/WAV route is a **hard
+blocker** — the Braids WASM worklet + Tone scheduler are bound to the live
+AudioContext. So it's a **realtime MediaRecorder tap on `masterGain`** (WebM/Ogg
+Opus), one loop, with a `⬇ Export` button in the toolbar. Confirm or adjust the
+7 §3 decisions (release tail = +2 s, 1 loop, export drives the transport, format
+= negotiated WebM/Ogg with WAV deferred, inline button, download-only for v1).
+Mostly "nod to the recommendations." Then I write the code-level plan.
+
+### 3. Melody tools (swing / Euclidean / arp / mutate) — spec ready
+**Spec:** [`docs/superpowers/specs/2026-06-20-melody-tools.md`](../docs/superpowers/specs/2026-06-20-melody-tools.md)
+**Key calls:** build **order/scope** (recommended: Mutate → Euclidean → Arp →
+Swing, shipped incrementally) and the **swing model** — bake timing offsets into
+the note data (visible/exportable) vs Tone's playback-only swing param. Plus 6
+smaller §3 decisions (Euclidean pitch fill, arp source pool, mutate scope, UI
+home). All four tools are pure functions in `grid.ts` → TDD-friendly like
+tonight's work.
+
+### 4. Parallax Daily (date-seeded surprise) — spec ready
+**Spec:** [`docs/superpowers/specs/2026-06-20-parallax-daily.md`](../docs/superpowers/specs/2026-06-20-parallax-daily.md)
+**Shape:** a seeded PRNG (`xmur3` + `mulberry32`) injected into `surpriseMe` +
+`randomizeMelody` (defaulting to `Math.random`, so normal Surprise is untouched);
+the date string seeds it. **6 decisions** (recommended: UTC date, a dedicated
+`▦ Daily` button, `?daily=YYYY-MM-DD` permalink, full engine+theme swap like
+Surprise, accept algorithm drift, full undo+lineage parity). Note: this refactors
+the `Math.random()` calls inside the melody functions shipped *today* — worth
+doing soon while they're fresh.
+
+---
 
 Optional, never a gate (carry-forward nice-to-haves):
 - **PNG PWA icons** — the app installs fine with SVG icons; a future `sharp` pass
   could add crisp PNG / Apple-touch variants for the broadest install/iOS coverage.
 - **Match-tool ear-pass on a real track** — the suggestion ranker is verified on
   ground-truth clips; a real-track listen is polish, not a gate.
+- **"Recent sounds" Match-Apply capture** — verified by code + identical to the
+  fully-verified Surprise path, but not driven end-to-end overnight (needs a
+  dropped audio file). A 10-second human confirm (drop a clip → Apply → check a
+  `◎` row appears) would fully close the lineage checklist.
 
 ## Resolved 2026-06-18 (v1.0.0 ship)
 The two eyeball passes that gated the tag are **done**:

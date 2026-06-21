@@ -485,7 +485,7 @@
       case "ArrowLeft":  evt.preventDefault(); moveCursor(0, -1); break;
       case "ArrowRight": evt.preventDefault(); moveCursor(0, +1); break;
       case " ":
-      case "Enter":      evt.preventDefault(); toggleCursorCell(); break;
+      case "Enter":      evt.preventDefault(); evt.stopPropagation(); toggleCursorCell(); break;
       case "Delete":
       case "Backspace": {
         evt.preventDefault();

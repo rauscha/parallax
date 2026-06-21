@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { remapByDegree, buildRowMidis, buildRhythm, pickNext, findTonicIdx } from "./grid";
+import { remapByDegree, buildRowMidis, buildRhythm, pickNext, findTonicIdx, randomizeMelody } from "./grid";
 
 describe("remapByDegree (A5 nearest-octave)", () => {
   it("moves B4 to the NEAREST Db-major degree, not the same letter-octave", () => {
@@ -158,5 +158,51 @@ describe("findTonicIdx", () => {
     const idx = findTonicIdx(midis, "G");
     expect(idx).toBeGreaterThan(0);
     expect(midis[idx] % 12).toBe(7); // G chroma
+  });
+});
+
+describe("randomizeMelody (musical)", () => {
+  it("returns at least one event", () => {
+    expect(randomizeMelody("C", "major", 3, 2).length).toBeGreaterThan(0);
+  });
+
+  it("first and last event are the tonic — key C (chroma 0)", () => {
+    for (let run = 0; run < 10; run++) {
+      const ev = randomizeMelody("C", "major", 3, 2);
+      expect(ev[0].midi % 12).toBe(0);
+      expect(ev.at(-1)!.midi % 12).toBe(0);
+    }
+  });
+
+  it("first and last event are the tonic — key G (chroma 7)", () => {
+    for (let run = 0; run < 10; run++) {
+      const ev = randomizeMelody("G", "major", 3, 2);
+      expect(ev[0].midi % 12).toBe(7);
+      expect(ev.at(-1)!.midi % 12).toBe(7);
+    }
+  });
+
+  it("all startSteps are in [0, 63]", () => {
+    const ev = randomizeMelody("C", "major", 3, 2);
+    expect(ev.every(e => e.startStep >= 0 && e.startStep <= 63)).toBe(true);
+  });
+
+  it("all durations are >= 1", () => {
+    const ev = randomizeMelody("C", "major", 3, 2);
+    expect(ev.every(e => e.durationSteps >= 1)).toBe(true);
+  });
+
+  it("produces rhythmic variety across 5 runs (more than 1 distinct duration)", () => {
+    const durs = new Set<number>();
+    for (let run = 0; run < 5; run++) {
+      for (const e of randomizeMelody("C", "major", 3, 2)) durs.add(e.durationSteps);
+    }
+    expect(durs.size).toBeGreaterThan(1);
+  });
+
+  it("works for pentatonic scale", () => {
+    const ev = randomizeMelody("C", "pentatonic", 3, 2);
+    expect(ev.length).toBeGreaterThan(0);
+    expect(ev.every(e => e.durationSteps >= 1)).toBe(true);
   });
 });

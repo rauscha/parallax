@@ -194,8 +194,11 @@ export function findTonicIdx(midis: number[], key: string): number {
 }
 
 /**
- * G4 — Generate a random in-scale melody.
- * Walks quarter-note beats, skips ~30% for rhythmic interest.
+ * Generate a musically-shaped in-scale melody:
+ * - Varied rhythm (eighth, quarter, dotted-quarter, half).
+ * - Phrase contour: rises to a peak around bar 2–3, resolves back to the tonic.
+ * - Stepwise bias: prefers ±1–2 scale degrees, occasional leaps toward the target.
+ * - Tonic anchors: first and last note are always the key root.
  */
 export function randomizeMelody(
   key: string,
@@ -206,14 +209,34 @@ export function randomizeMelody(
   const midis = buildRowMidis(key, scale, baseOctave, true, octaves);
   if (!midis.length) return [];
 
+  const len      = midis.length;
+  const tonicIdx = findTonicIdx(midis, key);
+
+  // Peak: upper 60–80% of the MIDI index range, randomised per roll.
+  const peakIdx = Math.floor(len * 0.60 + Math.random() * len * 0.20);
+
+  const slots  = buildRhythm(TOTAL_STEPS, 0.20);
   const events: Array<{ startStep: number; durationSteps: number; midi: number }> = [];
-  for (let beat = 0; beat < 16; beat++) {
-    if (beat > 0 && Math.random() < 0.3) continue;   // ~30% gaps for rhythm
-    events.push({
-      startStep: beat * 4,
-      durationSteps: 4,
-      midi: midis[Math.floor(Math.random() * midis.length)],
-    });
+  let currentIdx = tonicIdx;
+
+  for (let i = 0; i < slots.length; i++) {
+    const { start, dur } = slots[i];
+    const isFirst = i === 0;
+    const isLast  = i === slots.length - 1;
+
+    if (isFirst || isLast) {
+      currentIdx = tonicIdx;   // anchor both ends on the tonic
+    } else {
+      // Two-phrase contour: 0..0.5 rise toward peak, 0.5..1 fall back to tonic.
+      const t = start / TOTAL_STEPS;              // 0..1
+      const targetIdx = t < 0.5
+        ? Math.round(peakIdx * (t * 2))           // 0 → peakIdx as t goes 0→0.5
+        : Math.round(peakIdx * (1 - (t - 0.5) * 2)); // peakIdx → 0 as t goes 0.5→1
+      currentIdx = pickNext(midis, currentIdx, targetIdx);
+    }
+
+    events.push({ startStep: start, durationSteps: dur, midi: midis[currentIdx] });
   }
+
   return events;
 }

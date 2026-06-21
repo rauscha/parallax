@@ -39,3 +39,14 @@ export function stopTransport(): void {
   audioEngine.currentEngine?.allNotesOff();
   isPlayingStore.set(false);
 }
+
+/**
+ * Halt the scheduler at the current position WITHOUT silencing sounding notes —
+ * their envelope release rings out naturally. Used by audio export to capture
+ * the release tail after the loop ends. Unlike stopTransport(), it does NOT
+ * reset to beat 0 and does NOT call allNotesOff().
+ */
+export function pauseTransport(): void {
+  Tone.getTransport().pause();
+  isPlayingStore.set(false);
+}

@@ -16,6 +16,7 @@
   import RecentSoundsMenu from "./RecentSoundsMenu.svelte";
   import MidiMenu from "./MidiMenu.svelte";
   import PostcardModal from "./PostcardModal.svelte";
+  import ExportButton from "./ExportButton.svelte";
 
   let ready = $state(audioReadyStore.get());
   const unsubReady = audioReadyStore.subscribe((v) => { ready = v; });
@@ -58,6 +59,7 @@
     disabled={!ready}
     title="Copy a link that recreates this exact sound + melody"
   >⤴ {shareLabel}</button>
+  <ExportButton />
 </div>
 
 <PostcardModal bind:open={postcardOpen} />

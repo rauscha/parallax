@@ -381,9 +381,10 @@
   }
   .play-btn {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     letter-spacing: 0.08em;
-    padding: 5px 12px;
+    padding: 8px 22px;
+    min-height: 36px;
     color: var(--text);
     background: var(--surface-raised);
     border: var(--hairline-w) solid var(--hairline);
@@ -434,6 +435,7 @@
     /* 16px is the magic floor: a smaller font makes mobile browsers auto-zoom
        the whole page on focus (and that zoom is a pain to undo inside a PWA). */
     .tempo-input { padding: 6px 8px; min-height: 32px; width: 3.2em; font-size: 16px; }
+    .play-btn { padding: 10px 24px; min-height: 44px; }
   }
 
   .staff-header {

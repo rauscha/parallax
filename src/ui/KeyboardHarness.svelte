@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
-  import { audioReadyStore, publishActiveNotes } from "../state/stores";
+  import { audioReadyStore, publishActiveNotes, isPlayingStore } from "../state/stores";
+  import { playTransport, stopTransport } from "../sequencer";
 
   // QWERTY → MIDI note offset (standard Ableton/web layout, A = C of the current octave)
   // Lower row: Z S X D C V G B H N J M , — bottom octave
@@ -47,6 +48,11 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.code === "Minus" || e.code === "BracketLeft") { octave = Math.max(0, octave - 1); e.preventDefault(); return; }
     if (e.code === "Equal" || e.code === "BracketRight") { octave = Math.min(8, octave + 1); e.preventDefault(); return; }
+    if (e.code === "Space") {
+      if (isPlayingStore.get()) stopTransport(); else playTransport();
+      e.preventDefault();   // prevent the browser's default page-scroll on Space
+      return;
+    }
     const midi = midiFor(e.code);
     if (midi === null) return;
     if (held.has(midi)) return;
@@ -109,8 +115,9 @@
 <div class="hint">
   <span class="label">keyboard</span>
   <span class="readout">
-    Z–M row = octave <strong>{octave}</strong>, Q–U row = octave <strong>{octave + 1}</strong> ·
-    <kbd>[</kbd>/<kbd>]</kbd> shift octave · {held.size > 0 ? `${held.size} note${held.size > 1 ? 's' : ''} held` : 'idle'}
+    Z–M = oct <strong>{octave}</strong>, Q–U = oct <strong>{octave + 1}</strong> ·
+    <kbd>[</kbd>/<kbd>]</kbd> shift · <kbd>Space</kbd> play/stop ·
+    {held.size > 0 ? `${held.size} note${held.size > 1 ? 's' : ''} held` : 'idle'}
   </span>
 </div>
 

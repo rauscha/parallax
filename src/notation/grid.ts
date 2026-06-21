@@ -128,6 +128,71 @@ export function remapByDegree(
   });
 }
 
+/** Duration palette (16th-note steps): eighth×2, quarter×4, dotted-quarter, half.
+ *  Sampling uniformly gives ~25% eighths, ~50% quarters, ~12.5% dotted, ~12.5% halves. */
+const DURS = [2, 2, 4, 4, 4, 4, 6, 8] as const;
+
+/**
+ * Fill `totalSteps` 16th-note steps with a sequence of note slots, mixing
+ * durations from DURS and inserting silent rest gaps with probability `restProb`.
+ * Each slot is { start, dur }; gaps advance the cursor without a slot.
+ * Exported for unit tests — internal to the melody generation feature.
+ */
+export function buildRhythm(
+  totalSteps: number,
+  restProb: number,
+): Array<{ start: number; dur: number }> {
+  const slots: Array<{ start: number; dur: number }> = [];
+  let pos = 0;
+  while (pos < totalSteps) {
+    const remaining = totalSteps - pos;
+    const valid = (DURS as readonly number[]).filter(d => d <= remaining);
+    const dur = valid.length > 0 ? valid[Math.floor(Math.random() * valid.length)] : remaining;
+    slots.push({ start: pos, dur });
+    pos += dur;
+    // Rest gap: advance cursor without adding a slot (silence).
+    if (pos < totalSteps && Math.random() < restProb) {
+      const rests = [2, 4].filter(d => d <= totalSteps - pos);
+      if (rests.length > 0) pos += rests[Math.floor(Math.random() * rests.length)];
+    }
+  }
+  return slots;
+}
+
+/**
+ * Choose the next index into `midis` with stepwise bias toward `targetIdx`:
+ *   55% → ±1 step toward target  |  25% → ±2 steps  |  20% → jump to target.
+ * Result is clamped to [0, midis.length − 1].
+ * Exported for unit tests — internal to the melody generation feature.
+ */
+export function pickNext(midis: number[], idx: number, targetIdx: number): number {
+  const len = midis.length;
+  if (len <= 1) return 0;
+  const drift = Math.sign(targetIdx - idx);   // -1, 0, or +1
+  const r = Math.random();
+  let step: number;
+  if (r < 0.55) {
+    step = drift !== 0 ? drift : (Math.random() < 0.5 ? 1 : -1);
+  } else if (r < 0.80) {
+    step = drift !== 0 ? drift * 2 : (Math.random() < 0.5 ? 2 : -2);
+  } else {
+    step = targetIdx - idx;
+  }
+  return Math.max(0, Math.min(len - 1, idx + step));
+}
+
+/**
+ * Index of the first MIDI in `midis` whose pitch class is the root of `key`.
+ * Falls back to 0 if the key is unresolvable (won't happen for valid inputs).
+ * Exported for unit tests — internal to the melody generation feature.
+ */
+export function findTonicIdx(midis: number[], key: string): number {
+  const chroma = Note.chroma(key);
+  if (chroma === undefined) return 0;
+  const idx = midis.findIndex(m => ((m % 12) + 12) % 12 === chroma);
+  return idx === -1 ? 0 : idx;
+}
+
 /**
  * G4 — Generate a random in-scale melody.
  * Walks quarter-note beats, skips ~30% for rhythmic interest.

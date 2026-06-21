@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { remapByDegree, buildRowMidis } from "./grid";
+import { remapByDegree, buildRowMidis, buildRhythm, pickNext, findTonicIdx } from "./grid";
 
 describe("remapByDegree (A5 nearest-octave)", () => {
   it("moves B4 to the NEAREST Db-major degree, not the same letter-octave", () => {
@@ -74,5 +74,89 @@ describe("buildRowMidis", () => {
     expect(two.length).toBeGreaterThan(one.length);
     expect(two[0]).toBe(60);
     expect(two[two.length - 1]).toBe(84); // C6
+  });
+});
+
+describe("buildRhythm", () => {
+  it("produces at least 1 slot for totalSteps > 0", () => {
+    expect(buildRhythm(64, 0).length).toBeGreaterThan(0);
+  });
+
+  it("returns [] for totalSteps = 0", () => {
+    expect(buildRhythm(0, 0)).toEqual([]);
+  });
+
+  it("slots never overlap — each start >= previous start + previous dur", () => {
+    for (let run = 0; run < 20; run++) {
+      const slots = buildRhythm(64, 0.2);
+      for (let j = 1; j < slots.length; j++) {
+        expect(slots[j].start).toBeGreaterThanOrEqual(
+          slots[j - 1].start + slots[j - 1].dur,
+        );
+      }
+    }
+  });
+
+  it("last slot ends at or before totalSteps", () => {
+    for (let run = 0; run < 20; run++) {
+      const slots = buildRhythm(64, 0.2);
+      const last = slots.at(-1)!;
+      expect(last.start + last.dur).toBeLessThanOrEqual(64);
+    }
+  });
+
+  it("every duration is >= 1", () => {
+    for (let run = 0; run < 20; run++) {
+      expect(buildRhythm(64, 0.2).every(s => s.dur >= 1)).toBe(true);
+    }
+  });
+});
+
+describe("pickNext", () => {
+  const midis = [60, 62, 64, 65, 67, 69, 71, 72]; // C major 1-octave
+
+  it("always returns a valid index in [0, midis.length − 1]", () => {
+    for (let i = 0; i < 100; i++) {
+      const result = pickNext(midis, 3, 7);
+      expect(result).toBeGreaterThanOrEqual(0);
+      expect(result).toBeLessThanOrEqual(midis.length - 1);
+    }
+  });
+
+  it("returns 0 for a single-element array", () => {
+    expect(pickNext([60], 0, 0)).toBe(0);
+  });
+
+  it("biases upward when targetIdx > idx (>60% of 100 runs move up or stay)", () => {
+    let up = 0;
+    for (let i = 0; i < 100; i++) {
+      if (pickNext(midis, 1, 7) >= 1) up++;
+    }
+    expect(up).toBeGreaterThan(60);
+  });
+
+  it("biases downward when targetIdx < idx (>60% of 100 runs move down or stay)", () => {
+    let down = 0;
+    for (let i = 0; i < 100; i++) {
+      if (pickNext(midis, 6, 0) <= 6) down++;
+    }
+    expect(down).toBeGreaterThan(60);
+  });
+});
+
+describe("findTonicIdx", () => {
+  it("returns 0 for C major starting at C (chroma 0 is the first note)", () => {
+    const midis = buildRowMidis("C", "major", 3, true, 2);
+    expect(findTonicIdx(midis, "C")).toBe(0);
+    expect(midis[0] % 12).toBe(0); // C
+  });
+
+  it("returns an index > 0 for G major (tonic G is not the first note in the range)", () => {
+    // buildRowMidis starts at C3=48; in G major the first note is C3 (chroma 0),
+    // so the first G (chroma 7) is at some later index.
+    const midis = buildRowMidis("G", "major", 3, true, 2);
+    const idx = findTonicIdx(midis, "G");
+    expect(idx).toBeGreaterThan(0);
+    expect(midis[idx] % 12).toBe(7); // G chroma
   });
 });

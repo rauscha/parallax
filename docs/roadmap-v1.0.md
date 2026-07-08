@@ -170,7 +170,7 @@ The agent prepares; only a human can close these. Tag nothing until this list is
 
 ## After v1.0 (not in scope for this cycle — do NOT start these)
 
-Agreed direction from the review, in order: ① patch-lineage breadcrumb (extends B5's snapshot into a ring), ② swing + Euclidean/arp/mutate melody tools, ③ Parallax Daily (date-seeded surprise — refactor `surprise.ts`/`randomizeMelody` to take an injected RNG when the time comes), ④ un-defer one-loop audio export (MediaRecorder tap), ⑤ v1.2 marquee: port **Rings** as engine #4. Details: `reviews/2026-06-11-next-level-ideas.md`. The do-NOT-build list there is policy.
+Agreed direction from the review, in order: ① patch-lineage breadcrumb (extends B5's snapshot into a ring) — **✅ shipped** ("Recent sounds", 2026-06-20), ② swing + Euclidean/arp/mutate melody tools, ③ Parallax Daily (date-seeded surprise — refactor `surprise.ts`/`randomizeMelody` to take an injected RNG when the time comes), ④ un-defer one-loop audio export (MediaRecorder tap) — **✅ shipped** (2026-06-21; realtime MediaRecorder tap on masterGain → compressed WebM/Opus, not WAV; fixed +2 s release tail; ear-check confirmed 2026-07-07), ⑤ v1.2 marquee: port **Rings** as engine #4. Details: `reviews/2026-06-11-next-level-ideas.md`. The do-NOT-build list there is policy.
 
 ---
 

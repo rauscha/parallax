@@ -1,5 +1,13 @@
 # Waiting on you
 
+**Nothing pending (as of 2026-07-11).** The Rings design decisions (model scope,
+excitation model, theme direction, single comprehensive spec) were all resolved
+live in the 2026-07-11 session and are encoded in
+`docs/superpowers/specs/2026-07-11-rings-engine-design.md` — execution needs no
+further input until the plan's Task 9 human gate (ear/eye pass).
+
+---
+
 _Overnight run 2026-06-20 — full write-up in `.handoff/OVERNIGHT-LOG-2026-06-20.md`._
 The melody + transport feature **shipped + verified** (no decision needed). Four
 items were waiting on you, ordered most-actionable first.

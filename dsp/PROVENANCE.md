@@ -53,9 +53,10 @@ sha256sum public/braids.wasm public/braids.js \
   → `braids/`, `plaits/`, `stmlib/`), vendored under `dsp/vendor/` as regular
   files (not a git submodule). See `dsp/vendor/README.md` for the trimmed
   subtree list and `LICENSE-Braids.txt` for the MIT license + attribution.
-  - **eurorack upstream commit:** *not recorded at the original vendoring — to be
-    pinned at the next rebuild* (run the rebuild from a known `eurorack` checkout
-    and record its `git rev-parse HEAD` here).
+  - **eurorack upstream commit:** `08460a69a7e1f7a81c5a2abcc7189c9a6b7208d4` — pinned at the
+    2026-07-11 Rings vendoring. The braids/plaits vendoring predates this pin
+    and its upstream HEAD was never captured; treat this hash as authoritative
+    for `rings/` only.
 - **Shim (our code, MIT):** `dsp/shim/braids_shim.cc`, `dsp/shim/plaits_shim.cc`.
 
 ## Rebuild

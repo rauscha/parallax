@@ -4,6 +4,8 @@ This directory contains the DSP code from Émilie Gillet's open-source firmware,
 used to produce authentic Braids sound in the browser via Emscripten.
 
 - `braids/` — the Braids firmware (eurorack/braids)
+- `plaits/` — the Plaits firmware DSP core (eurorack/plaits)
+- `rings/` — the Rings firmware DSP core (eurorack/rings)
 - `stmlib/` — DSP utilities used by Braids (trimmed: only `dsp/`, `utils/`,
   `algorithms/`, `fft/`, `midi/`, `system/`, `ui/`, `stmlib.h`, `LICENSE`)
 

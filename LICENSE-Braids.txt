@@ -1,8 +1,8 @@
 Attribution for vendored DSP code
 ==================================
 
-The directories `dsp/vendor/braids/`, `dsp/vendor/plaits/`, and
-`dsp/vendor/stmlib/` contain source code from Émilie Gillet's Mutable
+The directories `dsp/vendor/braids/`, `dsp/vendor/plaits/`, `dsp/vendor/rings/`,
+and `dsp/vendor/stmlib/` contain source code from Émilie Gillet's Mutable
 Instruments firmware, vendored from:
 
   https://github.com/pichenettes/eurorack
@@ -14,7 +14,11 @@ Specifically:
                   (eurorack/plaits/dsp/ + resources.{cc,h} + user_data.h, MIT).
                   None of the hardware drivers, UI, settings, or bootloader are
                   vendored — only the synthesis code the WASM shim drives.
-  - stmlib/ — shared DSP utilities used by Braids and Plaits
+  - rings/  — the Rings resonator firmware: the DSP core only
+                  (eurorack/rings/dsp/ + resources.{cc,h}, MIT). None of the
+                  hardware drivers, UI, settings, or bootloader are vendored —
+                  only the synthesis code the WASM shim drives.
+  - stmlib/ — shared DSP utilities used by Braids, Plaits and Rings
                   (github.com/pichenettes/stmlib, MIT — vendored as a git
                   submodule of eurorack; we ship only the DSP-relevant subset)
 
@@ -22,7 +26,7 @@ All retained files preserve their original Émilie Gillet copyright headers and
 the MIT license text below applies to every file under `dsp/vendor/`.
 
 This project is not affiliated with or endorsed by Mutable Instruments.
-"Mutable Instruments", "Braids", and "Plaits" are trademarks of Émilie Gillet
+"Mutable Instruments", "Braids", "Plaits", and "Rings" are trademarks of Émilie Gillet
 and are not used in the user-facing branding of this project (see CLAUDE.md).
 
 ---

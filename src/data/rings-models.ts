@@ -65,13 +65,13 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 2, code: "STRG", name: "Modulated String", family: "strings",
     description: "A physically modelled string with adjustable stiffness — from perfect harp to detuned, bell-tinged piano wire.",
     knobs: [
-      k("structure", "Structure", "Stiffness and dispersion — a perfectly harmonic string on the left; upper partials stretch sharp like piano wire through the middle, then buzz inharmonically at the top."),
+      k("structure", "Structure", "Stiffness and dispersion — fully left the string rattles against a curved bridge, sitar-style; the clean, perfectly harmonic string sits about a quarter of the way in, then upper partials stretch sharp like piano wire, buzzing inharmonically at the top."),
       k("brightness", "Brightness", "Pluck brightness — soft thumb to hard pick."),
       k("damping", "Damping", "Decay time — staccato pluck to long singing sustain."),
       k("position", "Position", "Pluck position — comb-filters the attack; near the bridge is thin and nasal, near the middle round and full."),
     ],
     detail: {
-      listenFor: "What STRUCTURE does to the overtones — dead-on harmonic low, piano-stretch in the middle, metallic buzz up top. The workhorse string.",
+      listenFor: "What STRUCTURE does to the overtones — sitar-like bridge buzz at the far left, dead-on harmonic about a quarter in, piano-stretch through the middle, metallic buzz up top. The workhorse string.",
       goodFor: "Plucks, harps, clavs, koto lines — any melody that wants a real string under it." } },
 
   { index: 3, code: "FMVC", name: "FM Voice", family: "fm",
@@ -101,7 +101,7 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 5, code: "VERB", name: "String + Reverb", family: "strings",
     description: "The modulated string with a lush reverb wrapped around it — pluck and space in one voice. Hidden model.",
     knobs: [
-      k("structure", "Structure", "Stiffness and dispersion of the string — harmonic to piano-stretched to buzzy."),
+      k("structure", "Structure", "Stiffness and dispersion of the string — curved-bridge sitar buzz at the far left, perfectly harmonic about a quarter in, then piano-stretched to buzzy at the top."),
       k("brightness", "Brightness", "Pluck brightness, and with it how much sparkle feeds the tail."),
       k("damping", "Damping", "Decay of string AND tail together — turns a dry pluck into a wash."),
       k("position", "Position", "Pluck position — the comb-filtered attack colour that the reverb then carries."),

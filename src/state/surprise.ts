@@ -46,6 +46,7 @@ function randomParamValue(d: ParameterDescriptor): number {
   if (id === "attack") v = Math.min(v, d.min + span * 0.3);
   if (id === "release") v = Math.min(v, d.min + span * 0.6);
   if (id === "drift" || id === "signature") v = Math.min(v, d.min + span * 0.5);
+  if (id === "damping") v = Math.min(v, d.min + span * 0.85);   // Rings: full damping ≈ endless ring — keep rolls finite
 
   return +v.toFixed(4);
 }

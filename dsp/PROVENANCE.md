@@ -8,15 +8,17 @@ them. (security M-3)
 
 ## What's opaque vs. readable
 
-- **Opaque (compiled):** `public/braids.wasm`, `public/plaits.wasm`, and their
-  Emscripten JS glue `public/braids.js`, `public/plaits.js`. These come out of
-  the Emscripten build of the C++ shim + vendored Mutable Instruments DSP and
-  can't be eyeballed — hence this file.
+- **Opaque (compiled):** `public/braids.wasm`, `public/plaits.wasm`,
+  `public/rings.wasm`, and their Emscripten JS glue `public/braids.js`,
+  `public/plaits.js`, `public/rings.js`. These come out of the Emscripten
+  build of the C++ shim + vendored Mutable Instruments DSP and can't be
+  eyeballed — hence this file.
 - **Hand-maintained (readable):** the AudioWorklet processors
   `public/braids-worklet.js`, `public/plaits-worklet.js`,
-  `public/laxsynth-worklet.js` are plain JS, edited by hand and reviewable in
-  the diff. Laxsynth is **pure JS** — it has no `.wasm` at all. They're listed
-  here only so their hashes are pinned alongside the binaries.
+  `public/laxsynth-worklet.js`, `public/rings-worklet.js` are plain JS, edited
+  by hand and reviewable in the diff. Laxsynth is **pure JS** — it has no
+  `.wasm` at all. They're listed here only so their hashes are pinned
+  alongside the binaries.
 
 ## SHA-256 of the committed artifacts
 
@@ -29,7 +31,9 @@ regenerate with:
 ```sh
 sha256sum public/braids.wasm public/braids.js \
           public/plaits.wasm public/plaits.js \
-          public/braids-worklet.js public/plaits-worklet.js public/laxsynth-worklet.js
+          public/rings.wasm public/rings.js \
+          public/braids-worklet.js public/plaits-worklet.js \
+          public/laxsynth-worklet.js public/rings-worklet.js
 ```
 
 | File | SHA-256 |
@@ -38,9 +42,12 @@ sha256sum public/braids.wasm public/braids.js \
 | `public/braids.js`           | `ee0590665bfd77e41b3b512cea5160fa38633596768f512a351e614954b2d5e3` |
 | `public/plaits.wasm`         | `669906ba48c5168652e0d5a4fad2d93ef8ea0311416f403c33bd09462e52937d` |
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
+| `public/rings.wasm`          | `efe916aeb9e65266a45f225061ff0e32bbff5271fe8e49ec698ef93bb85d1d2e` |
+| `public/rings.js`            | `7c59376c46473fa206e8f8ce9882a26d4d500cbeee2d62f7bae9306d5b2797fa` |
 | `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
 | `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
 | `public/laxsynth-worklet.js` | `17fe058a615677abb08338397892f2275cc562bda6447b92896f145314bc13c1` |
+| `public/rings-worklet.js`    | `6a238375d9810163a043c64994c25aea0abdf1332311a6feb9b36ca0b6bee253` |
 
 > Note: `braids-worklet.js`, `plaits-worklet.js`, and `laxsynth-worklet.js` are
 > hand-edited JS, so their hashes change whenever those files are edited (e.g.
@@ -69,6 +76,7 @@ Requires Emscripten (`emcc`). PowerShell-only build scripts today (desktop):
 
 npm run wasm          # -> dsp/shim/build.ps1        (braids.wasm + braids.js)
 npm run wasm:plaits   # -> dsp/shim/build-plaits.ps1 (plaits.wasm + plaits.js)
+npm run wasm:rings    # -> dsp/shim/build-rings.ps1  (rings.wasm + rings.js)
 ```
 
 The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
@@ -77,6 +85,8 @@ The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
    `braids.wasm` was built 2026-06-15 with **emcc 5.0.7**
    (`263db4cffa6f9fc2ec514a70abac81362ea41849`). The `plaits.wasm` binary
    predates this rebuild and its emcc version was not captured at the time.
+   The `rings.wasm` was built 2026-07-11, also with **emcc 5.0.7**
+   (`263db4cffa6f9fc2ec514a70abac81362ea41849`) — same toolchain, no drift.
 3. record the **eurorack commit** the build was made from (see Source above) —
    *still unrecorded:* the M1 vendoring didn't capture upstream `HEAD`, and it
    can't be recovered from the vendored tree after the fact. Capture it at the

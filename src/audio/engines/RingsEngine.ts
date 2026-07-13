@@ -216,7 +216,8 @@ export class RingsEngine implements ISynthEngine {
     // hard-cut an in-flight tail audibly (Braids instead fades via a gain
     // ramp on swap). Ramp gain to silence here before tearing down so an
     // engine swap doesn't click/cut. Panic (allNotesOff) intentionally does
-    // NOT fade — that's locked instant-silence semantics.
+    // NOT fade — the locked Rings panic semantics is RING-OUT: it drops
+    // queued strikes and lets the current tail decay naturally.
     if (this.ctx && this.gainNode) {
       this.gainNode.gain.setTargetAtTime(0, this.ctx.currentTime, 0.01);
       await new Promise((r) => setTimeout(r, 50));

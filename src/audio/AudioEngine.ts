@@ -101,8 +101,14 @@ export class AudioEngine {
       // engine is already connected, so this delay is inaudible; the old one
       // finishes its fade first, then dispose() posts the worklet kill message.
       setTimeout(() => {
-        if (prev.output) try { prev.output.disconnect(); } catch { /* already gone */ }
-        void prev.dispose();
+        // dispose() owns the fade (Rings ramps its gain to silence before
+        // teardown — a resonator tail rings for seconds); disconnecting first
+        // would detach the node and make that fade inaudible. The disconnect
+        // stays as belt-and-braces, but every engine nulls its gainNode in
+        // dispose, so in practice it's a no-op.
+        void prev.dispose().finally(() => {
+          if (prev.output) { try { prev.output.disconnect(); } catch { /* already gone */ } }
+        });
       }, 60);
     }
   }

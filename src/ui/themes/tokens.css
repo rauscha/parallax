@@ -161,6 +161,56 @@
   color-scheme: dark;
 }
 
+/* —— Rings — "Soundboard": warm walnut body, brass signal ————————————
+   The wooden body of an acoustic resonator. Identity is carried by warmth
+   and LUMINANCE (colorblind-safe): walnut→ivory brightness axis, brass
+   signal bright enough to read as text, scope trace brighter still. */
+[data-theme="rings"] {
+  --bg:               #221A13;
+  --surface:          #2B2118;
+  --surface-raised:   #362A1E;
+  --surface-sunken:   #1B140E;
+  --hairline:         #4A3B2A;
+  --hairline-soft:    rgba(242, 233, 219, 0.07);
+
+  /* Text — every shade meets WCAG AA (≥4.5:1) against --bg. */
+  --text:             #F2E9DB;        /* parchment ivory — ~14.2:1 */
+  --text-muted:       #C9B99F;        /* ~8.9:1 */
+  --text-dim:         #A89877;        /* ~6.0:1 */
+
+  --signal:           #E3A94C;        /* brass — ~8.2:1 on --bg, text-safe */
+  --signal-ink:       var(--signal);
+  --signal-dim:       rgba(227, 169, 76, 0.35);
+  --signal-deep:      rgba(227, 169, 76, 0.16);
+  --signal-glow:      rgba(227, 169, 76, 0.5);
+  --accent:           #E77E52;        /* ember copper — ~6.1:1 */
+  --accent-dim:       rgba(231, 126, 82, 0.35);
+  --on-signal:        #221A13;        /* walnut on brass — ~8.2:1 */
+  --danger:           #FF8A70;        /* ~7.4:1 on --bg */
+
+  /* Scope: the resonance bloom — the trace reads by BRIGHTNESS (a step above
+     --signal), with long persistence echoing Rings' sympathetic decay. */
+  --scope-bg:         #140E08;
+  --scope-trace:      #FFC46B;
+  --scope-trace-w:    1.5px;
+  --scope-glow:       rgba(255, 196, 107, 0.5);
+  --scope-grid:       rgba(255, 196, 107, 0.07);
+  --scope-persist:    0.90;           /* long decay — sympathetic shimmer */
+  --scope-bloom:      1.3;            /* warm halo: between sandbox (1.0) and phosphor (1.7) */
+
+  --knob-track:       #362A1E;
+  --knob-fill:        var(--signal);
+  --knob-pointer:     var(--text);
+  --knob-tick:        var(--text-dim);
+
+  /* Type: inherit the :root stacks (Space Grotesk headings / Inter body /
+     JetBrains Mono readouts). A serif heading face is deferred polish. */
+  --label-case:       none;
+  --label-tracking:   0.02em;
+
+  color-scheme: dark;
+}
+
 /* Optional: scanlines layer for Phosphor (applied by ScopeFrame) */
 [data-theme="phosphor"] .scanlines::after {
   content: "";

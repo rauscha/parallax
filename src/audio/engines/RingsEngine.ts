@@ -40,7 +40,7 @@ export class RingsEngine implements ISynthEngine {
 
   // Mirror of param values for getParameter().
   private params: Record<string, number> = {
-    note: 60, structure: 0.4, brightness: 0.6, damping: 0.55, position: 0.3,
+    note: 48, structure: 0.4, brightness: 0.6, damping: 0.55, position: 0.3,
     gain: 0.6,
   };
 
@@ -211,6 +211,16 @@ export class RingsEngine implements ISynthEngine {
 
   async dispose(): Promise<void> {
     this.allNotesOff();
+    // A resonator tail can ring for seconds at full amplitude. AudioEngine
+    // swaps engines and disconnects the old one ~60ms later, which would
+    // hard-cut an in-flight tail audibly (Braids instead fades via a gain
+    // ramp on swap). Ramp gain to silence here before tearing down so an
+    // engine swap doesn't click/cut. Panic (allNotesOff) intentionally does
+    // NOT fade — that's locked instant-silence semantics.
+    if (this.ctx && this.gainNode) {
+      this.gainNode.gain.setTargetAtTime(0, this.ctx.currentTime, 0.01);
+      await new Promise((r) => setTimeout(r, 50));
+    }
     // Stop the worklet (free WASM buffer + return false from process()) so the
     // disposed processor is collected, not left rendering on the audio thread.
     if (this.node) { try { this.node.port.postMessage({ type: "dispose" }); } catch { /* */ } }

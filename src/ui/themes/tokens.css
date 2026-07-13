@@ -1,8 +1,10 @@
-/* Theme tokens — shared schema, three palettes.
+/* Theme tokens — shared schema, four palettes.
    The active theme follows the selected engine (see state/theme.ts):
-   braids → phosphor, plaits → sandbox, laxsynth → lab. Set via
-   [data-theme="lab"|"sandbox"|"phosphor"] on <html>. Braids boots first, so
-   phosphor is the landing theme; :root mirrors lab as a static fallback. */
+   braids → phosphor, plaits → sandbox, laxsynth → lab, rings → soundboard
+   ("Soundboard" is the skin's name; the ThemeId stays "rings"). Set via
+   [data-theme="lab"|"sandbox"|"phosphor"|"rings"] on <html>. Braids boots
+   first, so phosphor is the landing theme; :root mirrors lab as a static
+   fallback. */
 
 :root,
 [data-theme="lab"] {

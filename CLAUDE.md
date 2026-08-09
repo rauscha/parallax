@@ -22,7 +22,7 @@ Parallax exists because the M8's Macro synth couldn't be learned from the hardwa
 
 ## Locked decisions (do not re-litigate)
 - **Authentic Braids first** — real WASM engine before any UI flesh. No placeholder oscillator.
-- **All three themes** (Lab Instrument [SNES-inspired]; Sandbox; Phosphor) built from CSS custom-property tokens. **Theme follows the engine** (chosen 2026-06-09, superseding the manual runtime switcher): braids → phosphor, plaits → sandbox, laxsynth → lab. There is no manual theme control; selecting an engine switches the skin. Braids boots first, so phosphor is the landing theme.
+- **All four themes** (Lab Instrument [SNES-inspired]; Sandbox; Phosphor; Soundboard [walnut/brass]) built from CSS custom-property tokens. **Theme follows the engine** (chosen 2026-06-09, superseding the manual runtime switcher): braids → phosphor, plaits → sandbox, laxsynth → lab, rings → soundboard (ThemeId `"rings"`; "Soundboard" is the skin name). There is no manual theme control; selecting an engine switches the skin. Braids boots first, so phosphor is the landing theme.
 - **Single responsive PWA.** No native wrapper.
 - **v1 scope** = MIDI file import/export + shareable URL links — shipped, plus more (presets, PWA, postcard, Web MIDI input, Surprise, Match tool). **`v1.0.0` shipped 2026-06-18** — the ship-gate punch list in `docs/roadmap-v1.0.md` (Phases A–D) is complete; the tag subsumes the never-cut `v0.5.0-m5`. **Deferred:** audio recording/export (one-loop export is the agreed first un-deferral after v1.0), insert FX.
 - **Snap-to-scale on by default.** Monophonic. Treble clef. 120 BPM default.
@@ -65,7 +65,7 @@ src/
 - Keep the engine interface (`ISynthEngine`) pure — no Braids-specific strings outside `data/` and `engines/braids/`.
 
 ## What's deferred (don't quietly add)
-- Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
+- Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
 ## Memory pointers (read on resume)
 - `braids-synth-project` — project memory entry (decisions, plan path).

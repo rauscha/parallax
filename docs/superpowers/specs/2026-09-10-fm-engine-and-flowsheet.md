@@ -1,6 +1,7 @@
 # FM — engine #5 (msfa port) + the flowsheet teacher (design spec)
 
-**Created:** 2026-09-10 · **Status:** approved for planning; one gate open (§6.1 tap spike) · **Type:** comprehensive
+**Created:** 2026-09-10 · **Status:** approved for planning; **§6.1 gate PASSED 2026-09-10** (see
+`2026-09-10-tap-spike-results.md`) · **Type:** comprehensive
 design — engine port, tap instrumentation, and the teaching view in one spec.
 **Owner:** Andrew · **Follows:** `docs/ideas/2026-09-10-diy-synth-engine-survey.md` and
 `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`, plus the 2026-09-10 decisions below.
@@ -21,14 +22,23 @@ operator, `dx7note.cc` is one voice. One vendoring job, two features. That coupl
    **withdrawn**. Taps read the actual engine. See §2 and the revised architecture section of the idea note.
 3. **The flowsheet teacher is designed for a computer screen.** Not phone, not tablet. See §4.4 for exactly what that
    does and does not mean against the locked "single responsive PWA" decision.
+4. **The 5th theme is designed *for* the diagram surface** — flatter and higher-contrast than the other four skins,
+   which are instrument-panel skins. The flowsheet is the primary thing this theme has to serve. (Decision A, closed
+   2026-09-10.)
+5. **Own corpus, built from sound — never from ROM data.** Voices may be *inspired by* classic Yamaha sounds and
+   recreated by ear; a waveform is not copyrightable, and a sound designed to land in the same territory is our own
+   work. What is off limits is the patch data itself: no factory ROM sysex, no transcribed operator parameter sets.
+   Route B1, with the boundary stated in Andrew's terms: **build it from sound, not from the ROM.** (Decision B,
+   closed 2026-09-10.)
+6. **Model axis = voices**, each carrying its algorithm as a displayed property; the algorithm becomes the explorable
+   object in the flowsheet rather than a second picker. (Decision C, closed 2026-09-10.)
 
-## Open decisions — Andrew's call, needed before implementation starts
+## Decision record (A–C closed 2026-09-10; D stands as written)
 
-These are surfaced rather than decided, per the working-style rule. **A and B block the corpus and theme work; C and D
-block anything user-visible.** None of them block the DSP port (§7 Phases 1–4), so implementation can legitimately
-start before they are answered.
+A, B and C were open when this spec was written and are now closed — see locked decisions 4–6 above. The reasoning is
+kept below because the *boundaries* matter at implementation time, especially B.
 
-### A. The 5th theme
+### A. The 5th theme — **closed: designed for the diagram surface**
 
 Theme-follows-engine is locked, and `src/state/theme.ts` currently types
 `ThemeId = "lab" | "sandbox" | "phosphor" | "rings"`. A fifth engine therefore requires a **fifth skin** — name,
@@ -38,7 +48,7 @@ implementation. Needed: a direction. One seam worth considering — the flowshee
 flatter, higher-contrast tokens than any of the four existing skins, so it is worth deciding up front whether the FM
 theme is designed **for** that view or merely tolerates it.
 
-### B. The patch corpus, and the Yamaha problem — **read this one**
+### B. The patch corpus — **closed: B1, built from sound, not from the ROM**
 
 The survey note claimed the factory cartridge voices give "a corpus larger than Braids'". That needs a correction on
 the record: **msfa's Apache-2.0 licence covers the engine, not Yamaha's patch data.** The factory ROM sysex banks are
@@ -46,7 +56,15 @@ Yamaha's — widely circulated, not licensed for redistribution. Shipping them w
 is not licence-clean, in a project whose posture has otherwise been careful enough to vendor `LICENSE-Braids.txt` and
 keep per-file MIT headers intact.
 
-Three routes:
+**The boundary, in Andrew's words:** *"we've gotta build it from sound — can't copyright soundwaves — not from the
+ROM."* That is the correct line and it is worth stating precisely, because the two halves get conflated. Recreating a
+famous sound **by ear** is legitimate: timbre is not copyrightable, and the result is our own sound design. Copying the
+**patch data** — factory sysex, or a transcribed table of operator ratios, levels and envelopes lifted from the ROM —
+is copying someone's authored work regardless of how it is re-encoded. So: name voices in our own language, design
+them by listening, document them as "in the territory of" rather than "a clone of", and never let a factory parameter
+dump into the repo.
+
+Routes considered:
 
 - **B1 — author our own corpus (recommended).** Hand-design a voice set under our own copyright, chosen to
   *demonstrate* FM principles: a 2-op integer-ratio pair, the same pair detuned inharmonic, a feedback saw, a bell, an
@@ -59,7 +77,7 @@ Three routes:
   substitute.
 - **B3 — ship the factory ROM.** Not recommended. Not without a deliberate, documented decision.
 
-### C. What the model axis *is*
+### C. What the model axis *is* — **closed: voices**
 
 The Explain panel needs a discrete model axis (`modelEnumerable: true`). Two candidates, and they are not the same
 kind of thing: the **32 algorithms** are topologies (structure, not sound); the **voices** are sounds.
@@ -68,7 +86,7 @@ Braids/Plaits/Rings models are all sounds. Recommendation: **model axis = voices
 That keeps the Explain contract identical across all five engines and gives the teacher a reason to exist instead of
 duplicating the model picker.
 
-### D. Naming and attribution
+### D. Naming and attribution — stands as written
 
 The trademark rule applies unchanged. **Never brand the engine or the product "DX7", "Yamaha", or "Dexed".** The
 display name should be generic and factual — **"FM"** or **"6-Op FM"** — with attribution prose of the form *"based on
@@ -188,7 +206,7 @@ Plaits' HARMONICS/TIMBRE/MORPH:
 The exact mapping is decided at implementation against `patch.cc`; the *count and character* are locked here.
 Full per-operator editing is **not** a knob-panel feature — it belongs to the flowsheet view (§4), which is the point.
 
-**Model corpus.** Blocked on open decision B. The recommended shape (B1) is a hand-authored voice set where each entry
+**Model corpus.** Decided (locked #5): own voices, designed by ear, never lifted from ROM patch data. The shape is a hand-authored voice set where each entry
 demonstrates one FM idea, carrying the standard `EngineModel` fields (`code`, `name`, `family`, `description`, `knobs`,
 `detail.listenFor` / `detail.goodFor`) in `src/data/fm-models.ts`. Families are the natural FM taxonomy: bells and
 metallic, electric pianos, brass and winds, basses, inharmonic and noise, and teaching primitives.
@@ -239,7 +257,10 @@ Locked decision 3 is **not** a retreat from "single responsive PWA". Concretely:
 
 ## §5. Theme
 
-Blocked on open decision A. The contract once decided: a 5th `ThemeId`, a token set in `src/ui/themes/tokens.css`,
+**Decided (locked #4): the FM theme is designed for the diagram surface** — flatter and higher-contrast than the four
+instrument-panel skins that precede it. Where Phosphor/Soundboard/Lab/Sandbox are *surfaces of an instrument*, this one
+is a *drafting surface*: the flowsheet is the primary thing it has to serve, and knob panels adapt to it rather than
+the reverse. Direction only; pixels come from a `frontend-design` pass at implementation. The contract: a 5th `ThemeId`, a token set in `src/ui/themes/tokens.css`,
 entries in `ENGINE_THEME` and `THEME_COLOR`, and a row in `contrast.test.ts`.
 
 **Accessibility is non-negotiable, and this feature is the hardest case in the app.** Nothing in the flowsheet may
@@ -251,9 +272,16 @@ cannot separate the two colours you were about to use, because it will be.
 
 ## §6. Testing and verification
 
-### 6.1 The tap spike — the one open gate
+### 6.1 The tap spike — **PASSED 2026-09-10**
 
-Runnable **now, against `public/rings-worklet.js`**, before any msfa work exists. Roughly 40 lines.
+> **Result:** green. 8 taps cost **0.055 percentage points** of the audio-thread budget (13.253 % → 13.308 % duty, a
+> 0.4 % relative increase); 48 taps cost 0.812 pp with no inflection. Pool never starved at any tap count, heap flat,
+> zero per-quantum allocation, draw cost 0.064 ms/frame. **The SAB fallback is not needed and should not be built.**
+> Two things the spike could not establish — no per-quantum tail figure (`performance` is not exposed in Chrome's
+> `AudioWorkletGlobalScope`), and Chromium only (Firefox/Safari outstanding). Full detail and caveats:
+> `2026-09-10-tap-spike-results.md`.
+
+As run, against `public/rings-worklet.js`, before any msfa work exists. Roughly 40 lines.
 
 1. Add 8 dummy taps (copy the render block eight times into a capture ring) plus the pooled-transferable snapshot path.
 2. **Zero steady-state allocation in `process()`** — verify by inspection and a flat worklet heap in the Chrome memory
@@ -264,7 +292,8 @@ Runnable **now, against `public/rings-worklet.js`**, before any msfa work exists
 4. **Find the cliff, do not just pass.** Scale to 24 and 48 taps. If 48 is clean, 8 stops being a question.
 5. Run on Chrome (the target), plus Firefox and Safari — it is a PWA, and worklet scheduling differs.
 
-Outcome: green → §2 as written. Red at 8 taps → escalate to the SAB fallback as a *fresh decision*, not automatically.
+Outcome was green → §2 stands as written. (Had it been red at 8 taps, the SAB fallback would have needed a *fresh*
+decision, not an automatic escalation.)
 
 ### 6.2 Engine tests
 
@@ -284,19 +313,19 @@ disagrees with its own caption is the worst failure mode this feature has.
 
 | # | Phase | Blocked on |
 |---|---|---|
-| 0 | **Tap spike** (§6.1) against the Rings worklet — throwaway branch, keep the measurements | — |
+| 0 | ~~**Tap spike** (§6.1) against the Rings worklet~~ — **done 2026-09-10, green** | ✅ |
 | 1 | Vendor msfa + `LICENSE-msfa.txt` + `NOTICE`; confirm `N` and the rate wiring | — |
 | 2 | `fm_shim.cc` + `build-fm.ps1` → renders a tone from a hardcoded patch | 1 |
 | 3 | `fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated | 2 |
 | 4 | Macro parameter set (§3) + schema | 3 |
-| 5 | Model corpus + Explain prose | 4, **decisions B + C** |
-| 6 | The 5th theme | 5, **decision A** |
-| 7 | Tap exports in the shim + the snapshot protocol in the worklet | 3, 0 |
+| 5 | Model corpus + Explain prose (own voices, designed by ear) | 4 |
+| 6 | The 5th theme (diagram-first) | 5 |
+| 7 | Tap exports in the shim + the snapshot protocol in the worklet | 3 |
 | 8 | Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions | 7 |
 | 9 | Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates | all |
 
-Phases 1–4 are unblocked by the open decisions. Phase 0 is unblocked by everything and answers the only real technical
-risk in the plan, so it is cheap insurance to run early even if the rest waits.
+With A–C closed and phase 0 green, **nothing in this plan is blocked.** The remaining §6.1 item is the Firefox/Safari
+pass, which is not a blocker for phases 1–7 but should be run before the flowsheet view ships.
 
 ---
 

@@ -1,0 +1,173 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tap spike — FM flowsheet phase 0</title>
+<style>
+  body { font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; margin: 20px; background:#12141a; color:#e8e8ea; }
+  h1 { font-size: 15px; margin: 0 0 4px; }
+  .sub { color:#9aa0aa; margin-bottom:16px; }
+  button { font: inherit; padding:6px 14px; background:#2b6cb0; color:#fff; border:0; border-radius:4px; cursor:pointer; }
+  #status { margin:12px 0; color:#f0c674; }
+  #scopes { display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin:12px 0; }
+  canvas { width:100%; height:70px; background:#0b0d11; border:1px solid #2a2f3a; }
+  table { border-collapse: collapse; margin-top:14px; font-size:12px; }
+  th, td { border:1px solid #2a2f3a; padding:4px 9px; text-align:right; }
+  th { background:#1c1f27; text-align:center; }
+  td.k { text-align:left; color:#9aa0aa; }
+  .ok { color:#7ec699; } .bad { color:#e06c75; }
+</style>
+
+<h1>Tap spike — FM flowsheet phase 0</h1>
+<div class="sub">Real Rings WASM in an AudioWorklet + N dummy taps, pooled transferable snapshots at ~60 Hz.
+Runs 0 / 8 / 24 / 48 taps for 15 s each.</div>
+
+<button id="go">Run all</button>
+<div id="status">idle</div>
+<div id="scopes"></div>
+<div id="out"></div>
+
+<script type="module">
+const CONFIGS = [0, 8, 24, 48];
+const RUN_MS = 15000;
+const results = [];
+window.__spikeResults = results;
+window.__spikeDone = false;
+
+const statusEl = document.getElementById('status');
+const outEl = document.getElementById('out');
+const scopesEl = document.getElementById('scopes');
+
+// Eight visible scopes — the real feature draws these every frame, so the
+// main-thread cost is part of what we are measuring.
+const canvases = [];
+for (let i = 0; i < 8; ++i) {
+  const c = document.createElement('canvas');
+  c.width = 240; c.height = 70;
+  scopesEl.appendChild(c);
+  canvases.push(c.getContext('2d'));
+}
+
+let latest = null, latestTaps = 0, latestWindow = 0;
+let framesDrawn = 0;
+function draw() {
+  if (latest) {
+    for (let t = 0; t < Math.min(8, latestTaps); ++t) {
+      const ctx = canvases[t], W = 240, H = 70;
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#7ec699'; ctx.lineWidth = 1; ctx.beginPath();
+      // min/max envelope per pixel column — the draw-time decimation from §2
+      for (let x = 0; x < W; ++x) {
+        const a = ((x * latestWindow / W) | 0) + t * latestWindow;
+        const b = (((x + 1) * latestWindow / W) | 0) + t * latestWindow;
+        let lo = 1, hi = -1;
+        for (let i = a; i < b; ++i) { const v = latest[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+        ctx.moveTo(x + 0.5, H / 2 - hi * H * 0.45);
+        ctx.lineTo(x + 0.5, H / 2 - lo * H * 0.45);
+      }
+      ctx.stroke();
+    }
+    framesDrawn++;
+  }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+const heap = () => (performance.memory ? performance.memory.usedJSHeapSize : 0);
+
+async function runOne(ctx, wasmBinary, tapCount) {
+  statusEl.textContent = `running ${tapCount} taps…`;
+  const node = new AudioWorkletNode(ctx, 'tap-spike', {
+    numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1],
+    processorOptions: { wasmBinary, tapCount },
+  });
+  const gain = ctx.createGain();
+  gain.gain.value = 0.05;
+  node.connect(gain).connect(ctx.destination);
+
+  let metrics = null, ready = null;
+  const readyP = new Promise(res => { ready = res; });
+  node.port.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === 'ready') ready(m);
+    else if (m.type === 'snapshot') {
+      latest = new Float32Array(m.buffer);
+      latestTaps = m.taps; latestWindow = m.window;
+      // hand the buffer straight back to the pool — zero-copy round trip
+      node.port.postMessage({ type: 'returnBuffer', buffer: m.buffer }, [m.buffer]);
+    } else if (m.type === 'metrics') metrics = m;
+    else if (m.type === 'error') console.error('worklet error', m.message);
+  };
+  const readyInfo = await readyP;
+
+  // strum twice a second so the resonator is always doing real work
+  const strum = setInterval(() => node.port.postMessage({ type: 'gateOn', time: ctx.currentTime }), 500);
+  node.port.postMessage({ type: 'gateOn', time: ctx.currentTime });
+
+  await new Promise(r => setTimeout(r, 2000));            // warm-up, not measured
+  node.port.postMessage({ type: 'reset' });
+  framesDrawn = 0;
+  const h0 = heap(), t0 = performance.now();
+  await new Promise(r => setTimeout(r, RUN_MS));
+  const h1 = heap(), elapsed = performance.now() - t0;
+
+  node.port.postMessage({ type: 'metrics' });
+  await new Promise(r => setTimeout(r, 300));
+  clearInterval(strum);
+  node.port.postMessage({ type: 'dispose' });
+  node.disconnect(); gain.disconnect();
+
+  const r = {
+    taps: tapCount, hasPerf: readyInfo.hasPerf, elapsedMs: Math.round(elapsed),
+    fps: +(framesDrawn / (elapsed / 1000)).toFixed(1),
+    heapGrowthMB: h0 ? +(((h1 - h0) / 1048576)).toFixed(2) : null,
+    ...(metrics || { error: 'no metrics' }),
+  };
+  if (metrics) {
+    r.meanMs = +metrics.meanMs.toFixed(4);
+    r.maxMs = +metrics.maxMs.toFixed(3);
+    r.dutyPct = +((metrics.meanMs / metrics.quantumMs) * 100).toFixed(2);
+    r.snapsPerSec = +(metrics.snapsSent / (elapsed / 1000)).toFixed(1);
+    r.allocsPerSec = +(metrics.viewAllocs / (elapsed / 1000)).toFixed(1);
+    delete r.buckets_unused;
+  }
+  results.push(r);
+  render();
+  return r;
+}
+
+function render() {
+  const rows = [
+    ['taps', r => r.taps],
+    ['quanta measured', r => r.quanta],
+    ['mean process() ms', r => r.meanMs],
+    ['max process() ms', r => r.maxMs],
+    ['duty % of 2.67ms', r => r.dutyPct],
+    ['quanta > 50% budget', r => r.overBudget],
+    ['late callbacks', r => r.late],
+    ['snapshots/sec', r => r.snapsPerSec],
+    ['pool starved', r => r.poolStarved],
+    ['audio-thread allocs/sec', r => r.allocsPerSec],
+    ['draw fps', r => r.fps],
+    ['JS heap growth MB', r => r.heapGrowthMB],
+  ];
+  let h = '<table><tr><th></th>' + results.map(r => `<th>${r.taps} taps</th>`).join('') + '</tr>';
+  for (const [label, get] of rows) {
+    h += `<tr><td class="k">${label}</td>` + results.map(r => `<td>${get(r) ?? '—'}</td>`).join('') + '</tr>';
+  }
+  h += '</table>';
+  outEl.innerHTML = h;
+}
+
+document.getElementById('go').onclick = async () => {
+  document.getElementById('go').disabled = true;
+  const ctx = new AudioContext();
+  await ctx.resume();
+  statusEl.textContent = `AudioContext ${ctx.sampleRate} Hz, baseLatency ${ctx.baseLatency}`;
+  await ctx.audioWorklet.addModule('/spike-tap-worklet.js');
+  const wasmBinary = await (await fetch('/rings.wasm')).arrayBuffer();
+  window.__spikeMeta = { sampleRate: ctx.sampleRate, baseLatency: ctx.baseLatency, outputLatency: ctx.outputLatency, ua: navigator.userAgent };
+  for (const n of CONFIGS) await runOne(ctx, wasmBinary.slice(0), n);
+  await ctx.close();
+  statusEl.textContent = 'done';
+  window.__spikeDone = true;
+};
+</script>

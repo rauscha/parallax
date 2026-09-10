@@ -1,0 +1,140 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tap spike — CPU cost</title>
+<style>
+  body { font: 13px/1.5 ui-monospace, Consolas, monospace; margin:20px; background:#12141a; color:#e8e8ea; }
+  h1 { font-size:15px; margin:0 0 4px; } .sub { color:#9aa0aa; margin-bottom:14px; }
+  button { font:inherit; padding:6px 14px; background:#2b6cb0; color:#fff; border:0; border-radius:4px; cursor:pointer; }
+  #status { margin:12px 0; color:#f0c674; }
+  table { border-collapse:collapse; margin-top:14px; font-size:12px; }
+  th,td { border:1px solid #2a2f3a; padding:4px 10px; text-align:right; } th { background:#1c1f27; }
+  td.k { text-align:left; color:#9aa0aa; }
+  canvas { display:block; margin-top:10px; border:1px solid #2a2f3a; background:#0b0d11; }
+</style>
+
+<h1>Tap spike — CPU cost (offline render + synchronous draw bench)</h1>
+<div class="sub">performance.now() is not exposed inside AudioWorkletGlobalScope, so per-quantum timing is measured
+here instead: render a fixed span of audio through an OfflineAudioContext and time it on the main thread, where the
+clock exists. Realtime factor → duty cycle. Draw cost is timed synchronously (rAF is throttled when the pane is hidden).</div>
+
+<button id="go">Run</button>
+<div id="status">idle</div>
+<div id="out"></div>
+<canvas id="bench" width="240" height="70"></canvas>
+
+<script type="module">
+const CONFIGS = [0, 8, 24, 48];
+const RENDER_SECONDS = 30;
+const SR = 48000;
+const results = [];
+window.__cpuResults = results;
+window.__cpuDone = false;
+
+const statusEl = document.getElementById('status');
+const outEl = document.getElementById('out');
+
+async function renderOffline(wasmBinary, tapCount) {
+  const ctx = new OfflineAudioContext(1, SR * RENDER_SECONDS, SR);
+  await ctx.audioWorklet.addModule('/spike-tap-worklet.js');
+  const node = new AudioWorkletNode(ctx, 'tap-spike', {
+    numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1],
+    processorOptions: { wasmBinary, tapCount, skipPost: true },
+  });
+  node.connect(ctx.destination);
+  // strums across the whole render so the resonator is always working
+  for (let t = 0; t < RENDER_SECONDS; t += 0.5) node.port.postMessage({ type: 'gateOn', time: t });
+
+  // An OfflineAudioContext renders far faster than the worklet's async WASM
+  // init resolves, so a naive startRendering() times 30 s of silence. Suspend
+  // early, yield to the main thread so init completes, then time only the span
+  // after resume.
+  const WARM = 1.0;
+  ctx.suspend(WARM);
+  const renderP = ctx.startRendering();
+  await new Promise(r => setTimeout(r, 400));   // let init + ready land
+  const t0 = performance.now();
+  await ctx.resume();
+  const buf = await renderP;
+  const wallMs = performance.now() - t0;
+  const timedSeconds = RENDER_SECONDS - WARM;
+
+  // sanity: the render must actually contain audio, else we timed nothing
+  // only inspect the timed span, not the warm-up
+  const ch = buf.getChannelData(0);
+  const from = Math.floor(WARM * SR);
+  let peak = 0, nonzero = 0, n = 0;
+  for (let i = from; i < ch.length; i += 97) { const a = Math.abs(ch[i]); if (a > peak) peak = a; if (a > 1e-6) nonzero++; n++; }
+
+  return {
+    taps: tapCount,
+    wallMs: +wallMs.toFixed(1),
+    timedSeconds,
+    realtimeFactor: +((timedSeconds * 1000) / wallMs).toFixed(1),
+    dutyPct: +((wallMs / (timedSeconds * 1000)) * 100).toFixed(3),
+    peak: +peak.toFixed(4),
+    nonzeroPct: +((nonzero / n) * 100).toFixed(1),
+  };
+}
+
+// Synchronous draw benchmark: 8 scopes, min/max envelope per column, 300 frames.
+function drawBench() {
+  const c = document.getElementById('bench'), ctx = c.getContext('2d');
+  const W = 240, H = 70, WINDOW = 1024, TAPS = 8;
+  const data = new Float32Array(TAPS * WINDOW);
+  for (let i = 0; i < data.length; ++i) data[i] = Math.sin(i * 0.05) * 0.8;
+  const FRAMES = 300;
+  const t0 = performance.now();
+  for (let f = 0; f < FRAMES; ++f) {
+    for (let t = 0; t < TAPS; ++t) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#7ec699'; ctx.beginPath();
+      for (let x = 0; x < W; ++x) {
+        const a = ((x * WINDOW / W) | 0) + t * WINDOW, b = (((x + 1) * WINDOW / W) | 0) + t * WINDOW;
+        let lo = 1, hi = -1;
+        for (let i = a; i < b; ++i) { const v = data[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+        ctx.moveTo(x + 0.5, H / 2 - hi * H * 0.45); ctx.lineTo(x + 0.5, H / 2 - lo * H * 0.45);
+      }
+      ctx.stroke();
+    }
+  }
+  const ms = performance.now() - t0;
+  return { framesTimed: FRAMES, msPerFrame: +(ms / FRAMES).toFixed(3), budgetPct: +(((ms / FRAMES) / 16.67) * 100).toFixed(1) };
+}
+
+function render() {
+  const rows = [
+    ['taps', r => r.taps],
+    ['wall ms for timed span', r => r.wallMs],
+    ['timed audio seconds', r => r.timedSeconds],
+    ['x realtime', r => r.realtimeFactor],
+    ['audio-thread duty %', r => r.dutyPct],
+    ['output peak', r => r.peak],
+    ['non-silent samples %', r => r.nonzeroPct],
+  ];
+  let h = '<table><tr><th></th>' + results.map(r => `<th>${r.taps} taps</th>`).join('') + '</tr>';
+  for (const [l, g] of rows) h += `<tr><td class="k">${l}</td>` + results.map(r => `<td>${g(r) ?? '—'}</td>`).join('') + '</tr>';
+  h += '</table>';
+  if (window.__drawBench) {
+    const d = window.__drawBench;
+    h += `<p>Draw bench (8 scopes, 1024-sample window, min/max per column): <b>${d.msPerFrame} ms/frame</b>
+          = ${d.budgetPct}% of a 16.67 ms frame budget, over ${d.framesTimed} frames.</p>`;
+  }
+  outEl.innerHTML = h;
+}
+
+document.getElementById('go').onclick = async () => {
+  document.getElementById('go').disabled = true;
+  const wasmBinary = await (await fetch('/rings.wasm')).arrayBuffer();
+  window.__cpuMeta = { ua: navigator.userAgent, sr: SR, renderSeconds: RENDER_SECONDS };
+  for (const n of CONFIGS) {
+    statusEl.textContent = `offline render, ${n} taps…`;
+    results.push(await renderOffline(wasmBinary.slice(0), n));
+    render();
+  }
+  statusEl.textContent = 'draw bench…';
+  window.__drawBench = drawBench();
+  render();
+  statusEl.textContent = 'done';
+  window.__cpuDone = true;
+};
+</script>

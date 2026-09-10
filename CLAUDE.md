@@ -68,10 +68,17 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Idea backlog (captured, NOT approved — do not start without a spec + sign-off)
-- `docs/ideas/2026-09-10-diy-synth-engine-survey.md` — triage of the DIY Synths Database (94 open-source hardware projects) for a possible engine #5. Headline: almost everything there is GPL/NonCommercial or an analog circuit; the two live options are a **Plinky voice-core port** (MIT, author already ships an emcc build) and a **6-op FM engine via msfa** (Apache-2.0, the DX7 core under MiniDexed) — the latter recommended.
-- `docs/ideas/2026-09-10-fm-flowsheet-teacher.md` — Andrew's FM signal-flow teacher: a node graph where every wire is a live scope tap (ratio, index, feedback, per-operator envelope, 32 DX7 algorithms). Same explain-loop thesis, pointed at a topology. Shares a substrate with the msfa port — decide the engine first.
-
+## Engine #5 — FM (approved for planning 2026-09-10, not started)
+- **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
+  (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
+  One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
+  **designed for a computer screen** (its own route — the app stays a responsive PWA).
+- **Three decisions still open in that spec** (A: the 5th theme, since theme-follows-engine; B: the patch corpus —
+  there is a **licensing catch**, msfa's Apache-2.0 does *not* cover Yamaha's factory ROM voices; C: whether the model
+  axis is algorithms or voices). Phases 1–4 of the port are unblocked by all three.
+- **One technical gate:** the tap spike (§6.1) — runnable today against `public/rings-worklet.js`, before any msfa work.
+- **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
+  `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 
 ## Memory pointers (read on resume)
 - `braids-synth-project` — project memory entry (decisions, plan path).

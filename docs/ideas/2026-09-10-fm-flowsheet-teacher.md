@@ -1,6 +1,7 @@
 # FM flowsheet teacher — idea note
 
-**Created:** 2026-09-10 · **Status:** captured idea, not scoped, not approved · **Origin:** Andrew, 2026-09-10.
+**Created:** 2026-09-10 · **Status:** **scoped and approved for planning 2026-09-10** — see
+`docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` · **Origin:** Andrew, 2026-09-10.
 
 ## The idea, in Andrew's framing
 
@@ -44,38 +45,72 @@ Per node, live, on a shared time base:
 And ideally **spectrum alongside scope at the output**, because the sideband picture (carrier ± n·modulator) is the
 frequency-domain half of the same truth, and a physics brain wants both panes.
 
-## Architectural notes — feasibility, honestly assessed
+## Architectural notes — feasibility, measured against the real worklets
 
-**What's already here and reusable:** `src/viz/Oscilloscope.svelte` and `src/viz/Spectrum.svelte` already render from
-an `AnalyserNode`; `MatchPanel.svelte` already proves we can run **two** analysers in parallel (synth + reference
-sample) and draw both. So "N scopes on one page" is a solved problem in this codebase — that part is *solid*.
+*Revised 2026-09-10 after reading `public/rings-worklet.js` and `src/audio/AudioEngine.ts`. The original version of this
+section recommended a hedge (a TS teaching model for the diagram, real signal only at the output). **That
+recommendation is withdrawn.** It rested on a cost premise that does not survive contact with the code, and on an
+honesty trade that is worse than it looked. Real per-node taps are the plan.*
 
-**What's genuinely new — and this is the hard bit.** The DSP runs inside a single AudioWorklet with a ring buffer,
-and `AnalyserNode` only taps the Web Audio graph, not the inside of a worklet. There are two routes and they trade
-off badly:
+**What's already here and reusable:** `src/viz/Oscilloscope.svelte` and `src/viz/Spectrum.svelte` already render from an
+`AnalyserNode`; `MatchPanel.svelte` already runs **two** analysers in parallel and draws both. "N scopes on one page" is
+a solved problem in this codebase.
 
-1. **Tap inside the worklet.** Have the shim expose per-operator output buffers and post them to the main thread
-   alongside audio. Accurate — it's the real signal from the real engine — but it means pushing several extra
-   float streams per block across the worklet boundary, and audio-thread hygiene is already a known sensitivity in
-   this project (see the v1.0 punch-list items on worklet dispose and audio-thread degradation). *Plausible, needs
-   measurement, not a given.*
-2. **A separate, non-audio "teaching" model.** Compute the node waveforms in plain TS at a display rate, decoupled
-   from the audio engine — a mathematically correct FM model driving the diagram, with the real engine making the
-   sound in parallel. Cheap, zero audio-thread risk, and completely under our control for pedagogy (freeze time,
-   slow it down, step through phase). The cost: it is a *model of* the engine, not the engine, and if the two ever
-   disagree the app is lying — which is the one thing the product's honesty rule forbids. Mitigable by driving both
-   from the same parameter values and being explicit in the UI about what's drawn vs. what's heard.
+**The premise that was wrong.** The first draft assumed per-node taps meant a `postMessage` per render quantum — several
+float streams crossing the worklet boundary 375 times a second, each allocating. That *is* the expensive shape, and it
+is not the shape the feature needs. A scope is a **display**: it needs ~60 coherent snapshots per second of ~1024
+samples, not 375 fragments.
 
-My read, for whenever this gets scoped: **route 2 for the teaching view, route 1 only for the final output trace**
-(which we already have for free). Say so plainly in the UI. A didactic diagram that is honest about being a diagram
-is fine; a diagram that implies it's a probe on the real signal when it isn't, is not.
+At 48 kHz / 128-sample quanta (2.67 ms per quantum, 375 quanta/sec), with 8 taps (6 operators + the feedback wire +
+output):
 
-**Scope collision to be aware of:** this is a second interaction surface next to the staff editor and the Explain
-panel, on a layout that is already tight on a phone. It probably wants to be its own view/route, not another panel
-crammed into the main screen.
+| approach | messages/sec | steady-state allocations | bandwidth |
+|---|---|---|---|
+| per-quantum streaming *(the withdrawn premise)* | 375 | 375 x 8 arrays | ~1.5 MB/s |
+| **frame-rate snapshot, pooled + transferred** | **60** | **0** | ~2 MB/s |
+
+**The design that makes it cheap.** The shim copies each operator's output block into a pre-allocated capture ring
+*inside* the worklet — 8 x 128 float writes per quantum, ~380k writes/sec, negligible beside running six FM operators.
+Once per display frame the worklet posts the snapshot buffer **as a transferable**, and the main thread transfers a
+recycled empty buffer back. Pointer handoff, fixed pool, zero copy, no allocation in `process()` after init. For scale:
+a 6-op mono voice costs on the order of tens of microseconds against a 2667 us budget. This was never a CPU problem.
+The only thing that could hurt is allocation and message churn on the audio thread — a design choice, not a limit.
+
+**Two reasons route 2 loses even if cost were free.**
+
+1. **Phase coherence.** Independent analysers each capture on their own window, so the traces drift against each other.
+   But *"watch the modulator and carrier lock at a 2:1 ratio and drift at 2.01:1"* **is the lesson.** Same-offset capture
+   of every tap in one snapshot is the only thing that delivers it, and the pooled-snapshot design gives it for free.
+   (This also rules out the naive "just wire six `AnalyserNode`s" idea independently of the fact that an `AnalyserNode`
+   cannot see inside a worklet at all.)
+2. **The DX7 is not textbook FM.** A TS model draws a clean sine. msfa produces log-domain output through a quarter-sine
+   LUT with fixed-point envelope arithmetic, and feedback is a nonlinear recursion over the previous output samples. So
+   the two traces most worth looking at — feedback, and an operator at high index — are exactly the two a model gets
+   wrong. Writing a TS model faithful enough not to lie means reimplementing msfa in TypeScript. Under the product's
+   honesty rule that is not a cheaper option; it is the same option with a bug budget.
+
+**Residual unknown, and the fallback.** The one thing genuinely unmeasured is whether `port.postMessage` is
+allocation-free even with transferables — the spec does not promise it. If a spike shows it is not, the fallback is a
+`SharedArrayBuffer` ring, which needs cross-origin isolation. **That would contradict a locked decision:** GitHub Pages
+cannot send COOP/COEP headers, so it is reachable only via a `coi-serviceworker`-style shim riding the existing PWA
+service worker, at the cost of a reload on first visit and shakier Safari behaviour. Named here so the trade is known
+*before* the spike, not discovered after. It is not the plan.
+
+**Capture domain.** Taps are captured at **engine-native rate, pre-resample** — the true signal in msfa's own block
+domain — not at context rate downstream of the linear interpolator. The tap ring is therefore decoupled from the
+128-sample quantum.
+
+**Scope collision.** This is a second interaction surface next to the staff editor and the Explain panel. It wants to be
+its own view/route. Andrew's 2026-09-10 call: **design it for a computer screen**, not phone or tablet — see the spec
+for what that does and does not mean for the locked "single responsive PWA" decision.
 
 ## Status
 
-Captured only. Not scoped, not estimated, not approved, and deliberately not slotted into any roadmap phase. Next
-step whenever Andrew wants it: a design spec in `docs/superpowers/specs/`, following the Rings precedent — and the
-FM engine decision (msfa port, yes/no) should be made *first*, because it changes whether route 1 is even available.
+**Superseded by the spec.** On 2026-09-10 Andrew made the two decisions this note was waiting on: **msfa is engine #5**
+("if we're doing an FM synth teacher there's really no other option than a DX7"), and the teacher is **designed for a
+computer screen**, not phone or tablet. The architecture question was then re-examined against the real worklets and
+resolved in favour of **real per-node taps** (see above).
+
+Live document is now `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md`. This note is kept as the origin
+record and the reasoning trail; the spec is what gets implemented. Three decisions remain open there — the 5th theme,
+the patch corpus (there is a **licensing catch** on the factory voices), and what the model axis is.

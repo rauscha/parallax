@@ -91,6 +91,10 @@ Braids shim we already did.
 Why it's the best candidate:
 - **Model axis for free:** DX7 algorithms 1–32, and beyond that the factory cartridge voices (E.PIANO 1, TUB BELLS,
   BRASS 1 …) — a corpus larger than Braids', with decades of documentation to write honest prose from.
+  > **Correction (2026-09-10):** this overstated the case. msfa's Apache-2.0 licence covers the *engine*, **not
+  > Yamaha's patch data** — the factory ROM banks are widely circulated but not licensed for redistribution. The
+  > algorithms are free; the voices are not. See open decision B in
+  > `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md`, which recommends authoring our own corpus.
 - **Mono is native.** A DX7 voice is a voice; `dx7note.cc` is literally one note.
 - **Adds a category nothing else covers.** Braids/Plaits = macro-oscillator, Rings = resonator. FM is the gap.
 - **It doubles as the substrate for the FM flowsheet teacher** (see `2026-09-10-fm-flowsheet-teacher.md`) — the

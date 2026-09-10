@@ -12,7 +12,8 @@
     "test": "vitest run",
     "wasm": "powershell -ExecutionPolicy Bypass -File ./dsp/shim/build.ps1",
     "wasm:plaits": "powershell -ExecutionPolicy Bypass -File ./dsp/shim/build-plaits.ps1",
-    "wasm:rings": "powershell -ExecutionPolicy Bypass -File ./dsp/shim/build-rings.ps1"
+    "wasm:rings": "powershell -ExecutionPolicy Bypass -File ./dsp/shim/build-rings.ps1",
+    "wasm:fm": "powershell -ExecutionPolicy Bypass -File ./dsp/shim/build-fm.ps1"
   },
   "dependencies": {
     "@tonaljs/tonal": "^4.10.0",

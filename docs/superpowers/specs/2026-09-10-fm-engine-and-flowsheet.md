@@ -104,10 +104,15 @@ Same proven scaffold as Braids (96 kHz), Plaits (48 kHz) and Rings (48 kHz).
 `log2.cc` and their headers. No Android/JNI, no `synth_unit` host glue. Roughly ten small TUs — comparable to the
 Braids shim. Keep the Apache-2.0 headers on every file; add the `NOTICE`.
 
-**Sample rate and block size.** msfa's rate is configured at init (`Freqlut::init`, `Env::init_sr`, `Lfo::init`), so
-pin it to **48 kHz** and reuse the Rings resampler path verbatim. Its render block is a compile-time `N` (64 in the
-stock source — **confirm when vendoring**, do not assume). The worklet's ring buffer is written in units of that block,
-exactly as `rings-worklet.js` does with `RINGS_BLOCK = 24`.
+**Sample rate and block size — amended 2026-09-10, engine runs at 44.1 kHz.** The original text here pinned 48 kHz.
+Phase 1 found why that is wrong: msfa's rate is configured at init through `Freqlut::init(sr)`, `Lfo::init(sr)` and
+`PitchEnv::init(sr)`, but **`Env` takes no rate at all** — its increments are per-block constants calibrated against
+msfa's own 44.1 kHz reference, so at 48 kHz every operator envelope runs ~8.8 % fast. Rather than hand-patch vendored
+DSP and hope the scaling is right, **the engine runs at its calibrated 44.1 kHz** and the existing resampler carries it
+to the context rate — the same arrangement Braids already uses at 96 kHz. Every rate-dependent constant is then
+simultaneously correct against the calibration it was written for, and the vendored tree needs no second patch.
+Render block is `N` = **64** (confirmed: `synth.h`, `LG_N 6`, compile-time). The worklet's ring buffer is written in
+units of that block, exactly as `rings-worklet.js` does with `RINGS_BLOCK = 24`.
 
 **Shim — `dsp/shim/fm_shim.cc`** (global-instance pattern, like `plaits_shim.cc`):
 
@@ -315,7 +320,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 |---|---|---|
 | 0 | ~~**Tap spike** (§6.1) against the Rings worklet~~ — **done 2026-09-10, green** | ✅ |
 | 1 | ~~Vendor msfa + `LICENSE-msfa.txt` + `NOTICE`; confirm `N` and the rate wiring~~ — **done 2026-09-10** | ✅ |
-| 2 | `fm_shim.cc` + `build-fm.ps1` → renders a tone from a hardcoded patch | 1 |
+| 2 | ~~`fm_shim.cc` + `build-fm.ps1` → renders a tone from a hardcoded patch~~ — **done 2026-09-10** | ✅ |
 | 3 | `fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated | 2 |
 | 4 | Macro parameter set (§3) + schema | 3 |
 | 5 | Model corpus + Explain prose (own voices, designed by ear) | 4 |
@@ -362,10 +367,23 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
   block. The header declares `const char patch[128]` and the definition declares `[156]`; the body
   indexes past 128, so the header is simply wrong and C++ decay hides it. Call `UnpackPatch()` first.
 
+**Answered at phase 2 (shim + build, 2026-09-10)** — measured against the built binary, asserted in
+`src/audio/fm-wasm.test.ts`:
+
+- ~~Whether the heap contract stays `HEAP16` or widens to `HEAP32`~~ — **`HEAP16` stands.** Measured peak with
+  algorithm 32 (six independent carriers, every output level at 99, velocity 127) is 24576 of 32767 = **−2.5 dBFS,
+  no clipping**, using msfa's own `>>13`-with-clip conversion. What the measurement *also* showed: a normal
+  single-carrier voice lands around **−17 dBFS**, so the engine needs make-up gain — in the engine's `GainNode`, not
+  in the DSP. That is a phase-3 level-matching job, not a width problem.
+- ~~Pitch calibration offset (expect a Rings-style trim)~~ — **no trim needed.** MIDI 48/60/69/84 measure
+  130.8 / 261.6 / 440.0 / 1046.5 Hz by zero-crossing rate, dead on. Worth one confirming look at a spectrum in
+  phase 3, but there is no offset to apply.
+
 **Still open:**
 
-- Whether the heap contract stays `HEAP16` or widens to `HEAP32` — decide from a measured peak.
-- Pitch calibration offset (expect a Rings-style trim).
+- msfa hardcodes a **±3 semitone** pitch-bend range inside `Dx7Note::compute`. `fm_set_pitch_bend` maps onto that
+  range; anything wider needs the vendored constant changed, which would be a second local modification. Decide at
+  phase 4 whether ±3 is acceptable (it is what a DX7 does by default) or worth the patch.
 - Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis for the
   sideband picture to read correctly. It probably needs the log axis; confirm by looking at one.
 - Whether `log2.{cc,h}` earns its place — vendored per this spec, but upstream only uses `Log2` from its test

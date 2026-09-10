@@ -65,13 +65,19 @@ to re-apply.
   per-block-of-`N` constants calibrated against msfa's own 44.1 kHz reference
   (`main.cc:274`). Running the engine at 48 kHz therefore makes every operator
   envelope about **8.8 % fast**. Later Dexed-lineage forks added an `Env::init_sr`
-  for exactly this reason. Decide the fix at phase 2 (rate-scale the increments,
-  or run the engine at 44.1 kHz and let the existing resampler handle it) — do
-  not let it pass silently as "close enough".
+  for exactly this reason. **Resolved at phase 2: the engine runs at 44.1 kHz** and
+  the worklet resamples to the context rate, so every rate-dependent constant is
+  correct against the calibration it was written for and this tree needs no
+  second patch. Do not "simplify" it back to 48 kHz.
 - **Output is `int32_t` and `Dx7Note::compute` *adds* to the buffer** — the
   caller must zero it first. Upstream converts to `int16` with `>> 4`, a clip at
   ±(1 << 24), then `>> 9` (`synth_unit.cc:270`), i.e. `>> 13` total with
   saturation. That is the reference for the shim's `HEAP16` contract.
+- **Operator indices are reversed from the panel numbering.** msfa indexes operators 0..5 in DX7 sysex order, so
+  index 0 is operator 6 and index 5 is operator 1. Read it off algorithm 1 in `fm_core.cc`: `ops[0]` carries the
+  feedback flags and `ops[3]` / `ops[5]` are the carriers. Get this backwards and every flowsheet diagram is mirrored.
+- **Pitch bend range is hardcoded to ±3 semitones** in `Dx7Note::compute`, read from
+  `Controllers::values_[kControllerPitch]` (0x2000 = centre). Widening it means editing vendored code.
 - **`Dx7Note::init` takes the *unpacked 156-byte* patch**, despite the header
   declaring the parameter as `const char patch[156]` in the definition
   (`dx7note.cc:131`) and `const char patch[128]` in the header. The header is
@@ -80,6 +86,9 @@ to re-apply.
 
 ## Verification
 
-All eleven translation units pass `emcc -fsyntax-only -O2 -I.` under emcc 5.0.7
+All eleven translation units compile and link under emcc 5.0.7
 (`263db4cffa6f9fc2ec514a70abac81362ea41849`), the same toolchain that built
-`braids.wasm` and `rings.wasm`. Linking is phase 2's gate, not this one.
+`braids.wasm` and `rings.wasm` — `npm run wasm:fm` produces a 16 KB
+`public/fm.wasm`. `src/audio/fm-wasm.test.ts` then renders real audio through
+that binary and asserts block size, pitch and level, so `npm test` catches a
+broken rebuild.

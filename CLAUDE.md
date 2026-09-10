@@ -68,7 +68,7 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (in progress — phases 0–1 done 2026-09-10)
+## Engine #5 — FM (in progress — phases 0–2 done 2026-09-10)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
@@ -81,8 +81,14 @@ src/
   outstanding (needed before the flowsheet view ships, not before the port).
 - **Phase 1 (vendoring) done** — msfa DSP under `dsp/vendor/msfa/` at upstream `f67d41d3`, Apache-2.0
   (`LICENSE-msfa.txt`, `NOTICE`). Read `dsp/vendor/msfa/README.md` before writing the shim: render block `N = 64`,
-  one local patch to `aligned_buf.h`, and **`Env` is sample-rate-blind** (~8.8 % fast at 48 kHz) — phase 2 decides
-  the fix. Next: **phase 2**, `fm_shim.cc` + `build-fm.ps1`.
+  one local patch to `aligned_buf.h`, and **`Env` is sample-rate-blind** — which is why the engine runs at **44.1 kHz**
+  (spec §1 amended 2026-09-10) and the worklet resamples, exactly as Braids does from 96 kHz.
+- **Phase 2 (shim + build) done** — `dsp/shim/fm_shim.cc`, `dsp/shim/build-fm.ps1`, `npm run wasm:fm`,
+  `public/fm.{js,wasm}` committed. Pitch is exact with no trim; `HEAP16` stands (−2.5 dBFS worst case) but a normal
+  voice sits ~17 dB down, so phase 3 owes it make-up gain in the engine's `GainNode`. `src/audio/fm-wasm.test.ts`
+  renders through the committed binary and guards block size, pitch and level — the only engine with that guard.
+  The boot patch is **ours, authored by hand**; msfa's own `synth_unit.cc` carries a factory voice and is not
+  vendored. Next: **phase 3**, `fm-worklet.js` + `FmEngine.ts` + registry entry.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

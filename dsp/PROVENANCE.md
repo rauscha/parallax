@@ -9,10 +9,13 @@ them. (security M-3)
 ## What's opaque vs. readable
 
 - **Opaque (compiled):** `public/braids.wasm`, `public/plaits.wasm`,
-  `public/rings.wasm`, and their Emscripten JS glue `public/braids.js`,
-  `public/plaits.js`, `public/rings.js`. These come out of the Emscripten
-  build of the C++ shim + vendored Mutable Instruments DSP and can't be
-  eyeballed — hence this file.
+  `public/rings.wasm`, `public/fm.wasm`, and their Emscripten JS glue
+  `public/braids.js`, `public/plaits.js`, `public/rings.js`, `public/fm.js`.
+  These come out of the Emscripten build of the C++ shim + vendored DSP and
+  can't be eyeballed — hence this file. `fm.wasm` is the exception to "nothing
+  else would notice a bad rebuild": `src/audio/fm-wasm.test.ts` renders real
+  audio through the committed binary and asserts block size, pitch and level, so
+  `npm test` catches a broken FM build. The other three have no such guard yet.
 - **Hand-maintained (readable):** the AudioWorklet processors
   `public/braids-worklet.js`, `public/plaits-worklet.js`,
   `public/laxsynth-worklet.js`, `public/rings-worklet.js` are plain JS, edited
@@ -44,6 +47,8 @@ sha256sum public/braids.wasm public/braids.js \
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
 | `public/rings.wasm`          | `efe916aeb9e65266a45f225061ff0e32bbff5271fe8e49ec698ef93bb85d1d2e` |
 | `public/rings.js`            | `ed18e9fa1605fc86e2df86a0c46902e9a521b67ece1ce942f96b7cd57e288f76` |
+| `public/fm.wasm`             | `e473ac266642670c98b8056856344d9558292b4f7ea4b787df99091b25e34cab` |
+| `public/fm.js`               | `bf0bdc80bee8cad2c83ad63ae35be967db563f7ed882d8677dc7257a9ed5fdf9` |
 | `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
 | `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
 | `public/laxsynth-worklet.js` | `17fe058a615677abb08338397892f2275cc562bda6447b92896f145314bc13c1` |
@@ -72,9 +77,11 @@ sha256sum public/braids.wasm public/braids.js \
   upstream commit `f67d41d313b7dc85f6fb99e79e515cc9d208cfff` (2017-09-12, repo
   HEAD as of the 2026-09-10 vendoring). Licence in `LICENSE-msfa.txt`,
   attribution in `NOTICE`, the trimmed file list and the one local modification
-  in `dsp/vendor/msfa/README.md`. **No binary yet** — `public/fm.wasm` arrives at
-  phase 2 of `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md`, and
-  its hash and emcc version get a row in the table above when it does.
+  in `dsp/vendor/msfa/README.md`. Built into `public/fm.wasm` at phase 2
+  (2026-09-10); hashed in the table above.
+- **FM shim (our code, MIT):** `dsp/shim/fm_shim.cc`. Its boot patch is original,
+  authored by hand — Parallax ships no factory ROM patch data from any vendor
+  (locked decision 5 of the FM spec).
 
 ## Rebuild
 
@@ -97,6 +104,9 @@ The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
    predates this rebuild and its emcc version was not captured at the time.
    The `rings.wasm` was built 2026-07-11, also with **emcc 5.0.7**
    (`263db4cffa6f9fc2ec514a70abac81362ea41849`) — same toolchain, no drift.
+   The `fm.wasm` was built 2026-09-10, again with **emcc 5.0.7**
+   (`263db4cffa6f9fc2ec514a70abac81362ea41849`) — still no drift across four
+   engines.
 3. record the **eurorack commit** the build was made from (see Source above) —
    *still unrecorded:* the M1 vendoring didn't capture upstream `HEAD`, and it
    can't be recovered from the vendored tree after the fact. Capture it at the

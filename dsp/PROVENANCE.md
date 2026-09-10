@@ -67,6 +67,14 @@ sha256sum public/braids.wasm public/braids.js \
     for `rings/` only.
 - **Shim (our code, MIT):** `dsp/shim/braids_shim.cc`, `dsp/shim/plaits_shim.cc`,
   `dsp/shim/rings_shim.cc`.
+- **Vendored FM DSP (Apache-2.0):** Raph Levien's msfa
+  (`google/music-synthesizer-for-android`), vendored under `dsp/vendor/msfa/` at
+  upstream commit `f67d41d313b7dc85f6fb99e79e515cc9d208cfff` (2017-09-12, repo
+  HEAD as of the 2026-09-10 vendoring). Licence in `LICENSE-msfa.txt`,
+  attribution in `NOTICE`, the trimmed file list and the one local modification
+  in `dsp/vendor/msfa/README.md`. **No binary yet** — `public/fm.wasm` arrives at
+  phase 2 of `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md`, and
+  its hash and emcc version get a row in the table above when it does.
 
 ## Rebuild
 

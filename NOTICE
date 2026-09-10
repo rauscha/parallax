@@ -1,0 +1,27 @@
+Parallax
+Copyright 2026 Andrew Rausch
+
+This product includes software developed at Google Inc.
+
+  music-synthesizer-for-android
+  Copyright 2012-2017 Google Inc.
+  https://github.com/google/music-synthesizer-for-android
+  Licensed under the Apache License, Version 2.0 (see LICENSE-msfa.txt).
+
+The FM engine's DSP core (six-operator FM voice, operator and pitch envelopes,
+LFO, and the frequency/sine/exp lookup tables) is vendored from that project
+under dsp/vendor/msfa/. Original copyright headers are preserved in every file.
+The single local modification is recorded in dsp/vendor/msfa/README.md.
+
+Upstream ships no NOTICE file of its own; this file is Parallax's attribution
+under Apache-2.0 section 4, not a redistribution of one.
+
+---
+
+Parallax also includes software by Émilie Gillet (Mutable Instruments), licensed
+under the MIT License — see LICENSE-Braids.txt and dsp/vendor/README.md. That
+code is not Apache-licensed and its terms are unaffected by this file.
+
+Parallax is not affiliated with, endorsed by, or connected to Google Inc.,
+Yamaha Corporation, or Mutable Instruments. Product and engine names are used
+for factual attribution only.

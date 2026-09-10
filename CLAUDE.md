@@ -68,15 +68,21 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (approved for planning 2026-09-10, not started)
+## Engine #5 — FM (in progress — phases 0–1 done 2026-09-10)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
   **designed for a computer screen** (its own route — the app stays a responsive PWA).
-- **Three decisions still open in that spec** (A: the 5th theme, since theme-follows-engine; B: the patch corpus —
-  there is a **licensing catch**, msfa's Apache-2.0 does *not* cover Yamaha's factory ROM voices; C: whether the model
-  axis is algorithms or voices). Phases 1–4 of the port are unblocked by all three.
-- **One technical gate:** the tap spike (§6.1) — runnable today against `public/rings-worklet.js`, before any msfa work.
+- **All design decisions closed 2026-09-10:** the 5th theme is designed *for* the diagram surface; the model axis is
+  **voices** (algorithm shown as a property); the corpus is **our own, built by ear — never from ROM patch data**
+  (msfa's Apache-2.0 covers the engine, not Yamaha's factory voices). Nothing in the plan is blocked.
+- **Phase 0 (tap spike) passed** — `docs/superpowers/specs/2026-09-10-tap-spike-results.md`. 8 taps cost
+  +0.055 pp of the audio-thread budget; the SharedArrayBuffer fallback is **not** built. Firefox/Safari pass still
+  outstanding (needed before the flowsheet view ships, not before the port).
+- **Phase 1 (vendoring) done** — msfa DSP under `dsp/vendor/msfa/` at upstream `f67d41d3`, Apache-2.0
+  (`LICENSE-msfa.txt`, `NOTICE`). Read `dsp/vendor/msfa/README.md` before writing the shim: render block `N = 64`,
+  one local patch to `aligned_buf.h`, and **`Env` is sample-rate-blind** (~8.8 % fast at 48 kHz) — phase 2 decides
+  the fix. Next: **phase 2**, `fm_shim.cc` + `build-fm.ps1`.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

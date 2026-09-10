@@ -314,7 +314,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 | # | Phase | Blocked on |
 |---|---|---|
 | 0 | ~~**Tap spike** (§6.1) against the Rings worklet~~ — **done 2026-09-10, green** | ✅ |
-| 1 | Vendor msfa + `LICENSE-msfa.txt` + `NOTICE`; confirm `N` and the rate wiring | — |
+| 1 | ~~Vendor msfa + `LICENSE-msfa.txt` + `NOTICE`; confirm `N` and the rate wiring~~ — **done 2026-09-10** | ✅ |
 | 2 | `fm_shim.cc` + `build-fm.ps1` → renders a tone from a hardcoded patch | 1 |
 | 3 | `fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated | 2 |
 | 4 | Macro parameter set (§3) + schema | 3 |
@@ -342,8 +342,31 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
 
 ## §9. Open items pinned to implementation (not blockers)
 
-- msfa's render block `N`, and the exact int width coming out of `fm_render` — read from source, do not assume.
+**Answered at phase 1 (vendoring, 2026-09-10)** — read from the source, recorded in
+`dsp/vendor/msfa/README.md`:
+
+- ~~msfa's render block `N`~~ — **64** (`synth.h`: `LG_N 6`). Compile-time.
+- ~~The int width coming out of `fm_render`~~ — `Dx7Note::compute` writes **`int32_t`** and
+  **adds** to the buffer, so the shim must zero it first. Upstream's own `int16` conversion is
+  `>> 4`, clip at ±(1 << 24), `>> 9` — `>> 13` total with saturation (`synth_unit.cc:270`). That is
+  the reference for the `HEAP16` contract; the measured-peak check at phase 2 now has a baseline to
+  argue against rather than a blank page.
+- **New, and it matters: `Env` is sample-rate-blind in this revision.** `Freqlut`, `Lfo` and
+  `PitchEnv` all take the rate at init; `Env` does not — its increments are per-block-of-`N`
+  constants calibrated against msfa's 44.1 kHz reference (`main.cc:274`). At the spec's pinned
+  48 kHz every operator envelope runs **~8.8 % fast**. Later Dexed-lineage forks added `Env::init_sr`
+  for exactly this. Phase 2 decides: rate-scale the increments, or run the engine at 44.1 kHz and
+  let the existing resampler carry it. Do not let this pass as "close enough" — attack and decay
+  times are most of what makes an FM voice recognisable.
+- **New:** `Dx7Note::init` needs the **unpacked 156-byte** patch, not the packed 128-byte sysex
+  block. The header declares `const char patch[128]` and the definition declares `[156]`; the body
+  indexes past 128, so the header is simply wrong and C++ decay hides it. Call `UnpackPatch()` first.
+
+**Still open:**
+
 - Whether the heap contract stays `HEAP16` or widens to `HEAP32` — decide from a measured peak.
 - Pitch calibration offset (expect a Rings-style trim).
 - Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis for the
   sideband picture to read correctly. It probably needs the log axis; confirm by looking at one.
+- Whether `log2.{cc,h}` earns its place — vendored per this spec, but upstream only uses `Log2` from its test
+  harness and nothing in our set references it. Drop it at phase 9 if it is still unused.

@@ -63,6 +63,7 @@ src/
 - The plan file (linked above) is the spec. If you'd change a locked decision, surface it for the user instead of just doing it.
 - For UI/visual changes, run the dev server and confirm visually before claiming done. If you can't open a browser, say so.
 - Keep the engine interface (`ISynthEngine`) pure — no Braids-specific strings outside `data/` and `engines/braids/`.
+- **Solo dev — no PR ceremony.** Andrew works alone on `main`; PRs are not part of the workflow. Don't open PRs as a deliverable, don't ask for review, don't babysit CI or schedule PR check-ins. *(Exception: Claude Code web/remote sessions are required by their harness to open a draft PR for any branch they push — treat that as plumbing to merge or ignore, not as a review request.)*
 
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").

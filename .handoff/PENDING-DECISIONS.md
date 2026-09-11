@@ -6,34 +6,17 @@ Full write-up: `.handoff/OVERNIGHT-LOG-2026-09-10.md`. The engine plays, has its
 knobs, and carries fourteen hand-authored voices. Four items are waiting, most-actionable
 first.
 
-### 1. Should a macro knob change the note that is already sounding? ⭐
-A knob move currently lands on the **next note-on**, not the note under your fingers. msfa
-builds operator state inside `Dx7Note::init` and offers no public route in afterwards:
-`Env::setparam` exists and is meant for exactly this, but `env_[]` is private to `Dx7Note`
-and `Controllers` carries pitch bend and nothing else.
+## Resolved 2026-09-11 (answered on waking)
 
-- **(a) Add a small live-update method to `Dx7Note`** — a third local modification to vendored
-  code, the same shape as the tap patch already approved for phase 7. About six lines,
-  additive, dated, documented as re-apply-on-revendor.
-- **(b) Leave it note-on scoped.** Free, and every knob card already says so. The casualty is
-  "Show me", which holds one note for 2.6 s — on FM it moves the knob and changes nothing.
-- **(c) Make "Show me" retrigger** for engines that declare note-on-scoped params. No vendored
-  change, but it edits shared UI for one engine's benefit.
+1. **Macro knobs → make them reach the note already sounding. BUILT.** `Env::update` and `Dx7Note::update` added
+   to the vendored engine (patches 2 and 3 of three, documented in `dsp/vendor/msfa/README.md`), wasm rebuilt,
+   PROVENANCE hashes updated. Verified on one held note: centroid 649 Hz → 1316 Hz turning Brightness up, → 483 Hz
+   turning it down. 141 tests pass, including new ones asserting no retrigger and no sample-level step at the swap.
+2. **5th theme name → `graph`.** Phase 6 is unblocked; it still needs an eye pass before it ships.
+3. **Firefox → Andrew will install it.** The Firefox/Safari pass on the tap spike (spec §6.1 step 5) stays open
+   until then; still not a blocker for phases 1–7.
 
-**Recommendation: (a).** You already accepted the principle for taps, and it is the difference
-between FM having the same live knob feel as the other four engines or being the one that
-does not.
-
-### 2. Name the 5th theme, so phase 6 can be built
-The spec locks the direction — a **drafting surface**, flatter and higher-contrast than the
-four instrument-panel skins, designed *for* the flowsheet. The name lands in `ThemeId`,
-filenames and docs, so renaming later is churn. Candidates: **Blueprint**, **Drafting**,
-**Graph**, or your own. Until then FM wears Phosphor, which is the documented fallback for an
-unknown engine id, not a bug.
-
-### 3. Firefox / Safari pass on the tap spike — still outstanding
-Unchanged since phase 0 and not doable from this machine (no Safari here). Not a blocker for
-phases 1–7; should run before the flowsheet view ships.
+---
 
 ### 4. An ear pass on the fourteen voices, when you have a minute
 Measurement can prove Clank is the brightest voice in the corpus. It cannot tell you whether

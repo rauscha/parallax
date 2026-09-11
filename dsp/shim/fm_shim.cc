@@ -74,6 +74,11 @@ Controllers g_controllers;
 bool g_inited     = false;
 bool g_note_alive = false;   // a note has been initialised at least once
 
+// The note currently sounding. Dx7Note bakes velocity and key scaling into its
+// operator state at note-on, so re-aiming that state later needs both back.
+int g_note_midi = 60;
+int g_note_vel  = 100;
+
 // Writes one operator's 21 bytes. `op` is the msfa index (0 = operator 6).
 void SetOp(char* p, int op,
            int r1, int r2, int r3, int r4,
@@ -183,6 +188,34 @@ void fm_init(double sample_rate) {
 // Accepts either a 156-byte unpacked patch or a 128-byte packed sysex block
 // (unpacked here). Takes effect on the next note-on — msfa builds a voice's
 // operator state at init time, so a mid-note swap is not meaningful.
+// Load a patch AND apply it to the note already sounding, without retriggering
+// it — this is what a macro knob calls.
+//
+// Everything in the four macros (operator output levels, ratios, EG rates, the
+// feedback amount) is per-voice state that msfa builds inside Dx7Note::init, so
+// there is no way to reach it through Controllers, which carries pitch bend and
+// nothing else. Dx7Note::update is our own addition to the vendored engine for
+// exactly this: it recomputes the same fields init() does, but re-aims the
+// running envelopes rather than restarting them, and leaves the oscillator
+// phases alone. See ../vendor/msfa/README.md.
+//
+// Falls back to plain loading when no note is sounding.
+EMSCRIPTEN_KEEPALIVE
+void fm_update_patch(const char* data, int len) {
+  if (!g_inited || !data) return;
+  if (len == kPatchSize) {
+    memcpy(g_patch, data, kPatchSize);
+  } else if (len == 128) {
+    UnpackPatch(data, g_patch);
+  } else {
+    return;
+  }
+  g_lfo.reset(g_patch + 137);
+  if (g_note_alive) {
+    g_note.update(g_patch, g_note_midi, g_note_vel);
+  }
+}
+
 EMSCRIPTEN_KEEPALIVE
 void fm_set_patch(const char* data, int len) {
   if (!data) return;
@@ -203,6 +236,8 @@ void fm_note_on(int midi_note, int velocity) {
   if (midi_note > 127) midi_note = 127;
   if (velocity < 1) velocity = 1;
   if (velocity > 127) velocity = 127;
+  g_note_midi = midi_note;
+  g_note_vel = velocity;
   g_note.init(g_patch, midi_note, velocity);
   g_lfo.keydown();
   g_note_alive = true;

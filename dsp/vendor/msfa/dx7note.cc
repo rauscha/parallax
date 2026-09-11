@@ -179,6 +179,45 @@ void Dx7Note::init(const char patch[156], int midinote, int velocity) {
   pitchmodsens_ = pitchmodsenstab[patch[143] & 7];
 }
 
+// [Parallax modification, 2026-09-11] See dx7note.h. This is init() with three
+// differences: Env::update instead of Env::init (so envelopes are re-aimed, not
+// retriggered), no reset of params_[op].phase or gain[1] (so the oscillators
+// keep running), and no pitchenv_.set (PitchEnv::set restarts the pitch
+// envelope, and callers of this do not change pitch-envelope bytes).
+void Dx7Note::update(const char patch[156], int midinote, int velocity) {
+  int rates[4];
+  int levels[4];
+  for (int op = 0; op < 6; op++) {
+    int off = op * 21;
+    for (int i = 0; i < 4; i++) {
+      rates[i] = patch[off + i];
+      levels[i] = patch[off + 4 + i];
+    }
+    int outlevel = patch[off + 16];
+    outlevel = Env::scaleoutlevel(outlevel);
+    int level_scaling = ScaleLevel(midinote, patch[off + 8], patch[off + 9],
+        patch[off + 10], patch[off + 11], patch[off + 12]);
+    outlevel += level_scaling;
+    outlevel = min(127, outlevel);
+    outlevel = outlevel << 5;
+    outlevel += ScaleVelocity(velocity, patch[off + 15]);
+    outlevel = max(0, outlevel);
+    int rate_scaling = ScaleRate(midinote, patch[off + 13]);
+    env_[op].update(rates, levels, outlevel, rate_scaling);
+
+    int mode = patch[off + 17];
+    int coarse = patch[off + 18];
+    int fine = patch[off + 19];
+    int detune = patch[off + 20];
+    basepitch_[op] = osc_freq(midinote, mode, coarse, fine, detune);
+  }
+  algorithm_ = patch[134];
+  int feedback = patch[135];
+  fb_shift_ = feedback != 0 ? 8 - feedback : 16;
+  pitchmoddepth_ = (patch[139] * 165) >> 6;
+  pitchmodsens_ = pitchmodsenstab[patch[143] & 7];
+}
+
 void Dx7Note::compute(int32_t *buf, int32_t lfo_val, int32_t lfo_delay,
   const Controllers *ctrls) {
   int32_t pitchmod = pitchenv_.getsample();

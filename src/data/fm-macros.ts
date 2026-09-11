@@ -17,14 +17,14 @@
  * fm-algorithms.ts, which is generated from the vendored engine's own table.
  *
  * --- When a change is heard -------------------------------------------------
- * msfa builds a voice's operator state inside Dx7Note::init and exposes no
- * public path to change it mid-note: Env::setparam exists and is designed for
- * exactly this, but env_[] is private to Dx7Note and Controllers carries pitch
- * bend and nothing else. So a macro move lands on the NEXT note-on, not on the
- * note currently sounding. Reaching inside the voice would mean a third local
- * modification to vendored code, which is a decision Andrew has not been asked
- * for yet — see .handoff/PENDING-DECISIONS.md. Every knob card says this
- * plainly rather than letting the knob feel broken.
+ * Immediately, including on a note that is already sounding. That is not free:
+ * stock msfa builds a voice's operator state inside Dx7Note::init and exposes
+ * no public path to change it afterwards (Env::setparam exists and is meant for
+ * exactly this, but env_[] is private to Dx7Note, and Controllers carries pitch
+ * bend and nothing else). Dx7Note::update and Env::update are our own additions
+ * to the vendored engine, added 2026-09-11 on Andrew's decision — they re-aim
+ * the running envelopes instead of restarting them. See
+ * dsp/vendor/msfa/README.md.
  */
 import { FM_PATCH_SIZE } from "./fm-patch";
 import { algorithmRoles, modulatorsOf } from "./fm-algorithms";

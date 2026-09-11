@@ -56,7 +56,7 @@ $em_flags = @(
   "-s", "ASSERTIONS=0",
   "-s", "FILESYSTEM=0",
   "-s", "MALLOC=emmalloc",
-  "-s", "EXPORTED_FUNCTIONS=['_fm_init','_fm_set_patch','_fm_note_on','_fm_note_off','_fm_set_pitch_bend','_fm_alloc','_fm_free','_fm_block_size','_fm_render','_malloc','_free']",
+  "-s", "EXPORTED_FUNCTIONS=['_fm_init','_fm_set_patch','_fm_update_patch','_fm_note_on','_fm_note_off','_fm_set_pitch_bend','_fm_alloc','_fm_free','_fm_block_size','_fm_render','_malloc','_free']",
   "-s", "EXPORTED_RUNTIME_METHODS=['HEAP16','HEAPU8','HEAPF32']"
 )
 

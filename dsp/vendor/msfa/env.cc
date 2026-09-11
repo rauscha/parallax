@@ -63,6 +63,47 @@ void Env::keydown(bool d) {
   }
 }
 
+// [Parallax modification, 2026-09-11] See env.h. advance() recomputes
+// targetlevel_, rising_ and inc_ from the member fields and never touches
+// level_, so calling it in place is exactly "keep going from here, but aim
+// somewhere else". rising_ flips on its own if the new target is below the
+// level already reached.
+void Env::update(const int r[4], const int l[4], int32_t ol, int rate_scaling) {
+  // Output level has to be applied to the level the envelope has ALREADY
+  // reached, not just to where it is heading. advance() folds outlevel_ into
+  // the target linearly — `targetlevel_ = (scaled_level + outlevel_ - 4256) <<
+  // 16` — so shifting level_ by the same delta puts the envelope at the new
+  // output level while leaving it at exactly the same point in its own shape.
+  //
+  // Re-aiming alone is not enough, and the failure is quiet rather than
+  // obvious: the level only moves at the current stage's rate, so lowering a
+  // target changes nothing at all until the envelope happens to arrive there,
+  // and on a held note parked at its sustain level it never does — getsample()
+  // does not integrate at stage 3 while the key is down. Measured before this
+  // was added: raising a modulator's level mid-note barely moved the spectrum
+  // and lowering it was bit-identical to doing nothing.
+  //
+  // The shift is a jump, but not a step: FmOpKernel ramps an operator's gain
+  // linearly across the render block, so it lands as a ~1.5 ms fade.
+  const int32_t delta = ol - outlevel_;
+  for (int i = 0; i < 4; i++) {
+    rates_[i] = r[i];
+    levels_[i] = l[i];
+  }
+  outlevel_ = ol;
+  rate_scaling_ = rate_scaling;
+  if (delta != 0) {
+    int64_t shifted = (int64_t)level_ + ((int64_t)delta << 16);
+    if (shifted < 0) shifted = 0;
+    const int64_t kMaxLevel = 0x7fffffff;
+    if (shifted > kMaxLevel) shifted = kMaxLevel;
+    level_ = (int32_t)shifted;
+  }
+  if (ix_ < 4) {
+    advance(ix_);
+  }
+}
+
 void Env::setparam(int param, int value) {
   if (param < 4) {
     rates_[param] = value;

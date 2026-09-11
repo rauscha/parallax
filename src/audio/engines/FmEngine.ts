@@ -199,7 +199,7 @@ export class FmEngine implements ISynthEngine {
     if (p) p.setTargetAtTime(clamped, this.ctx.currentTime, 0.005);
   }
 
-  /** Load the patch for a corpus index. Takes effect on the next note-on. */
+  /** Load the patch for a corpus index. Applies to the sounding note too. */
   private setModelIndex(index: number): void {
     const last = FM_PATCHES.length - 1;
     index = Math.max(0, Math.min(last, index | 0));
@@ -210,15 +210,15 @@ export class FmEngine implements ISynthEngine {
 
   /**
    * Rebuild the working patch (corpus voice + current macro positions) and send
-   * it to the worklet.
+   * it to the worklet, which applies it to the note already sounding.
    *
-   * This is where the engine's one real ergonomic compromise lives. msfa builds
-   * operator state inside Dx7Note::init and offers no public way to change it
-   * mid-note, so the patch that arrives here takes effect on the NEXT note-on.
-   * In practice the sequencer is usually running and the next note is under
-   * half a beat away, but a knob turned against a held note will not change it.
-   * applyMacros() carries the full explanation; the knob descriptions below say
-   * it to the user.
+   * Stock msfa cannot do that — it builds operator state inside Dx7Note::init
+   * and exposes no route in afterwards, so macro moves used to land on the next
+   * note-on. Dx7Note::update and Env::update are our own additions to the
+   * vendored engine (2026-09-11): they recompute the same fields init() does
+   * but re-aim the running envelopes instead of restarting them, and leave the
+   * oscillator phases alone, so a knob turned against a held note changes that
+   * note without a click. See dsp/vendor/msfa/README.md.
    */
   private pushPatch(): void {
     const base = FM_PATCHES[this.currentModelIndex];
@@ -234,16 +234,16 @@ export class FmEngine implements ISynthEngine {
         description: "The loaded patch — six operators, their envelopes, and the algorithm wiring them together." },
       { id: "brightness", label: "Brightness", group: "shape", type: "continuous",
         min: 0, max: 1, default: 0.5, apply: "message",
-        description: "Modulation index — the output level of every operator that modulates another, moved together. Centre is the voice as designed. Takes effect on the next note." },
+        description: "Modulation index — the output level of every operator that modulates another, moved together. Centre is the voice as designed." },
       { id: "ratio", label: "Ratio", group: "shape", type: "continuous",
         min: 0, max: 1, default: 0.5, apply: "message",
-        description: "Modulator frequency ratios, scaled together across an octave either side of the voice's own. Whole-number ratios sound harmonic; everything between them sounds like metal. Takes effect on the next note." },
+        description: "Modulator frequency ratios, scaled together across an octave either side of the voice's own. Whole-number ratios sound harmonic; everything between them sounds like metal." },
       { id: "feedback", label: "Feedback", group: "shape", type: "continuous",
         min: 0, max: 1, default: 0.5, apply: "message",
-        description: "The algorithm's feedback loop, from none to full. Adds progressively noisier harmonics. Takes effect on the next note." },
+        description: "The algorithm's feedback loop, from none to full. Adds progressively noisier harmonics." },
       { id: "envelope", label: "Envelope", group: "envelope", type: "continuous",
         min: 0, max: 1, default: 0.5, apply: "message",
-        description: "Every operator's envelope rates together — left is a slow bloom, right is a sharp pluck. Takes effect on the next note." },
+        description: "Every operator's envelope rates together — left is a slow bloom, right is a sharp pluck." },
       { id: "gain", label: "Gain", group: "output", type: "continuous",
         min: 0, max: 1, default: 0.6, apply: "audioparam" },
     ];

@@ -272,6 +272,9 @@ Locked decision 3 is **not** a retreat from "single responsive PWA". Concretely:
 
 ## §5. Theme
 
+**Named 2026-09-11: `graph`.** Andrew's pick from Blueprint / Drafting / Graph — "I lean graphing". `ThemeId`
+gains `"graph"`; the skin's display name is **Graph**.
+
 **Decided (locked #4): the FM theme is designed for the diagram surface** — flatter and higher-contrast than the four
 instrument-panel skins that precede it. Where Phosphor/Soundboard/Lab/Sandbox are *surfaces of an instrument*, this one
 is a *drafting surface*: the flowsheet is the primary thing it has to serve, and knob panels adapt to it rather than
@@ -413,14 +416,17 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
   consecutive note-ons until the loop settles. Harmless for playing; it matters when writing sample-exact tests.
 - **Macro timing is the one open ergonomic question** — see "Still open" below.
 
-**Still open:**
+- ~~Whether macro knobs should reach the note that is already sounding~~ — **yes, decided 2026-09-11 and built.**
+  `Env::update` and `Dx7Note::update` are additive local modifications to the vendored engine (patches 2 and 3 of
+  three; see `dsp/vendor/msfa/README.md`), implementing the `// TODO: parameter changes` that `dx7note.h` has
+  carried since 2012. They re-aim running envelopes instead of restarting them. The load-bearing detail: re-aiming
+  alone is *not enough* — `advance()` folds `outlevel_` into the target linearly, so the level only moves at the
+  current stage's rate, and on a held note parked at stage 3 `getsample()` does not integrate at all. Measured
+  before the fix: raising a modulator's level mid-note barely moved the spectrum and lowering it was bit-identical
+  to doing nothing. `Env::update` therefore also shifts `level_` by the change in `outlevel`. Verified live on one
+  held note: spectral centroid 649 Hz → 1316 Hz turning Brightness up, → 483 Hz turning it down.
 
-- **Whether macro knobs should reach the note that is already sounding.** msfa builds operator state inside
-  `Dx7Note::init` and exposes no public route to change it mid-note: `Env::setparam` exists and is designed for
-  exactly this, but `env_[]` is private to `Dx7Note` and `Controllers` carries pitch bend and nothing else. Phase 4
-  therefore lands macro moves on the *next* note-on, labelled plainly on every knob card. Making them continuous
-  means a third local modification to vendored code — the same shape as the tap patch already agreed for phase 7.
-  Andrew's call; carded in `.handoff/PENDING-DECISIONS.md`.
+**Still open:**
 
 
 - Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis for the

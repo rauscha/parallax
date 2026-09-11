@@ -38,6 +38,21 @@ class Dx7Note {
 
   void keyup();
 
+  // [Parallax modification, 2026-09-11] The "TODO: parameter changes" below,
+  // implemented. Recomputes every operator's envelope parameters and base
+  // pitch, plus the algorithm and feedback shift, from a new patch WITHOUT
+  // restarting the note: init() rebuilds the voice from silence, this one
+  // re-aims the voice that is already sounding. Deliberately does not touch
+  // the pitch envelope — PitchEnv::set restarts it, and nothing that drives
+  // this changes pitch-envelope bytes.
+  //
+  // Note the parameter type: like init(), this reads the UNPACKED 156-byte
+  // patch. (init's header declaration says [128] and its definition says
+  // [156]; the definition is the truthful one.)
+  //
+  // See README.md in this directory — one of three local patches.
+  void update(const char patch[156], int midinote, int velocity);
+
   // TODO: parameter changes
 
   // TODO: some way of indicating end-of-note. Maybe should be a return

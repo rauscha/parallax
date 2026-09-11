@@ -118,20 +118,27 @@ class FmProcessor extends AudioWorkletProcessor {
     this.port.postMessage({ type: "ready", blockSize: this.block });
   }
 
-  /** Copy 156 unpacked patch bytes into the wasm heap and hand them to the shim. */
+  /**
+   * Copy 156 unpacked patch bytes into the wasm heap and hand them to the shim.
+   *
+   * Always via _fm_update_patch, which applies the new patch to the note
+   * already sounding instead of waiting for the next note-on, and degrades to a
+   * plain load when nothing is playing. That live path exists because of a
+   * local addition to the vendored engine (Dx7Note::update) — see
+   * dsp/shim/fm_shim.cc and dsp/vendor/msfa/README.md.
+   */
   writePatch(bytes) {
     const m = this.module;
     if (!m || !this.patchPtr) return;
     const n = Math.min(156, bytes.length);
     m.HEAPU8.set(bytes.subarray(0, n), this.patchPtr);
-    m._fm_set_patch(this.patchPtr, n);
+    m._fm_update_patch(this.patchPtr, n);
   }
 
   onMessage(msg) {
     switch (msg.type) {
       case "setPatch": {
-        // Takes effect on the next note-on: msfa builds a voice's operator
-        // state in Dx7Note::init, so a mid-note swap is not meaningful.
+        // Applied to the note already sounding, if there is one.
         const bytes = msg.bytes instanceof Uint8Array ? msg.bytes : new Uint8Array(msg.bytes);
         if (this.ready) this.writePatch(bytes);
         else this.pendingPatch = bytes;

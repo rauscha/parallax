@@ -39,6 +39,16 @@ class Env {
 
   void keydown(bool down);
   void setparam(int param, int value);
+
+  // [Parallax modification, 2026-09-11] Re-aim a RUNNING envelope at new
+  // parameters without restarting it. init() zeroes level_ and jumps to stage
+  // 0, which is a retrigger; this assigns the same four fields and then calls
+  // advance(ix_) so the current stage is recomputed against the new rates,
+  // levels and output level while level_ is left exactly where it is. It is
+  // what setparam() would be if it also covered outlevel and rate scaling.
+  // See README.md in this directory — one of three local patches.
+  void update(const int rates[4], const int levels[4], int outlevel,
+      int rate_scaling);
   static int scaleoutlevel(int outlevel);
  private:
   int rates_[4];

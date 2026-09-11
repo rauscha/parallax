@@ -148,6 +148,8 @@ type FmModule = {
   _fm_alloc(n: number): number;
   _fm_free(p: number): void;
   _fm_set_patch(p: number, len: number): void;
+  _fm_update_patch(p: number, len: number): void;
+  _fm_note_off(): void;
   _fm_note_on(n: number, v: number): void;
   _fm_render(p: number, n: number): void;
   _malloc(n: number): number;
@@ -250,6 +252,109 @@ describe("macros do what their labels claim", () => {
     expect(fundamental(detent)).toBeLessThan(261.6 * 1.03);
     // ...but the timbre must.
     expect(Math.abs(brightnessOf(shifted) - brightnessOf(detent))).toBeGreaterThan(0.001);
+  });
+
+  // --- The live path ---------------------------------------------------------
+  // Dx7Note::update / Env::update are our own additions to the vendored engine
+  // (2026-09-11). They exist so a knob turned against a held note changes that
+  // note. The two things that can go wrong are opposite failures: the change is
+  // ignored, or the note is retriggered and clicks. Both are checked.
+
+  /** Render `pre` seconds, swap the patch live, render `post` more. */
+  function renderWithLiveSwap(a: Uint8Array, b: Uint8Array, pre: number, post: number) {
+    const load = (patch: Uint8Array, live: boolean) => {
+      const p = M._malloc(patch.length);
+      M.HEAPU8.set(patch, p);
+      if (live) M._fm_update_patch(p, patch.length);
+      else M._fm_set_patch(p, patch.length);
+      M._free(p);
+    };
+    load(a, false);
+    const nPre = Math.floor((SR * pre) / N) * N;
+    const nPost = Math.floor((SR * post) / N) * N;
+    const ptr = M._fm_alloc(nPre + nPost);
+    M._fm_note_on(60, 100);
+    M._fm_render(ptr, nPre);
+    load(b, true);
+    M._fm_render(ptr + nPre * 2, nPost);
+    const out = Float64Array.from(M.HEAP16.subarray(ptr >> 1, (ptr >> 1) + nPre + nPost));
+    M._fm_free(ptr);
+    return { audio: out, splice: nPre };
+  }
+
+  const rmsOf = (x: Float64Array, from: number, len: number): number => {
+    let s = 0;
+    for (let i = from; i < from + len; ++i) s += x[i] * x[i];
+    return Math.sqrt(s / len);
+  };
+
+  // Voice 12 ("Two Operators"), not the boot voice: its modulator holds at EG
+  // level 88 instead of decaying away, so there is still something to change
+  // a third of a second into the note. On the boot voice the modulator has
+  // almost gone by then and the measurement floor is the carrier's own sine.
+  const SUSTAINING = 12;
+
+  it("changes the note that is already sounding", () => {
+    const base = applyMacros(FM_PATCHES[SUSTAINING], FM_MACRO_DEFAULTS);
+    const bright = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, brightness: 0.95 });
+    const dull = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, brightness: 0.05 });
+    const win = 8192;
+
+    const up = renderWithLiveSwap(base, bright, 0.3, 0.3);
+    expect(brightnessOf(up.audio.slice(up.splice, up.splice + win)))
+      .toBeGreaterThan(brightnessOf(up.audio.slice(up.splice - win, up.splice)) * 1.2);
+
+    // And down again — the direction that used to be bit-identical to doing
+    // nothing, before Env::update learned to move the level and not just the
+    // target it is walking toward.
+    const down = renderWithLiveSwap(base, dull, 0.3, 0.3);
+    expect(brightnessOf(down.audio.slice(down.splice, down.splice + win)))
+      .toBeLessThan(brightnessOf(down.audio.slice(down.splice - win, down.splice)) * 0.85);
+  });
+
+  it("does not retrigger the note doing it", () => {
+    const base = applyMacros(FM_PATCHES[SUSTAINING], FM_MACRO_DEFAULTS);
+    const nudged = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, brightness: 0.62 });
+    const { audio, splice } = renderWithLiveSwap(base, nudged, 0.3, 0.1);
+    // A retrigger zeroes the envelope and re-attacks, so the level right after
+    // the swap would collapse and then overshoot. It should just carry on.
+    const before = rmsOf(audio, splice - 2048, 2048);
+    const after = rmsOf(audio, splice, 2048);
+    expect(after).toBeGreaterThan(before * 0.5);
+    expect(after).toBeLessThan(before * 2.0);
+  });
+
+  it("leaves no sample-level step at the swap", () => {
+    const base = applyMacros(FM_PATCHES[SUSTAINING], FM_MACRO_DEFAULTS);
+    const nudged = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, envelope: 0.7 });
+    const { audio, splice } = renderWithLiveSwap(base, nudged, 0.3, 0.1);
+    // Biggest sample-to-sample step in the 256 samples around the swap, against
+    // the biggest step in the 2048 samples before it. A click would stand out.
+    const stepIn = (from: number, len: number) => {
+      let m = 0;
+      for (let i = from + 1; i < from + len; ++i) m = Math.max(m, Math.abs(audio[i] - audio[i - 1]));
+      return m;
+    };
+    expect(stepIn(splice - 128, 256)).toBeLessThanOrEqual(stepIn(splice - 2176, 2048) * 1.25);
+  });
+
+  it("still falls back to next-note when nothing is sounding", () => {
+    // fm_update_patch with no live note is just a load; the next note-on must
+    // come out the same as if fm_set_patch had been used.
+    const bright = applyMacros(FM_PATCHES[0], { ...FM_MACRO_DEFAULTS, brightness: 0.8 });
+    M._fm_note_off();
+    const viaSet = renderWith(bright, 0.3);
+    const p = M._malloc(bright.length);
+    M.HEAPU8.set(bright, p);
+    M._fm_update_patch(p, bright.length);
+    M._free(p);
+    const n = Math.floor((SR * 0.3) / N) * N;
+    const ptr = M._fm_alloc(n);
+    M._fm_note_on(60, 100);
+    M._fm_render(ptr, n);
+    const viaUpdate = Float64Array.from(M.HEAP16.subarray(ptr >> 1, (ptr >> 1) + n));
+    M._fm_free(ptr);
+    expect([...viaUpdate]).toEqual([...viaSet]);
   });
 
   it("stays inside int16 at every macro extreme", () => {

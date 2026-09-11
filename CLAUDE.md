@@ -98,9 +98,13 @@ src/
   **(b)** `src/data/fm-algorithms.ts` is **generated** from the vendored algorithm table, not hand-typed;
   **(c)** silencing an operator in the middle of a chain makes the carrier render as a bare sine, silently —
   read the header of `fm-voices.ts` before authoring a patch.
-- **One decision waiting** (`.handoff/PENDING-DECISIONS.md`): macro knobs currently take effect on the *next*
-  note-on, because msfa exposes no public path into a sounding voice. Making them continuous needs a third local
-  modification to vendored code. Next build step is **phase 6** (the 5th theme — needs a name and an eye pass).
+- **Macro knobs reach the note already sounding** (decided + built 2026-09-11). That needed `Env::update` and
+  `Dx7Note::update` — additive local modifications to the vendored engine, patches 2 and 3 of three, all documented
+  in `dsp/vendor/msfa/README.md`. **There are now three local patches to msfa, not one**; phase 7's tap pointer
+  will be the fourth.
+- **The 5th theme is named `graph`** (Andrew, 2026-09-11) — a drafting surface, flatter and higher-contrast than
+  the four instrument-panel skins. Next build step is **phase 6**: `ThemeId` entry, tokens, `ENGINE_THEME` /
+  `THEME_COLOR`, and a `contrast.test.ts` row. Needs an eye pass before it ships.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

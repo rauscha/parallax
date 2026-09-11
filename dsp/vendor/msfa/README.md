@@ -40,18 +40,61 @@ not the FM voice).
 spec names it and it costs nothing; drop it if it is still unused when the port
 finishes.
 
-## Local modifications — exactly one
+## Local modifications — three, all marked in the source
 
-`aligned_buf.h` gained `#include <stddef.h>` and `#include <stdint.h>`.
+Every one carries a dated `[Parallax modification]` comment at the site. If you
+re-vendor from upstream, these are the patches to re-apply, and nothing else was
+touched.
+
+### 1. `aligned_buf.h` — `#include <stddef.h>` and `<stdint.h>` (2026-09-10)
 
 Upstream relies on `size_t` and `intptr_t` arriving through an earlier include,
 which held under the 2017 Android NDK but does not under emcc 5.0.7 + libc++:
 without them `fm_core.cc` and `dx7note.cc` fail with *"unknown type name
-'size_t'"*. The change is marked in the file with a dated `[Parallax
-modification]` comment.
+'size_t'"*.
 
-Nothing else was touched. If you re-vendor from upstream, this is the only patch
-to re-apply.
+### 2 and 3. `Env::update` and `Dx7Note::update` — live parameter changes (2026-09-11)
+
+Both are **additive**: new methods, no existing behaviour changed, nothing
+removed. They implement the `// TODO: parameter changes` that `dx7note.h` has
+carried since 2012.
+
+The engine builds a voice's entire operator state inside `Dx7Note::init` and
+offers no public route in afterwards. `Env::setparam` exists and is clearly meant
+for this, but `env_[]` is private to `Dx7Note`, and the `Controllers` struct that
+*is* passed to `compute()` every block carries pitch bend and nothing else. So
+without these two methods, every macro knob in the Parallax FM engine would only
+take effect on the next note-on — a knob turned against a held note would do
+nothing at all.
+
+`Dx7Note::update(patch, midinote, velocity)` is `init()` with three differences:
+it calls `Env::update` instead of `Env::init`, it does not reset
+`params_[op].phase` or `gain[1]`, and it does not call `pitchenv_.set` (which
+restarts the pitch envelope, and nothing driving this changes pitch-envelope
+bytes).
+
+`Env::update(rates, levels, outlevel, rate_scaling)` assigns the same four fields
+`init()` does, then calls `advance(ix_)` to recompute the current stage in place
+rather than jumping back to stage 0. It also **shifts `level_` by the change in
+`outlevel`**, and that part is not optional — it is the difference between the
+knob working and appearing to work:
+
+- `advance()` folds `outlevel_` into the target linearly, so a re-aim on its own
+  only moves the level at the current stage's rate.
+- Lowering a target therefore changes nothing until the envelope happens to
+  arrive there, and on a held note parked at its sustain level it never does:
+  `getsample()` deliberately does not integrate at stage 3 while the key is down.
+- Measured before the shift was added: raising a modulator's output level
+  mid-note barely moved the spectrum, and lowering it was **bit-identical to
+  doing nothing**.
+
+The shift is a jump rather than a ramp, but not a step — `FmOpKernel` ramps an
+operator's gain linearly across the 64-sample render block, so it lands as a
+~1.5 ms fade. `src/data/fm-macros.test.ts` asserts there is no sample-level step
+at the swap and no retrigger.
+
+**Phase 7 will add a fourth**, already agreed: an optional per-operator tap
+pointer on `FmCore::compute`, null by default. See spec §2.
 
 ## Facts confirmed at vendoring (read from the source, not assumed)
 

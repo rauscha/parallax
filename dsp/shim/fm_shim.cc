@@ -121,8 +121,16 @@ void LoadBootPatch(char* p) {
     p[126 + i] = 99;   // pitch EG rates — instant
     p[130 + i] = 50;   // pitch EG levels — 50 is centre, i.e. no pitch envelope
   }
-  p[134] = 0;          // algorithm 1
-  p[135] = 0;          // no feedback (its operator is silent in this voice)
+  // Algorithm 2, not 1. Both wire operator 2 into operator 1 identically, so
+  // this patch renders bit-for-bit the same either way at feedback 0 — msfa
+  // only takes the feedback path when (flags & 0xc0) == 0xc0 AND the shift is
+  // under 16, and feedback 0 gives a shift of exactly 16. What changes is
+  // which operator carries the feedback flag: algorithm 1 puts it on operator
+  // 6, which is silent here, so the Feedback macro would have been a dead knob
+  // on the engine's default voice. Algorithm 2 puts it on operator 2, which is
+  // the modulator this voice actually uses.
+  p[134] = 1;          // algorithm 2
+  p[135] = 0;          // feedback off at the detent; the macro opens it up
   p[136] = 1;          // oscillator key sync
   p[137] = 35;         // LFO speed
   p[138] = 0;          // LFO delay

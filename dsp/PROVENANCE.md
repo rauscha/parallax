@@ -47,7 +47,7 @@ sha256sum public/braids.wasm public/braids.js \
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
 | `public/rings.wasm`          | `efe916aeb9e65266a45f225061ff0e32bbff5271fe8e49ec698ef93bb85d1d2e` |
 | `public/rings.js`            | `ed18e9fa1605fc86e2df86a0c46902e9a521b67ece1ce942f96b7cd57e288f76` |
-| `public/fm.wasm`             | `e473ac266642670c98b8056856344d9558292b4f7ea4b787df99091b25e34cab` |
+| `public/fm.wasm`             | `312d1c41d81ac7adc3bfa729264779734010c804b79f7554e1bc74c6a8874a5e` |
 | `public/fm.js`               | `bf0bdc80bee8cad2c83ad63ae35be967db563f7ed882d8677dc7257a9ed5fdf9` |
 | `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
 | `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
@@ -78,6 +78,10 @@ sha256sum public/braids.wasm public/braids.js \
   HEAD as of the 2026-09-10 vendoring). Licence in `LICENSE-msfa.txt`,
   attribution in `NOTICE`, the trimmed file list and the one local modification
   in `dsp/vendor/msfa/README.md`. Built into `public/fm.wasm` at phase 2
+  and rebuilt at phase 5 — the only change being the boot patch's algorithm
+  byte, moved from 1 to 2 so the default voice's Feedback macro reaches a
+  sounding operator. The two algorithms wire this patch identically, so the
+  rendered audio is unchanged; `src/data/fm-models.test.ts` asserts that
   (2026-09-10); hashed in the table above.
 - **FM shim (our code, MIT):** `dsp/shim/fm_shim.cc`. Its boot patch is original,
   authored by hand — Parallax ships no factory ROM patch data from any vendor

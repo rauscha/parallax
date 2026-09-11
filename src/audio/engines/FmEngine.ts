@@ -3,6 +3,7 @@ import type {
   NoteOnOpts, NoteOffOpts, MidiNote,
 } from "../types";
 import { FM_MODELS, FM_PATCHES } from "../../data/fm-models";
+import { applyMacros, FM_MACRO_DEFAULTS, type FmMacros } from "../../data/fm-macros";
 
 /**
  * FmEngine — wraps the six-operator FM WASM AudioWorklet behind ISynthEngine.
@@ -77,8 +78,21 @@ export class FmEngine implements ISynthEngine {
   // Mirror of param values for getParameter().
   private params: Record<string, number> = {
     model: 0,
+    brightness: FM_MACRO_DEFAULTS.brightness,
+    ratio: FM_MACRO_DEFAULTS.ratio,
+    feedback: FM_MACRO_DEFAULTS.feedback,
+    envelope: FM_MACRO_DEFAULTS.envelope,
     gain: 0.6,
   };
+
+  private get macros(): FmMacros {
+    return {
+      brightness: this.params.brightness,
+      ratio: this.params.ratio,
+      feedback: this.params.feedback,
+      envelope: this.params.envelope,
+    };
+  }
 
   get output(): AudioNode | null { return this.gainNode; }
 
@@ -191,10 +205,25 @@ export class FmEngine implements ISynthEngine {
     index = Math.max(0, Math.min(last, index | 0));
     this.currentModelIndex = index;
     this.params.model = index;
-    const patch = FM_PATCHES[index];
-    if (!patch || !this.node) return;
-    // Copy so the worklet's structured-clone never aliases the corpus array.
-    this.node.port.postMessage({ type: "setPatch", bytes: new Uint8Array(patch) });
+    this.pushPatch();
+  }
+
+  /**
+   * Rebuild the working patch (corpus voice + current macro positions) and send
+   * it to the worklet.
+   *
+   * This is where the engine's one real ergonomic compromise lives. msfa builds
+   * operator state inside Dx7Note::init and offers no public way to change it
+   * mid-note, so the patch that arrives here takes effect on the NEXT note-on.
+   * In practice the sequencer is usually running and the next note is under
+   * half a beat away, but a knob turned against a held note will not change it.
+   * applyMacros() carries the full explanation; the knob descriptions below say
+   * it to the user.
+   */
+  private pushPatch(): void {
+    const base = FM_PATCHES[this.currentModelIndex];
+    if (!base || !this.node) return;
+    this.node.port.postMessage({ type: "setPatch", bytes: applyMacros(base, this.macros) });
   }
 
   getParameterSchema(): ParameterDescriptor[] {
@@ -203,6 +232,18 @@ export class FmEngine implements ISynthEngine {
         min: 0, max: Math.max(0, FM_MODELS.length - 1), step: 1, default: 0,
         apply: "message",
         description: "The loaded patch — six operators, their envelopes, and the algorithm wiring them together." },
+      { id: "brightness", label: "Brightness", group: "shape", type: "continuous",
+        min: 0, max: 1, default: 0.5, apply: "message",
+        description: "Modulation index — the output level of every operator that modulates another, moved together. Centre is the voice as designed. Takes effect on the next note." },
+      { id: "ratio", label: "Ratio", group: "shape", type: "continuous",
+        min: 0, max: 1, default: 0.5, apply: "message",
+        description: "Modulator frequency ratios, scaled together across an octave either side of the voice's own. Whole-number ratios sound harmonic; everything between them sounds like metal. Takes effect on the next note." },
+      { id: "feedback", label: "Feedback", group: "shape", type: "continuous",
+        min: 0, max: 1, default: 0.5, apply: "message",
+        description: "The algorithm's feedback loop, from none to full. Adds progressively noisier harmonics. Takes effect on the next note." },
+      { id: "envelope", label: "Envelope", group: "envelope", type: "continuous",
+        min: 0, max: 1, default: 0.5, apply: "message",
+        description: "Every operator's envelope rates together — left is a slow bloom, right is a sharp pluck. Takes effect on the next note." },
       { id: "gain", label: "Gain", group: "output", type: "continuous",
         min: 0, max: 1, default: 0.6, apply: "audioparam" },
     ];
@@ -216,6 +257,12 @@ export class FmEngine implements ISynthEngine {
     switch (id) {
       case "model":
         this.setModelIndex(value | 0);
+        return;
+      case "brightness":
+      case "ratio":
+      case "feedback":
+      case "envelope":
+        this.pushPatch();
         return;
       case "gain":
         if (this.gainNode) {

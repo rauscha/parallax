@@ -331,9 +331,9 @@ disagrees with its own caption is the worst failure mode this feature has.
 | 0 | ~~**Tap spike** (§6.1) against the Rings worklet~~ — **done 2026-09-10, green** | ✅ |
 | 1 | ~~Vendor msfa + `LICENSE-msfa.txt` + `NOTICE`; confirm `N` and the rate wiring~~ — **done 2026-09-10** | ✅ |
 | 2 | ~~`fm_shim.cc` + `build-fm.ps1` → renders a tone from a hardcoded patch~~ — **done 2026-09-10** | ✅ |
-| 3 | `fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated | 2 |
-| 4 | Macro parameter set (§3) + schema | 3 |
-| 5 | Model corpus + Explain prose (own voices, designed by ear) | 4 |
+| 3 | ~~`fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated~~ — **done 2026-09-10** | ✅ |
+| 4 | ~~Macro parameter set (§3) + schema~~ — **done 2026-09-10** | ✅ |
+| 5 | ~~Model corpus + Explain prose (own voices, designed by ear)~~ — **done 2026-09-10**, 14 voices | ✅ |
 | 6 | The 5th theme (diagram-first) | 5 |
 | 7 | Tap exports in the shim + the snapshot protocol in the worklet | 3 |
 | 8 | Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions | 7 |
@@ -394,11 +394,35 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
   130.8 / 261.6 / 440.0 / 1046.5 Hz by zero-crossing rate, dead on. Worth one confirming look at a spectrum in
   phase 3, but there is no offset to apply.
 
+**Answered at phases 3–5 (2026-09-10):**
+
+- ~~Pitch-bend range~~ — **±3 stands.** `fm_set_pitch_bend` clamps to the engine's own range and the worklet's
+  `bend` AudioParam declares the same bounds, so nothing pretends to a range it cannot deliver. Widening it would
+  mean editing vendored DSP for a control almost nothing in this app drives; not worth it.
+- **New, and it shaped the whole corpus: silencing an operator mid-chain breaks the chain.** `FmCore::compute`
+  tracks a `has_contents` flag per modulation bus; an operator under the gain threshold whose flags do not say
+  "add" marks its output bus *empty*, and a carrier reading an empty bus renders as a bare sine. "Use algorithm 16
+  but only turn on operators 1, 2 and 6" therefore gives a sine, silently. Active operators must form a contiguous
+  chain. Caught by measurement — the first draft of the noise voice measured identically to the pure-sine voice.
+- **New: a voice only gets a live Feedback knob if it sounds its algorithm's feedback operator.** Algorithm 1 puts
+  the flag on operator 6; algorithm 2 wires the same two operators but puts it on operator 2. The boot patch moved
+  from 1 to 2 for exactly this reason, with no change to the rendered audio.
+- **New: algorithms 4 and 6 have no feedback operator at all** in this engine — the hardware loops a *pair* there
+  and msfa's own source says "todo: more than one op in a feedback loop". Asserted in `fm-macros.test.ts`.
+- **New: `Dx7Note::init` does not clear `fb_buf_`**, so a voice with feedback running is not bit-identical across
+  consecutive note-ons until the loop settles. Harmless for playing; it matters when writing sample-exact tests.
+- **Macro timing is the one open ergonomic question** — see "Still open" below.
+
 **Still open:**
 
-- msfa hardcodes a **±3 semitone** pitch-bend range inside `Dx7Note::compute`. `fm_set_pitch_bend` maps onto that
-  range; anything wider needs the vendored constant changed, which would be a second local modification. Decide at
-  phase 4 whether ±3 is acceptable (it is what a DX7 does by default) or worth the patch.
+- **Whether macro knobs should reach the note that is already sounding.** msfa builds operator state inside
+  `Dx7Note::init` and exposes no public route to change it mid-note: `Env::setparam` exists and is designed for
+  exactly this, but `env_[]` is private to `Dx7Note` and `Controllers` carries pitch bend and nothing else. Phase 4
+  therefore lands macro moves on the *next* note-on, labelled plainly on every knob card. Making them continuous
+  means a third local modification to vendored code — the same shape as the tap patch already agreed for phase 7.
+  Andrew's call; carded in `.handoff/PENDING-DECISIONS.md`.
+
+
 - Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis for the
   sideband picture to read correctly. It probably needs the log axis; confirm by looking at one.
 - Whether `log2.{cc,h}` earns its place — vendored per this spec, but upstream only uses `Log2` from its test

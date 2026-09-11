@@ -37,8 +37,10 @@ engine sound next to the other four*. Measured tonight over identical 2-second w
 
 So the real loudness gap is about **4 dB**, not 17. Peak level is flat across the range
 (−16.6 to −17.1 dBFS from MIDI 36 to 84), so the make-up is a constant, not a per-note curve.
-Chosen: **×1.6 (+4.1 dB)**, which matches Rings' attack loudness and still leaves the FM peak
-4 dB below Rings' peak.
+First chosen ×1.6 (+4.1 dB) to match Rings' attack RMS. In the running app that still left FM
+2.9 dB under Rings, so it was raised to **×2.0 (+6 dB)**, which splits the two measurements.
+All fourteen finished voices land within 1.4 dB of each other at the same velocity, which is
+what makes one engine-wide constant defensible rather than arbitrary.
 
 ## Done overnight
 
@@ -86,9 +88,91 @@ macros do what their labels claim. In the running app, sweeping Brightness from 
 moves the measured spectral centroid from 260 Hz to about 5.4 kHz.
 
 **One compromise, not hidden:** a macro move lands on the *next* note-on, not the note
-currently sounding. See the first card under "Waiting on you" — it is the one real decision
-the night produced.
+currently sounding. See card 1 below — it is the one real decision the night produced.
+
+### Phase 5 — fourteen voices and their prose — `c4f797f`
+
+Six families: three bells, two electric pianos, two brass and winds, two basses, two
+inharmonic, three teaching primitives. All original, authored against the engine and then
+measured. `src/data/fm-voices.ts` is the sound; `src/data/fm-models.ts` is the words.
+
+**Measurement caught two things that reading would not have.**
+
+*The engine silently unplugs chains.* `FmCore::compute` keeps a "has contents" flag per
+modulation bus. An operator below the gain threshold whose flags do not say "add" marks its
+output bus **empty**, and a carrier reading an empty bus is rendered as a bare sine. So
+"use algorithm 16, but only switch on operators 1, 2 and 6" does not give a deep stack — it
+gives a sine, with no error anywhere. The first draft of the noise voice measured
+*identically* to the pure-sine voice. Every voice now uses a contiguous chain, and a test
+asserts that all thirteen non-sine voices are audibly more modulated than a sine.
+
+*The default voice had a dead knob.* Algorithm 1 puts the feedback loop on operator 6, which
+the boot patch does not sound — so Feedback did nothing on the engine's landing voice.
+Algorithm 2 wires the same two operators but puts the loop on operator 2. The boot patch
+moved to algorithm 2 and the wasm was rebuilt; the audio is unchanged, and a test proves it
+by rendering both and comparing samples. `dsp/PROVENANCE.md` hash updated.
+
+**Every comparative claim in the prose is asserted against rendered audio** — Clank really is
+the brightest, One Operator really is the least, Bronze Gong really does have the longest
+decay, and the quoted ratios are read back out of the patch bytes. Where a knob genuinely
+does nothing on a voice the card says so, and a test proves the knob produces sample-identical
+audio. One Operator has three dead knobs, which is the point of that voice.
+
+**Verified live:** all fourteen sound through the worklet (peaks 0.121–0.143, a 1.4 dB
+spread), the picker groups all six families, and the Explain panel renders four cards per
+voice with working Show-me buttons. 137 tests pass, type-check clean.
 
 ## Waiting on you
 
-_(see the end of this file and `.handoff/PENDING-DECISIONS.md`)_
+Also mirrored in `.handoff/PENDING-DECISIONS.md`.
+
+### 1. Should a macro knob change the note that is already sounding?
+
+**Where it stopped.** Phase 4 shipped the four macros working, but a knob move lands on the
+*next* note-on rather than the note under your fingers. With the sequencer running that is
+under half a beat away and barely noticeable; on a held note, nothing happens.
+
+**Why.** msfa builds a voice's operator state inside `Dx7Note::init` and offers no public way
+in afterwards. `Env::setparam` exists and is designed for exactly this, but `env_[]` is
+private to `Dx7Note`, and the `Controllers` struct that *is* passed in every block carries
+pitch bend and nothing else. There is no route that does not touch vendored code.
+
+**Options.**
+- **(a) Add a small live-update method to `Dx7Note`** — a third local modification, the same
+  shape as the tap patch you already approved for phase 7: additive, dated, documented in
+  `dsp/vendor/msfa/README.md` as re-apply-on-revendor.
+- **(b) Leave it note-on scoped.** Costs nothing, and the knob cards already say so plainly.
+  The real casualty is the "Show me" sweep, which holds one note for 2.6 seconds — on FM it
+  will move the knob and change nothing audible.
+- **(c) Make "Show me" retrigger** for engines that declare note-on-scoped params. Generic,
+  no vendored change, but it edits shared UI for one engine's benefit.
+
+**My recommendation: (a).** You have already accepted the principle for taps, the patch is
+about six lines, and it is the difference between FM having the same live knob feel as the
+other four engines or being the one that does not.
+
+### 2. The 5th theme needs a name before phase 6
+
+Not a blocker tonight — I deliberately did not build it, because a theme you cannot see until
+morning is a poor use of unattended time, and the name lands in `ThemeId`, filenames and docs
+where renaming later is churn.
+
+The spec locks the direction: a **drafting surface**, flatter and higher-contrast than the four
+instrument-panel skins, designed *for* the flowsheet rather than tolerating it. Candidate
+names: **Blueprint**, **Drafting**, **Graph**. Say which (or your own) and phase 6 is
+straightforward — token set, `ENGINE_THEME` / `THEME_COLOR` entries, and a `contrast.test.ts`
+row, AA-guarded the way Soundboard was.
+
+Until then FM wears Phosphor, which is the existing documented fallback for an unknown engine
+id, not a bug.
+
+### 3. Firefox and Safari pass on the tap spike — still outstanding
+
+Unchanged from phase 0 and not something this machine can do: Safari is not installed here.
+It is not a blocker for phases 1–7, but it should run before the flowsheet view ships.
+
+### 4. An ear pass, when you have a minute
+
+Everything above is verified by measurement, and measurement cannot tell you whether Swell
+Brass sounds like brass. The fourteen voices are the first thing in this engine that only you
+can sign off. `⚄ Surprise me` will walk you through them quickly.

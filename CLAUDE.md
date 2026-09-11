@@ -68,7 +68,7 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (in progress — phases 0–2 done 2026-09-10)
+## Engine #5 — FM (in progress — phases 0–5 done 2026-09-10)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
@@ -88,7 +88,19 @@ src/
   voice sits ~17 dB down, so phase 3 owes it make-up gain in the engine's `GainNode`. `src/audio/fm-wasm.test.ts`
   renders through the committed binary and guards block size, pitch and level — the only engine with that guard.
   The boot patch is **ours, authored by hand**; msfa's own `synth_unit.cc` carries a factory voice and is not
-  vendored. Next: **phase 3**, `fm-worklet.js` + `FmEngine.ts` + registry entry.
+  vendored.
+- **Phases 3–5 done (overnight 2026-09-10 → 11)** — `.handoff/OVERNIGHT-LOG-2026-09-10.md`. The engine plays from
+  the staff (`public/fm-worklet.js`, `src/audio/engines/FmEngine.ts`, registry entry), has its four macro knobs,
+  and carries **14 hand-authored voices** across six families with verified Explain prose. Make-up gain is **×2.0**
+  in the engine's `GainNode`, measured against Rings rather than against full scale. Three things to know before
+  touching this engine:
+  **(a)** an FM "model" is *data* — 156 patch bytes in `src/data/fm-voices.ts`, not a firmware enum;
+  **(b)** `src/data/fm-algorithms.ts` is **generated** from the vendored algorithm table, not hand-typed;
+  **(c)** silencing an operator in the middle of a chain makes the carrier render as a bare sine, silently —
+  read the header of `fm-voices.ts` before authoring a patch.
+- **One decision waiting** (`.handoff/PENDING-DECISIONS.md`): macro knobs currently take effect on the *next*
+  note-on, because msfa exposes no public path into a sounding voice. Making them continuous needs a third local
+  modification to vendored code. Next build step is **phase 6** (the 5th theme — needs a name and an eye pass).
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

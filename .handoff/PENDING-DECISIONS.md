@@ -1,6 +1,47 @@
 # Waiting on you
 
-**Nothing pending (as of 2026-07-11).** The Rings design decisions (model scope,
+## Overnight run 2026-09-10 → 11 — FM engine phases 3–5 shipped
+
+Full write-up: `.handoff/OVERNIGHT-LOG-2026-09-10.md`. The engine plays, has its four macro
+knobs, and carries fourteen hand-authored voices. Four items are waiting, most-actionable
+first.
+
+### 1. Should a macro knob change the note that is already sounding? ⭐
+A knob move currently lands on the **next note-on**, not the note under your fingers. msfa
+builds operator state inside `Dx7Note::init` and offers no public route in afterwards:
+`Env::setparam` exists and is meant for exactly this, but `env_[]` is private to `Dx7Note`
+and `Controllers` carries pitch bend and nothing else.
+
+- **(a) Add a small live-update method to `Dx7Note`** — a third local modification to vendored
+  code, the same shape as the tap patch already approved for phase 7. About six lines,
+  additive, dated, documented as re-apply-on-revendor.
+- **(b) Leave it note-on scoped.** Free, and every knob card already says so. The casualty is
+  "Show me", which holds one note for 2.6 s — on FM it moves the knob and changes nothing.
+- **(c) Make "Show me" retrigger** for engines that declare note-on-scoped params. No vendored
+  change, but it edits shared UI for one engine's benefit.
+
+**Recommendation: (a).** You already accepted the principle for taps, and it is the difference
+between FM having the same live knob feel as the other four engines or being the one that
+does not.
+
+### 2. Name the 5th theme, so phase 6 can be built
+The spec locks the direction — a **drafting surface**, flatter and higher-contrast than the
+four instrument-panel skins, designed *for* the flowsheet. The name lands in `ThemeId`,
+filenames and docs, so renaming later is churn. Candidates: **Blueprint**, **Drafting**,
+**Graph**, or your own. Until then FM wears Phosphor, which is the documented fallback for an
+unknown engine id, not a bug.
+
+### 3. Firefox / Safari pass on the tap spike — still outstanding
+Unchanged since phase 0 and not doable from this machine (no Safari here). Not a blocker for
+phases 1–7; should run before the flowsheet view ships.
+
+### 4. An ear pass on the fourteen voices, when you have a minute
+Measurement can prove Clank is the brightest voice in the corpus. It cannot tell you whether
+Swell Brass sounds like brass. This is the first thing in the engine only you can sign off.
+
+---
+
+**Nothing else pending (as of 2026-07-11).** The Rings design decisions (model scope,
 excitation model, theme direction, single comprehensive spec) were all resolved
 live in the 2026-07-11 session and are encoded in
 `docs/superpowers/specs/2026-07-11-rings-engine-design.md` — execution needs no

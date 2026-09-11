@@ -17,10 +17,12 @@ import { BraidsEngine } from "./engines/BraidsEngine";
 import { PlaitsEngine } from "./engines/PlaitsEngine";
 import { LaxsynthEngine } from "./engines/LaxsynthEngine";
 import { RingsEngine } from "./engines/RingsEngine";
+import { FmEngine } from "./engines/FmEngine";
 import { BRAIDS_MODELS, BRAIDS_FAMILIES } from "../data/braids-models";
 import { PLAITS_MODELS, PLAITS_FAMILIES } from "../data/plaits-models";
 import { LAXSYNTH_MODELS, LAXSYNTH_FAMILIES } from "../data/laxsynth-models";
 import { RINGS_MODELS, RINGS_FAMILIES } from "../data/rings-models";
+import { FM_MODELS, FM_FAMILIES } from "../data/fm-models";
 
 export interface EngineRegistryEntry {
   id: string;
@@ -83,6 +85,17 @@ export const ENGINES: EngineRegistryEntry[] = [
     createEngine: () => new RingsEngine(),
     models: RINGS_MODELS,
     families: RINGS_FAMILIES,
+  },
+  {
+    // FM (six-operator). Unlike the other four, an FM "model" is a patch — 156
+    // bytes of our own operator settings in data/fm-models.ts, pushed into the
+    // engine on selection. The wasm knows nothing about the catalogue, so the
+    // array order here IS the model index and share-URL codes depend on it.
+    id: "fm",
+    name: "FM",
+    createEngine: () => new FmEngine(),
+    models: FM_MODELS,
+    families: FM_FAMILIES,
   },
 ];
 

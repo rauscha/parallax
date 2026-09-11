@@ -42,7 +42,52 @@ Chosen: **×1.6 (+4.1 dB)**, which matches Rings' attack loudness and still leav
 
 ## Done overnight
 
-_(filled in as each phase lands)_
+### Spec correction — `afb6a2d`
+
+Recorded the tap decision (phase 7 will patch `fm_core.cc` with an optional per-operator
+tap pointer) and corrected the make-up-gain figure. Reading `FmCore::compute` showed the
+taps §2 asks for cannot be taken without touching vendored code: the operator kernels write
+into three shared buses private to `FmCore`, with add flags, so each operator's block is
+overwritten or summed away before the shim could see it.
+
+### Phase 3 — the engine plays — `826624a`
+
+`public/fm-worklet.js`, `src/audio/engines/FmEngine.ts`, and the registry entry. The worklet
+is a Rings clone with the differences FM forces: 44.1 kHz native resampled to the context
+rate, a 64-sample block read from the wasm rather than hardcoded, a held gate with a real
+note-off, and real velocity (every operator has a key-velocity-sensitivity field, so a soft
+note is genuinely less bright, not just quieter).
+
+An FM "model" is data, not a firmware enum. `src/data/fm-patch.ts` turns a typed,
+panel-ordered voice description into msfa's 156-byte layout, reversing panel order into
+sysex order on the way out — panel operator 1 is byte block 5, and getting that backwards
+would mirror every future flowsheet diagram. `fm-models.test.ts` proves the TS description
+of voice 0 and the C++ `LoadBootPatch` agree by rendering both: they are sample-identical.
+
+**Verified in the browser:** FM appears in the picker, swaps in and out four times with no
+console errors, and an offline render through the real worklet reports blockSize 64 and puts
+MIDI 60 at 262 Hz — the resampler preserves pitch.
+
+### Phase 4 — the four macro knobs — `516f9f2`
+
+Brightness, Ratio, Feedback, Envelope, all centred at 0.5 = the voice as authored. Pure TS:
+they rewrite the patch bytes and push them through the existing `setPatch` path, so no C++
+change and no wasm rebuild.
+
+`src/data/fm-algorithms.ts` is **generated** from the vendored `algorithms[32]` table rather
+than hand-typed, because which operators are modulators is a property of the algorithm, not
+the patch. That generation surfaced a real engine limitation, now asserted in tests:
+**algorithms 4 and 6 have no feedback operator** — the hardware loops a *pair* of operators
+there and msfa's own source says "todo: more than one op in a feedback loop". The Feedback
+knob genuinely does nothing on those two, so no voice prose may claim otherwise.
+
+**Verified:** 17 new tests, three of them rendering through the real binary to check the
+macros do what their labels claim. In the running app, sweeping Brightness from 0.15 to 0.9
+moves the measured spectral centroid from 260 Hz to about 5.4 kHz.
+
+**One compromise, not hidden:** a macro move lands on the *next* note-on, not the note
+currently sounding. See the first card under "Waiting on you" — it is the one real decision
+the night produced.
 
 ## Waiting on you
 

@@ -156,6 +156,16 @@ The genuinely new part. Full reasoning lives in the idea note's revised architec
 routing sums or overwrites it. Feedback is read from the kernel's feedback state. Capture is at **engine-native rate,
 pre-resample** — the true signal in msfa's own block domain, decoupled from the 128-sample quantum.
 
+**Reading them requires a second modification to vendored code — decided 2026-09-10.** Phase 3's pre-flight read
+`FmCore::compute` and found there is no seam outside it. The operator kernels write straight into three shared buses
+(`buf_`, private to `FmCore`) and into the output buffer, with `add` flags, so each operator's contribution is
+overwritten or summed away in place by the next operator. There is nothing to tap from the shim. Two routes were put to
+Andrew and he chose the first: **add an optional per-operator tap-output pointer to `FmCore::compute`, null by default
+so behaviour is identical when taps are off**, as a second dated `[Parallax modification]` recorded in
+`dsp/vendor/msfa/README.md` as re-apply-on-revendor. The rejected alternative was reimplementing the routing in our own
+shim, which would fork the 32-algorithm table — the one thing most likely to drift from the engine and make the
+flowsheet lie about the signal it is drawing. Nothing is touched before phase 7.
+
 **Tap set (8).** Operators 1–6, the feedback wire, and the voice output.
 
 **Transport — pooled transferables, not per-quantum streaming.**
@@ -375,6 +385,11 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
   no clipping**, using msfa's own `>>13`-with-clip conversion. What the measurement *also* showed: a normal
   single-carrier voice lands around **−17 dBFS**, so the engine needs make-up gain — in the engine's `GainNode`, not
   in the DSP. That is a phase-3 level-matching job, not a width problem.
+  **Corrected at phase 3:** −17 dBFS is the distance to *full scale*, which is not the loudness question. Measured
+  against Rings over identical 2-second windows at C4, the FM boot patch is **−3.9 dB** in attack RMS
+  (−27.1 vs −23.2 dBFS) and −2.1 dB over the whole window, with peak level flat within 0.5 dB from MIDI 36 to 84. The
+  make-up is therefore a constant **×1.6 (+4.1 dB)**, not the ×7 that −17 dBFS would imply — which would have made FM
+  the loudest engine in the app by a wide margin.
 - ~~Pitch calibration offset (expect a Rings-style trim)~~ — **no trim needed.** MIDI 48/60/69/84 measure
   130.8 / 261.6 / 440.0 / 1046.5 Hz by zero-crossing rate, dead on. Worth one confirming look at a spectrum in
   phase 3, but there is no offset to apply.

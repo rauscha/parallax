@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
+  import { dpr, readToken as token, tokenFloat as tokenNum } from "./trace";
 
   // Defaults to the live synth analyser; pass `analyser` to point a second
   // instance at another source (e.g. the loaded reference sample in MatchPanel).
@@ -15,8 +16,6 @@
   const BAR_COUNT = 56;
   const SMOOTH = 0.55;   // EMA — the shared analyser runs unsmoothed (scope needs it)
 
-  function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
-
   function fit() {
     if (!canvas || !wrap) return;
     const r = wrap.getBoundingClientRect();
@@ -27,13 +26,11 @@
     canvas.style.height = `${r.height}px`;
   }
 
-  function readToken(name: string, fallback: string): string {
-    return getComputedStyle(canvas).getPropertyValue(name).trim() || fallback;
-  }
-  function tokenFloat(name: string, fallback: number): number {
-    const v = parseFloat(getComputedStyle(canvas).getPropertyValue(name));
-    return Number.isFinite(v) ? v : fallback;
-  }
+  // Thin adapters over the shared primitive, bound to this component's canvas —
+  // the definitions live in trace.ts so every scope in the app reads tokens and
+  // scales for DPR the same way.
+  const readToken = (name: string, fallback: string) => token(canvas, name, fallback);
+  const tokenFloat = (name: string, fallback: number) => tokenNum(canvas, name, fallback);
 
   function draw() {
     raf = requestAnimationFrame(draw);

@@ -19,6 +19,7 @@ import {
 } from "lz-string";
 import { patchStore, melodyStore, engineIdStore } from "./stores";
 import { encodeState, decodeState, type SharedState } from "./serialization";
+import { viewStore } from "./route";
 
 const HASH_KEY = "p";
 
@@ -34,11 +35,22 @@ export function readSharedState(): SharedState | null {
   return decodeState(json);
 }
 
-/** Build a full shareable URL from the current store state (does not navigate). */
+/**
+ * Build a full shareable URL from the current store state (does not navigate).
+ *
+ * The fragment is a key/value space, and `view` shares it (see `route.ts`), so
+ * the current view is carried along: a link reproduces what the sender was
+ * looking at, which is the same promise the patch and melody already make.
+ * `writeShareUrl` puts this string straight into the address bar, so dropping
+ * the key here would silently walk the sender out of the flowsheet.
+ */
 export function buildShareUrl(): string {
   const json = encodeState(patchStore.get(), melodyStore.get());
   const blob = compressToEncodedURIComponent(json);
-  return `${location.origin}${location.pathname}#${HASH_KEY}=${blob}`;
+  const frag = new URLSearchParams(`${HASH_KEY}=${blob}`);
+  const view = viewStore.get();
+  if (view !== "instrument") frag.set("view", view);
+  return `${location.origin}${location.pathname}#${frag.toString()}`;
 }
 
 /**

@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { audioEngine } from "../audio/AudioEngine";
   import { audioReadyStore } from "../state/stores";
+  import { dpr, findTrigger, readToken as token, tokenFloat as tokenNum } from "./trace";
 
   let canvas: HTMLCanvasElement;
   let wrap: HTMLDivElement;
@@ -27,7 +28,6 @@
   let motionMql: MediaQueryList | null = null;
   const onMotionChange = () => { if (motionMql) reducedMotion = motionMql.matches; };
 
-  function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
 
   function fit() {
     if (!canvas || !wrap) return;
@@ -39,36 +39,12 @@
     canvas.style.height = `${r.height}px`;
   }
 
-  function readToken(name: string, fallback: string): string {
-    return getComputedStyle(canvas).getPropertyValue(name).trim() || fallback;
-  }
+  // Thin adapters over the shared primitive, bound to this component's canvas —
+  // the definitions live in trace.ts so every scope in the app reads tokens and
+  // scales for DPR the same way.
+  const readToken = (name: string, fallback: string) => token(canvas, name, fallback);
+  const tokenFloat = (name: string, fallback: number) => tokenNum(canvas, name, fallback);
 
-  function tokenFloat(name: string, fallback: number): number {
-    const v = parseFloat(getComputedStyle(canvas).getPropertyValue(name));
-    return Number.isFinite(v) ? v : fallback;
-  }
-
-  // Find a zero-crossing in `buf` using hysteresis. Returns interpolated index
-  // (fractional) of the first positive-going crossing, or -1 if none found.
-  function findTriggerIndex(): number {
-    if (!buf) return -1;
-    const N = buf.length;
-    let armed = false;        // true after we've seen a sample below -HYSTERESIS
-    for (let i = 1; i < N; ++i) {
-      const x = buf[i];
-      if (!armed) {
-        if (x < -HYSTERESIS) armed = true;
-        continue;
-      }
-      if (x >= 0 && buf[i - 1] < 0) {
-        // Linear interp between (i-1) and i where the signal crosses zero
-        const a = buf[i - 1], b = buf[i];
-        const frac = b !== a ? -a / (b - a) : 0;
-        return (i - 1) + frac;
-      }
-    }
-    return -1;
-  }
 
   function draw() {
     raf = requestAnimationFrame(draw);
@@ -111,7 +87,7 @@
 
     // Trigger + silence-detect in a single pass — folded together so we don't
     // walk the buffer twice every frame.
-    let triggerIdx = findTriggerIndex();
+    let triggerIdx = buf ? findTrigger(buf, 0, buf.length, HYSTERESIS) : -1;
     let peak = 0;
     for (let i = 0; i < N; ++i) {
       const a = Math.abs(buf[i]);

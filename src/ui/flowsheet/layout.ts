@@ -31,10 +31,10 @@ import { algorithmRoles } from "../../data/fm-algorithms";
 
 /** Node box, CSS pixels. Sized for a legible scope inside, per spec §4.4. */
 export const NODE_W = 160;
-export const NODE_H = 104;
+export const NODE_H = 132;
 /** Distance between slot centres, and between row centres. */
 export const COL_PITCH = 184;
-export const ROW_PITCH = 128;
+export const ROW_PITCH = 164;
 /** Space reserved under row 0 for the output sum node. */
 export const OUT_H = 92;
 export const PAD = 16;

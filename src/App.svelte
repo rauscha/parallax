@@ -19,12 +19,14 @@
   import GridEditor from "./notation/GridEditor.svelte";
   import KeyScalePicker from "./notation/KeyScalePicker.svelte";
   import StaffToolbar from "./notation/StaffToolbar.svelte";
-  import { audioReadyStore, isPlayingStore, melodyStore } from "./state/stores";
+  import { audioReadyStore, engineIdStore, isPlayingStore, melodyStore } from "./state/stores";
   import { playTransport, stopTransport, loadDemoMelody, clearMelody } from "./sequencer";
   import { surfaceStore, setSurface, type Surface } from "./notation/editorMode";
   import { surpriseMe } from "./state/surprise";
   import { captureUndo } from "./state/undo";
   import { readSharedState } from "./state/share-url";
+  import { viewStore, setView } from "./state/route";
+  import Flowsheet from "./ui/flowsheet/Flowsheet.svelte";
   import { listPresets } from "./state/persistence";
 
   // Store subscriptions — captured and torn down in onDestroy. App is the root
@@ -38,6 +40,18 @@
   let matchOpen = $state(false);
   let surface = $state<Surface>(surfaceStore.get());
   unsubs.push(surfaceStore.subscribe((v) => { surface = v; }));
+
+  // Which top-level view is showing. The instrument stays MOUNTED while the
+  // flowsheet is up, just taken off screen: KeyboardHarness binds its listeners
+  // at the window, the Part keeps playing, and the FM voice keeps sounding —
+  // which is the whole point of a view that shows the sounding voice. Unmounting
+  // it would silence the thing being taught.
+  let view = $state(viewStore.get());
+  unsubs.push(viewStore.subscribe((v) => { view = v; }));
+  const offstage = $derived(view === "flowsheet");
+
+  let engineId = $state(engineIdStore.get());
+  unsubs.push(engineIdStore.subscribe((v) => { engineId = v; }));
 
   let playing = $state(false);
   unsubs.push(isPlayingStore.subscribe((v) => { playing = v; }));
@@ -85,7 +99,11 @@
   <TapToStart />
 {/if}
 
-<header class="topbar">
+{#if offstage}
+  <Flowsheet />
+{/if}
+
+<header class="topbar" class:offstage={offstage}>
   <div class="brand">
     <span class="logo">◐</span>
     <span class="brand-name">Parallax</span>
@@ -98,6 +116,11 @@
     <button class="surprise-entry" onclick={roll} disabled={!ready || rolling}
       aria-label="Surprise me — roll a random engine, sound, and melody"
       title="Roll a random engine, sound, and melody"><span class="dice" aria-hidden="true">⚄</span><span class="surprise-label">{rolling ? " Rolling…" : " Surprise me"}</span></button>
+    {#if engineId === "fm"}
+      <button class="flowsheet-entry" onclick={() => setView("flowsheet")} disabled={!ready}
+        title="Open the flowsheet — the algorithm as a diagram, with the real signal on every operator"
+        >⌗<span class="flowsheet-label"> Flowsheet</span></button>
+    {/if}
     <ToolsMenu>
       <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
         title="Load a track and recreate one of its sounds">◎ Match a sound</button>
@@ -106,7 +129,7 @@
   </div>
 </header>
 
-<main class="grid">
+<main class="grid" class:offstage={offstage}>
   <section class="region scope" aria-label="Visualizer">
     <div class="viz-toggle" role="group" aria-label="Visualizer mode">
       <button class="viz-btn" class:active={viz === "scope"} aria-pressed={viz === "scope"}
@@ -186,14 +209,14 @@
   </section>
 </main>
 
-<NoteStrip />
+{#if !offstage}<NoteStrip />{/if}
 
 <MatchPanel bind:open={matchOpen} />
 
 <PwaToast />
 <UndoToast />
 
-<footer class="transport">
+<footer class="transport" class:offstage={offstage}>
   <div class="transport-left">
     <button class="play-btn" onclick={toggleTransport} disabled={!ready || eventCount === 0}
       aria-pressed={playing} aria-label={playing ? "Stop" : "Play"}>
@@ -222,6 +245,27 @@
 </footer>
 
 <style>
+  /* The instrument, while the flowsheet is up. display:none rather than a
+     visibility/opacity trick so nothing inside stays in the tab order — but the
+     components remain mounted, so input and transport keep working. */
+  .offstage { display: none !important; }
+
+  .flowsheet-entry {
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm, 3px);
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .flowsheet-entry:hover:not(:disabled) { border-color: var(--signal); color: var(--signal); }
+  .flowsheet-entry:disabled { opacity: 0.5; cursor: default; }
+  @media (max-width: 720px) {
+    .flowsheet-label { display: none; }
+  }
+
   .topbar {
     display: flex;
     justify-content: space-between;

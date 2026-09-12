@@ -305,6 +305,65 @@ Locked decision 3 is **not** a retreat from "single responsive PWA". Concretely:
 - The rest of the FM engine — picker, knobs, Explain panel, staff, share links — stays fully responsive like every
   other engine. Only the teacher is desktop-scoped.
 
+### Built 2026-09-12.
+
+**The wiring had to be derived first.** `FM_ALGORITHMS` carried carriers and the
+feedback operator, but not who modulates whom — and the vendored flag bytes do
+not answer that directly. They say which bus each operator reads and writes; a
+wire is not a property of either endpoint. So the generator simulates
+`FmCore::compute`'s three-bus machine, `has_contents` rule included, and records
+what was on each operator's in-bus when it rendered.
+
+That data is the one thing here that can be wrong invisibly — a wrong wire does
+not throw, does not change a sound, and draws a confident picture of a signal
+path the engine does not have. It is therefore asserted **against the engine**:
+silence one operator and the wiring predicts exactly which other traces change,
+because a trace changes iff the silenced operator can reach it along the wires.
+32 algorithms × 6 operators, bit-exact, through the taps.
+
+**One trigger for all eight traces.** Found once on the output and reused for
+every node. This is the single most important decision in the view: it makes the
+frequency ratio readable *as motion* — an operator at exactly 2× stands still
+frame after frame, one at 2.01× walks sideways. Triggering each trace on itself
+would lock every one of them and throw that away.
+
+**§9's spectrum question, answered both halves.** `Spectrum.svelte`'s axis was
+already logarithmic, so that half needed nothing. The half that did: it
+aggregates into 56 peak-held bars, and 56 bars cannot separate adjacent
+sidebands — the one thing this pane is for. The flowsheet therefore computes its
+own FFT (`src/viz/fft.ts`) from the **output tap**, so the two panes are the same
+samples rather than two claims about the same signal. Known limit, kept rather
+than papered over: at 1024 points the bins are 43 Hz apart, so below ~400 Hz a
+log axis stretches few bins across many pixels and the curve is visibly stepped.
+That is the real resolution, and smoothing it would imply detail we do not have.
+
+**Scaling, after measuring.** A single carrier peaks around 0.015 of full scale
+and its modulator sits ~30 dB under that, so a fixed ±1 scale drew eight flat
+lines — honest and useless. The default is per-trace fit, and the level that
+hides is printed instead: each node shows its trace's **measured** peak in dB
+against the loudest trace, beside the patch's own IDX/VOL byte. Measurement and
+intent, side by side. A shared scale is one click away for comparing heights.
+
+**The route is `#view=flowsheet`.** The fragment looked taken by share links, but
+`#p=<blob>` is read with `URLSearchParams`, so it was already a key/value space
+with one key in use. A real path would need the GitHub Pages 404 trick; a
+separate HTML entry would be a full page load, tearing down the AudioContext and
+silencing the voice the view exists to show. The instrument stays **mounted**
+while the flowsheet is up, off screen — keyboard, MIDI and transport keep
+working, and the note keeps sounding.
+
+**Verified live, not asserted.** A carrier at 258 Hz with a ×2 modulator puts
+sidebands at 775 and 1292 Hz; driving Brightness 0.5 → 1.0 lifts the first by
+11.8 dB and brings the second into view — the textbook prediction, measured
+through the wasm, the taps and the FFT. Gating measured the same way: **zero** tap
+frames after leaving the view, and zero while the narrow-screen gate is up.
+
+**Still to do on this view**, deliberately not built at phase 8: editing a node's
+ratio / level / envelope *in place* (§4.2). The four macros are live here and
+drive the diagram, which covers the "turn it and watch" gesture; per-operator
+editing needs a patch-override layer the engine does not have yet, and is worth
+doing as its own change rather than smuggled into this one.
+
 ---
 
 ## §5. Theme
@@ -394,7 +453,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 | 5 | ~~Model corpus + Explain prose (own voices, designed by ear)~~ — **done 2026-09-10**, 14 voices | ✅ |
 | 6 | ~~The 5th theme (diagram-first)~~ — **done 2026-09-12**, `graph` | ✅ |
 | 7 | ~~Tap exports in the shim + the snapshot protocol in the worklet~~ — **done 2026-09-12** | ✅ |
-| 8 | Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions | 7 |
+| 8 | ~~Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions~~ — **done 2026-09-12** | ✅ |
 | 9 | Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates | all |
 
 With A–C closed and phase 0 green, **nothing in this plan is blocked.** The remaining §6.1 item is the Firefox/Safari
@@ -484,7 +543,13 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
 **Still open:**
 
 
-- Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis for the
-  sideband picture to read correctly. It probably needs the log axis; confirm by looking at one.
+- ~~Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis~~ —
+  **answered at phase 8, and the guess was half right.** That component's axis is *already* logarithmic. The real
+  problem was resolution: it aggregates into 56 peak-held bars, which cannot separate adjacent sidebands. The
+  flowsheet computes its own FFT from the output tap instead, so the trace and the spectrum are the same samples.
+  See §4.
+- **New, from phase 8:** per-operator in-place editing (§4.2) is not built. The four macros are live in the view, so
+  "turn it and watch which traces move" works; editing one operator's ratio or level needs a patch-override layer
+  the engine does not have (it rebuilds from `FM_PATCHES[i]` plus macro positions). Worth its own change.
 - Whether `log2.{cc,h}` earns its place — vendored per this spec, but upstream only uses `Log2` from its test
   harness and nothing in our set references it. Drop it at phase 9 if it is still unused.

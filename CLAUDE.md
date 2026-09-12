@@ -68,7 +68,7 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (in progress — phases 0–5 done 2026-09-10)
+## Engine #5 — FM (phases 0–8 done; phase 9 — ear/eye gate + docs — outstanding)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
@@ -118,6 +118,19 @@ src/
   **(c)** taps are **off by default and cost nothing off** — only the flowsheet view calls
   `FmEngine.setTapsEnabled(true)`, and it must turn them off when it unmounts.
   Measured live: 57 frames/s, 0 dropped. Spec §2 carries the reasoning.
+- **Phase 8 done 2026-09-12 — the flowsheet view.** Route is `#view=flowsheet` (the fragment was never "taken" —
+  share links are `#p=<blob>` read with `URLSearchParams`, so it is a key/value space). Four things to know:
+  **(a)** `FM_ALGORITHMS[].wires` is **generated** by simulating `FmCore::compute`'s bus machine, and
+  `src/data/fm-algorithms.test.ts` asserts it **against the engine** — silence an operator and the wiring predicts
+  which traces change. Never hand-edit a wire;
+  **(b)** all eight traces share ONE trigger, taken on the output. That is what makes a whole-number ratio stand
+  still and a near-miss walk. Do not "fix" a drifting trace by triggering it on itself;
+  **(c)** the instrument stays **mounted** behind the flowsheet (`.offstage`, `display:none`) so keyboard, MIDI and
+  transport keep working and the note keeps sounding — do not switch it to `{#if}`;
+  **(d)** the loaded voice is `patchStore.modelId` resolved via `indexForCode`, **not** `params.model`, which
+  `bindings.ts` deliberately skips.
+  Not built, on purpose: per-operator in-place editing (spec §4.2) — needs a patch-override layer. Spec §4 carries
+  the reasoning.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

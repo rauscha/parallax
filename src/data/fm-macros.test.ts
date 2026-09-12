@@ -338,6 +338,38 @@ describe("macros do what their labels claim", () => {
     expect(stepIn(splice - 128, 256)).toBeLessThanOrEqual(stepIn(splice - 2176, 2048) * 1.25);
   });
 
+  // Found by ear-check prep, not by the suite: switching voice while a note was
+  // ringing out made the RELEASE 4.4x louder than the note itself had been.
+  // Env::update applies an output-level change to the level already reached, so
+  // re-aiming a dying note at a louder patch swells it back up. The shim now
+  // only updates while the key is down — which is also the musical answer, since
+  // a note you have let go of should not morph into the voice you just picked.
+  it("leaves a released note alone when the patch changes under it", () => {
+    const quiet = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, brightness: 0.1 });
+    const loud = applyMacros(FM_PATCHES[SUSTAINING], { ...FM_MACRO_DEFAULTS, brightness: 0.95 });
+    const load = (patch: Uint8Array, live: boolean) => {
+      const p = M._malloc(patch.length);
+      M.HEAPU8.set(patch, p);
+      if (live) M._fm_update_patch(p, patch.length);
+      else M._fm_set_patch(p, patch.length);
+      M._free(p);
+    };
+    load(quiet, false);
+    const nHeld = Math.floor((SR * 0.25) / N) * N;
+    const nTail = Math.floor((SR * 0.6) / N) * N;
+    const ptr = M._fm_alloc(nHeld + nTail);
+    M._fm_note_on(60, 100);
+    M._fm_render(ptr, nHeld);
+    M._fm_note_off();
+    load(loud, true);                       // voice switch during the ring-out
+    M._fm_render(ptr + nHeld * 2, nTail);
+    const x = Float64Array.from(M.HEAP16.subarray(ptr >> 1, (ptr >> 1) + nHeld + nTail));
+    M._fm_free(ptr);
+    const held = Math.max(...Array.from(x.slice(0, nHeld)).map(Math.abs));
+    const tail = Math.max(...Array.from(x.slice(nHeld)).map(Math.abs));
+    expect(tail).toBeLessThan(held);
+  });
+
   it("still falls back to next-note when nothing is sounding", () => {
     // fm_update_patch with no live note is just a load; the next note-on must
     // come out the same as if fm_set_patch had been used.

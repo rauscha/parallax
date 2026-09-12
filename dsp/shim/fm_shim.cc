@@ -76,8 +76,11 @@ bool g_note_alive = false;   // a note has been initialised at least once
 
 // The note currently sounding. Dx7Note bakes velocity and key scaling into its
 // operator state at note-on, so re-aiming that state later needs both back.
-int g_note_midi = 60;
-int g_note_vel  = 100;
+int  g_note_midi = 60;
+int  g_note_vel  = 100;
+// Whether the key is still DOWN, as distinct from g_note_alive (a note has
+// been built at least once). Live patch updates apply only while it is.
+bool g_note_down = false;
 
 // Writes one operator's 21 bytes. `op` is the msfa index (0 = operator 6).
 void SetOp(char* p, int op,
@@ -182,6 +185,7 @@ void fm_init(double sample_rate) {
   g_lfo.reset(g_patch + 137);
 
   g_note_alive = false;
+  g_note_down = false;
   g_inited = true;
 }
 
@@ -211,7 +215,14 @@ void fm_update_patch(const char* data, int len) {
     return;
   }
   g_lfo.reset(g_patch + 137);
-  if (g_note_alive) {
+  // Only while the key is actually DOWN. A released note is in its release
+  // stage and must be left to finish: Env::update applies the change in output
+  // level to the level already reached, so re-aiming a dying note at a louder
+  // patch makes it swell back up instead of fading. Measured before this guard:
+  // switching voice while a note rang out left the RELEASE 4.4x louder than the
+  // note itself had been. Musically it is the same answer — a note you have let
+  // go of should not morph into the voice you just selected.
+  if (g_note_alive && g_note_down) {
     g_note.update(g_patch, g_note_midi, g_note_vel);
   }
 }
@@ -241,11 +252,13 @@ void fm_note_on(int midi_note, int velocity) {
   g_note.init(g_patch, midi_note, velocity);
   g_lfo.keydown();
   g_note_alive = true;
+  g_note_down = true;
 }
 
 EMSCRIPTEN_KEEPALIVE
 void fm_note_off(void) {
   if (g_note_alive) g_note.keyup();
+  g_note_down = false;
 }
 
 // Semitones, +/-. msfa hardcodes a 3-semitone bend range in Dx7Note::compute,

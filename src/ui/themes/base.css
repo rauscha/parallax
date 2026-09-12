@@ -115,6 +115,18 @@ body::after {
   mix-blend-mode: overlay;
 }
 [data-theme="phosphor"] body::after { display: none; }
+/* Graph opts out of the grain too, and rules the paper instead. The grid goes
+   on the BODY, behind the opaque panels — not on the ::after overlay, which is
+   fixed above everything and would lay squares across prose, the staff and the
+   scope's own graticule. Drawn in ink rather than in the signal colour so it
+   stays background structure and can never be mistaken for data. */
+[data-theme="graph"] body::after { display: none; }
+[data-theme="graph"] body {
+  background-image:
+    linear-gradient(to right,  rgba(20, 22, 26, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 22, 26, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
 /* On phones the fixed grain sits over the dense sequencer grid and, blended on
    the tinted low-contrast cells, reads as a muddy gradient as content scrolls
    beneath it. The texture buys little on a small screen — drop it there. */

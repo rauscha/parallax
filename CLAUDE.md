@@ -102,9 +102,11 @@ src/
   `Dx7Note::update` — additive local modifications to the vendored engine, patches 2 and 3 of three, all documented
   in `dsp/vendor/msfa/README.md`. **There are now three local patches to msfa, not one**; phase 7's tap pointer
   will be the fourth.
-- **The 5th theme is named `graph`** (Andrew, 2026-09-11) — a drafting surface, flatter and higher-contrast than
-  the four instrument-panel skins. Next build step is **phase 6**: `ThemeId` entry, tokens, `ENGINE_THEME` /
-  `THEME_COLOR`, and a `contrast.test.ts` row. Needs an eye pass before it ships.
+- **Phase 6 done 2026-09-12 — the `graph` theme.** A drafting surface, not an instrument panel: cool paper, ruled
+  24 px grid on the body background, near-black ink, Okabe-Ito blue signal that is text-safe so `--signal-ink` can
+  just alias it. The scope is a **plot** here — `--scope-persist: 0`, `--scope-bloom: 0`, hairline frame — which is
+  why those two tokens exist as numbers rather than as booleans. `contrast.test.ts` now guards five themes.
+  Spec §5 carries the reasoning. Andrew's eye pass on it is still outstanding.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

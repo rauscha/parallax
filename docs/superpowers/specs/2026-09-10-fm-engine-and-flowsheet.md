@@ -281,6 +281,24 @@ is a *drafting surface*: the flowsheet is the primary thing it has to serve, and
 the reverse. Direction only; pixels come from a `frontend-design` pass at implementation. The contract: a 5th `ThemeId`, a token set in `src/ui/themes/tokens.css`,
 entries in `ENGINE_THEME` and `THEME_COLOR`, and a row in `contrast.test.ts`.
 
+**Built 2026-09-12.** Cool paper (`#F2F3F5`), white sheets, ruled hairlines, near-black ink — the highest-contrast
+text set of the five themes. Two palette rules follow from the flowsheet's job of *labelling* a signal graph:
+
+1. **Every colour here is text-safe on the paper.** Sandbox needs a separate `--signal-ink` because its hot orange
+   cannot be read as text; Graph does not, because a diagram labels the thing it colours. `--signal` is Okabe-Ito
+   blue `#0072B2` (4.7:1 on `--bg`) and serves as trace, fill and text alike.
+2. **Hue is never the only channel.** `--signal` (blue, audio path) and `--accent` (`#B54600`, vermillion, control
+   path) are an Okabe-Ito pair chosen for colourblind separation — but §5's rule stands for phase 8: the wires must
+   still be told apart by line style and node label, with colour as reinforcement only.
+
+Three departures from the instrument skins, all deliberate: the scope is a **plot, not a screen** — white field,
+`--scope-persist: 0` so every frame is a fresh plot with no phosphor smear, `--scope-bloom: 0` because ink does not
+glow, and a drawn hairline frame (the other four get their edge for free from a dark screen sunk into a lit panel);
+the grain overlay is off and the body is **ruled in 24 px squares** instead, on the body background rather than the
+fixed `::after` layer so the squares never cross prose, the staff, or the scope's own graticule; and the corner radii
+drop to 1–3 px — drafted, not moulded. Labels are uppercase at 0.06em tracking, the technical-drawing convention.
+
+
 **Accessibility is non-negotiable, and this feature is the hardest case in the app.** Nothing in the flowsheet may
 carry meaning by hue alone. Wires and traces are distinguished by *luminance*, line weight, dash pattern, and a text
 label at the node. Translucent fills are out — they read as invisible. Assume the diagram will be read by someone who
@@ -337,7 +355,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 | 3 | ~~`fm-worklet.js` + `FmEngine.ts` + registry entry → plays from the staff, pitch-calibrated~~ — **done 2026-09-10** | ✅ |
 | 4 | ~~Macro parameter set (§3) + schema~~ — **done 2026-09-10** | ✅ |
 | 5 | ~~Model corpus + Explain prose (own voices, designed by ear)~~ — **done 2026-09-10**, 14 voices | ✅ |
-| 6 | The 5th theme (diagram-first) | 5 |
+| 6 | ~~The 5th theme (diagram-first)~~ — **done 2026-09-12**, `graph` | ✅ |
 | 7 | Tap exports in the shim + the snapshot protocol in the worklet | 3 |
 | 8 | Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions | 7 |
 | 9 | Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates | all |

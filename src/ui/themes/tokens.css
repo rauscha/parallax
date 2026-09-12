@@ -1,10 +1,14 @@
-/* Theme tokens — shared schema, four palettes.
+/* Theme tokens — shared schema, five palettes.
    The active theme follows the selected engine (see state/theme.ts):
-   braids → phosphor, plaits → sandbox, laxsynth → lab, rings → soundboard
-   ("Soundboard" is the skin's name; the ThemeId stays "rings"). Set via
-   [data-theme="lab"|"sandbox"|"phosphor"|"rings"] on <html>. Braids boots
-   first, so phosphor is the landing theme; :root mirrors lab as a static
-   fallback. */
+   braids → phosphor, plaits → sandbox, laxsynth → lab, rings → soundboard,
+   fm → graph ("Soundboard" is the skin's name; the ThemeId stays "rings").
+   Set via [data-theme="lab"|"sandbox"|"phosphor"|"rings"|"graph"] on <html>.
+   Braids boots first, so phosphor is the landing theme; :root mirrors lab as a
+   static fallback.
+
+   Four of the five are instrument panels. Graph is not — it is a drafting
+   surface, built for the FM engine and for the flowsheet view that reads the
+   engine's real per-operator taps. */
 
 :root,
 [data-theme="lab"] {
@@ -211,6 +215,78 @@
   --label-tracking:   0.02em;
 
   color-scheme: dark;
+}
+
+/* —— Graph — the drafting surface ————————————————————————————————
+   The FM engine's skin, and the surface the flowsheet teacher is drawn on.
+   Not an instrument panel: no bevels, no grain, no glow. Cool paper, ruled
+   lines, near-black ink, and a plotted trace rather than a lit one.
+
+   Two rules govern the palette, both from the flowsheet's job of labelling a
+   signal graph. First, EVERY colour here is text-safe on the paper — there is
+   no fill-only signal colour as in Sandbox, because a diagram labels the thing
+   it colours. Second, hue is never the only channel: --signal (blue, audio
+   path) and --accent (vermillion, control path) are an Okabe-Ito pair chosen
+   for colourblind separation, but the diagram must still distinguish the two
+   by line style and text label, with colour as reinforcement only. */
+[data-theme="graph"] {
+  --bg:               #F2F3F5;        /* cool paper — the drawing ground */
+  --surface:          #FFFFFF;        /* the sheet laid on it */
+  --surface-raised:   #FFFFFF;        /* flat: separation is by hairline, not tone */
+  --surface-sunken:   #E4E7EC;
+  --hairline:         #A8B0BC;        /* a real ruled line, not a whisper */
+  --hairline-soft:    rgba(20, 22, 26, 0.10);
+
+  /* Text — the highest-contrast set of the five themes. */
+  --text:             #14161A;        /* ~16.3:1 */
+  --text-muted:       #3D444F;        /* ~8.7:1 */
+  --text-dim:         #5A626F;        /* ~5.6:1 */
+
+  /* Signal — Okabe-Ito blue. Dark enough to be text, saturated enough to be a
+     trace, so one token serves both and --signal-ink needs no separate value. */
+  --signal:           #0072B2;        /* ~4.7:1 on --bg, ~5.2:1 on --surface */
+  --signal-ink:       var(--signal);
+  --signal-dim:       rgba(0, 114, 178, 0.38);
+  --signal-deep:      rgba(0, 114, 178, 0.12);   /* selected-row wash */
+  --signal-glow:      rgba(0, 114, 178, 0.25);
+  --accent:           #B54600;        /* Okabe-Ito vermillion, darkened to ~5.0:1 */
+  --accent-dim:       rgba(181, 70, 0, 0.32);
+  --on-signal:        #FFFFFF;        /* ~5.2:1 on the blue fill */
+  --danger:           #A81E12;        /* ~6.6:1 */
+
+  /* Scope: a PLOT, not a screen. The other four themes sink a dark display
+     into a lit panel; this one draws on the same paper as everything else,
+     with no persistence smear and no halo — persist 0 clears every frame. */
+  --scope-bg:         #FFFFFF;
+  --scope-trace:      var(--signal);
+  --scope-trace-w:    1.6px;
+  --scope-glow:       rgba(0, 114, 178, 0.25);
+  --scope-grid:       rgba(20, 22, 26, 0.13);
+  --scope-persist:    0;              /* no phosphor decay: a fresh plot each frame */
+  --scope-bloom:      0;              /* ink on paper does not glow */
+
+  --knob-track:       #D7DCE3;
+  --knob-fill:        var(--signal);
+  --knob-pointer:     #14161A;
+  --knob-tick:        #5A626F;
+
+  /* Flatter corners than the instrument skins — drafted, not moulded. */
+  --radius-sm:        1px;
+  --radius-md:        2px;
+  --radius-lg:        3px;
+
+  /* Technical-drawing labels: small, capitalised, generously tracked. */
+  --label-case:       uppercase;
+  --label-tracking:   0.06em;
+
+  color-scheme: light;
+}
+
+/* Graph: the scope is a plot, so it needs a drawn edge. The other four themes
+   get theirs for free — a dark screen sunk into a lit panel reads as a frame
+   on its own. White ink on white paper does not. */
+[data-theme="graph"] .scope-wrap {
+  box-shadow: inset 0 0 0 var(--hairline-w) var(--hairline);
 }
 
 /* Optional: scanlines layer for Phosphor (applied by ScopeFrame) */

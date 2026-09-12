@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
  */
 const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
-const THEMES = ["lab", "sandbox", "phosphor", "rings"] as const;
+const THEMES = ["lab", "sandbox", "phosphor", "rings", "graph"] as const;
 const TEXT_TOKENS = ["--text", "--text-muted", "--text-dim", "--danger", "--signal-ink"];
 
 function block(theme: string): string {

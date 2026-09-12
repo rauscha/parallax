@@ -6,13 +6,14 @@ import { engineIdStore } from "./stores";
  * there is no separate manual theme control. `engineIdStore` is the single
  * source of truth; this module just mirrors it onto <html data-theme>.
  */
-export type ThemeId = "lab" | "sandbox" | "phosphor" | "rings";
+export type ThemeId = "lab" | "sandbox" | "phosphor" | "rings" | "graph";
 
 const ENGINE_THEME: Record<string, ThemeId> = {
   braids: "phosphor",   // vintage CRT green
   plaits: "sandbox",    // warm TE-style body
   laxsynth: "lab",      // SNES-inspired indigo
   rings: "rings",       // Soundboard — warm walnut + brass
+  fm: "graph",          // Graph — cool drafting paper, blue plotted trace
 };
 
 /** Browser chrome colour per theme — keeps the mobile status bar in step. */
@@ -21,6 +22,7 @@ const THEME_COLOR: Record<ThemeId, string> = {
   sandbox: "#E9E5DC",
   phosphor: "#0A0805",
   rings: "#221A13",
+  graph: "#F2F3F5",
 };
 
 export function themeForEngine(engineId: string): ThemeId {

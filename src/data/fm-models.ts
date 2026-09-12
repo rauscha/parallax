@@ -24,6 +24,16 @@
  * - Brightness comparisons ("brighter than", "the brightest here") are ordered
  *   by a measured spectral-brightness figure, not by taste. fm-voices.test.ts
  *   renders all fourteen and asserts the ordering the words imply.
+ *
+ * There is a second guard, and it checks a different thing. fm-voices.test.ts
+ * asserts this prose against rendered **audio**; `ui/flowsheet/claims.test.ts`
+ * asserts it against the **picture** the flowsheet draws — the ratio printed on
+ * a node against the measured frequency of the trace beside it, the "silent"
+ * tag against a flat trace, and the quoted sideband structure against the
+ * spectrum pane. Hollow Reed's description was rewritten at phase 9 because the
+ * second guard caught the first one letting a textbook-sounding sentence
+ * through: with a 3:1 modulator the missing harmonics are the multiples of
+ * three, not "the ones in between".
  */
 import type { EngineModel, EngineFamily } from "../audio/types";
 import { buildPatch, type FmPatchSpec } from "./fm-patch";
@@ -160,7 +170,7 @@ export const FM_VOICES: FmVoice[] = [
     model: {
       index: 6, code: "REED", name: "Hollow Reed", family: "brass",
       description:
-        "A 3:1 modulator, so its sidebands land three harmonics apart around the carrier and the harmonics in between stay thin. Plus a bare carrier two detune steps away.",
+        "A 3:1 modulator, so its sidebands land on every third harmonic either side of the carrier — and the ones below it fold back through zero, which leaves the multiples of three as the gaps. That hole is the hollowness. Plus a bare carrier two detune steps away.",
       knobs: [
         k("brightness", "Brightness", "Opens the reed. The spacing of the sidebands does not change with this knob — only how many of them there are, and how far up they reach."),
         k("ratio", "Ratio", "3:1 is where the hollowness lives. Down an octave it fills in and sounds like a flute; up it thins toward a whistle."),

@@ -96,6 +96,12 @@ sha256sum public/braids.wasm public/braids.js \
   renders the same note with taps off and on and requires the int16 output to be
   **bit-for-bit identical**. There is no local modification count left to spend
   after this one — see `dsp/vendor/msfa/README.md`.
+  Rebuilt a final time 2026-09-12 at **phase 9**, after dropping the unreferenced
+  `log2.{cc,h}` from the vendored set. The hashes in the table above did **not
+  change** — the binary is byte-identical with and without those files, which is
+  the proof that the compiler had been dead-stripping them all along and that
+  nothing reachable ever called `Log2`. A removal from a vendored tree is worth
+  that kind of evidence rather than an argument.
 - **FM shim (our code, MIT):** `dsp/shim/fm_shim.cc`. Its boot patch is original,
   authored by hand — Parallax ships no factory ROM patch data from any vendor
   (locked decision 5 of the FM spec).

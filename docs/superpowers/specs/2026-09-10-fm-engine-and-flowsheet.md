@@ -103,6 +103,8 @@ Same proven scaffold as Braids (96 kHz), Plaits (48 kHz) and Rings (48 kHz).
 `fm_op_kernel.cc`, `dx7note.cc`, `patch.cc`, `env.cc`, `pitchenv.cc`, `lfo.cc`, `freqlut.cc`, `sin.cc`, `exp2.cc`,
 `log2.cc` and their headers. No Android/JNI, no `synth_unit` host glue. Roughly ten small TUs — comparable to the
 Braids shim. Keep the Apache-2.0 headers on every file; add the `NOTICE`.
+**Amended at phase 9: `log2.{cc,h}` is gone.** Nothing in the set ever referenced it, and the rebuilt
+`public/fm.wasm` is byte-identical without it — it was being dead-stripped all along. See §9.
 
 **Sample rate and block size — amended 2026-09-10, engine runs at 44.1 kHz.** The original text here pinned 48 kHz.
 Phase 1 found why that is wrong: msfa's rate is configured at init through `Freqlut::init(sr)`, `Lfo::init(sr)` and
@@ -439,6 +441,43 @@ The same gate as every prior engine — an ear pass on the corpus, an eye pass o
 engine:** verify that a trace shown next to a claim in the Explain prose actually demonstrates that claim. A scope that
 disagrees with its own caption is the worst failure mode this feature has.
 
+#### Run 2026-09-12 (phase 9).
+
+**The engine-specific clause is automated**, in `src/ui/flowsheet/claims.test.ts`. The corpus already had
+`fm-voices.test.ts`, which asserts the prose against real rendered *audio*; what that cannot catch is the prose
+disagreeing with the *picture*, because the view reads the patch through `readout.ts`, draws through `trace.ts` and
+analyses through `fft.ts` and no corpus test touches any of them. A wrong byte offset or a stale ratio formula would
+print a confident number beside a trace doing something else, and every existing test would still pass. So each
+assertion has the same shape: **take what the view would display, check it against the signal the view would draw**,
+both from the running engine through the committed binary.
+
+The sharpest is the ratio. A node prints `×2` beside a trace; that is a *prediction about the frequency of that
+trace*, and it is checked by measuring the trace — interpolated zero crossings, exact for a sine no matter what its
+envelope is doing. Eighteen operator traces across the corpus are checked this way, plus the eight ratios the prose
+quotes by name. Traces with no single period to read (a wide-open feedback loop, a hard-modulated carrier) are
+skipped by a crossing-uniformity test rather than by a hand-written exception list — and they are exactly the traces
+whose cards say the pitch is hard to hear.
+
+Also asserted: the `silent` tag matches a flat trace for all 6 × 14 operators; the feedback wire pane draws only
+where a loop is actually running; the shared trigger holds a 2:1 modulator still frame after frame while a 1.41:1 one
+walks (**the load-bearing claim of the whole view**, and the reason the trigger is shared); and five spectrum claims
+including Parallax Bell's missing even harmonics and Feedback Alone's harmonics against One Operator's.
+
+**One prose claim failed and was fixed.** Hollow Reed said its 3:1 modulator put sidebands "three harmonics apart
+around the carrier" with "the harmonics in between" staying thin. The pane says otherwise: the lower sidebands fold
+back through zero, so f0−3f0 lands on 2f0 and f0−6f0 on 5f0, and harmonics 2 and 5 measure as strong as 4 and 7.
+What is actually missing is every **multiple of three** — measured at about −60 dB against −26 to −39 for the rest.
+The description now says that, and the test pins it. This is precisely the failure §6.3 was written to catch: a
+caption that is the textbook sentence about FM and still contradicts the picture directly under it.
+
+**Also verified live** (§6.2, for this engine): six rapid model switches under playback with no error; engine swap
+FM → Rings → Braids → FM with playback running, clean; share-URL round-trip restoring an FM voice from a cold load;
+preset save/load round-trip; and the one-loop export path capturing 106 kB of real audio with the FM model code in
+the filename.
+
+**Outstanding, and Andrew's to run:** the ear pass on the corpus, the eye pass on the `graph` theme and on the
+flowsheet itself, and the Firefox/Safari half of §6.1.
+
 ---
 
 ## §7. Phasing (ordered, committable)
@@ -454,7 +493,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 | 6 | ~~The 5th theme (diagram-first)~~ — **done 2026-09-12**, `graph` | ✅ |
 | 7 | ~~Tap exports in the shim + the snapshot protocol in the worklet~~ — **done 2026-09-12** | ✅ |
 | 8 | ~~Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions~~ — **done 2026-09-12** | ✅ |
-| 9 | Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates | all |
+| 9 | ~~Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates~~ — **done 2026-09-12** | ✅ |
 
 With A–C closed and phase 0 green, **nothing in this plan is blocked.** The remaining §6.1 item is the Firefox/Safari
 pass, which is not a blocker for phases 1–7 but should be run before the flowsheet view ships.
@@ -551,5 +590,8 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
 - **New, from phase 8:** per-operator in-place editing (§4.2) is not built. The four macros are live in the view, so
   "turn it and watch which traces move" works; editing one operator's ratio or level needs a patch-override layer
   the engine does not have (it rebuilds from `FM_PATCHES[i]` plus macro positions). Worth its own change.
-- Whether `log2.{cc,h}` earns its place — vendored per this spec, but upstream only uses `Log2` from its test
-  harness and nothing in our set references it. Drop it at phase 9 if it is still unused.
+- ~~Whether `log2.{cc,h}` earns its place~~ — **dropped at phase 9.** Still unused when the port finished, so it
+  went. The check that made this safe rather than merely tidy: rebuilding `public/fm.wasm` without it produced a
+  **byte-identical binary**, which proves it was being dead-stripped and that nothing reachable ever called it. This
+  set only ever *decodes* log-frequency, through `Freqlut`; if something later needs an encoder, take it from
+  upstream at the pinned revision rather than reinventing it.

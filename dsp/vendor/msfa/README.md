@@ -30,15 +30,16 @@ not the FM voice).
 | `freqlut.{cc,h}`     | log-frequency → phase-increment table |
 | `sin.{cc,h}`         | sine lookup |
 | `exp2.{cc,h}`        | `Exp2` and `Tanh` tables |
-| `log2.{cc,h}`        | `Log2` table |
 | `synth.h`            | `LG_N` / `N`, `min`/`max`, memory-barrier macro |
 | `aligned_buf.h`      | alignment wrapper used by `FmCore` |
 | `controllers.h`      | the MIDI controller value struct `Dx7Note::compute` reads |
 
-**`log2.{cc,h}` is currently unreferenced** by this set — upstream only uses
-`Log2` from its `main.cc` test harness. It is vendored because the FM engine
-spec names it and it costs nothing; drop it if it is still unused when the port
-finishes.
+**`log2.{cc,h}` was vendored and is now gone.** Nothing in this set ever
+referenced it — upstream only uses `Log2` from its `main.cc` test harness — so it
+was dropped at phase 9, as the spec said to do if it was still unused when the
+port finished. If a future change needs a log-frequency *encoder* (this set only
+ever decodes, via `Freqlut`), fetch it from upstream at the pinned revision
+rather than reinventing it.
 
 ## Local modifications — four, all marked in the source
 

@@ -68,7 +68,7 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (phases 0–8 done; phase 9 — ear/eye gate + docs — outstanding)
+## Engine #5 — FM (phases 0–9 done 2026-09-12; **built, not shipped** — the human gate is Andrew's)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
@@ -131,6 +131,22 @@ src/
   `bindings.ts` deliberately skips.
   Not built, on purpose: per-operator in-place editing (spec §4.2) — needs a patch-override layer. Spec §4 carries
   the reasoning.
+- **Phase 9 done 2026-09-12 — the gate and the docs.** The §6.3 clause that is specific to this engine ("a trace
+  shown next to a claim must demonstrate that claim") is **automated**, in `src/ui/flowsheet/claims.test.ts`.
+  `fm-voices.test.ts` checks the prose against the *audio*; this one checks it against the *picture*, which is a
+  different code path entirely (`readout.ts` + `trace.ts` + `fft.ts`). Three things to know:
+  **(a)** the strongest assertion is that **the ratio a node prints is the measured frequency of the trace beside
+  it** — interpolated zero crossings, 18 operator traces plus the 8 ratios the prose names. Traces with no single
+  period (an open feedback loop, a hard-modulated carrier) are skipped by a **crossing-uniformity test**, never by a
+  hand-written exception list; if you add a voice, nothing needs updating;
+  **(b)** it caught a real one: Hollow Reed's description claimed a 3:1 modulator leaves "the harmonics in between"
+  thin. The lower sidebands fold back through zero, so 2 and 5 are as strong as 4 and 7 — what is missing is every
+  **multiple of three**. The prose now says that. Treat a failure here as "the words are wrong", not "the test is
+  strict";
+  **(c)** `log2.{cc,h}` was dropped from the vendored msfa set, and the rebuilt `fm.wasm` is **byte-identical** —
+  the hashes in `dsp/PROVENANCE.md` are unchanged, which is what proves the removal was safe.
+  **Still outstanding and Andrew's alone:** the ear pass, the eye pass on the `graph` theme and the flowsheet, and
+  the Firefox/Safari half of §6.1. Until those land, FM is built and unshipped.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

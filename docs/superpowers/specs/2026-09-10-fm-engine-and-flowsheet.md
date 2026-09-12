@@ -475,8 +475,17 @@ FM → Rings → Braids → FM with playback running, clean; share-URL round-tri
 preset save/load round-trip; and the one-loop export path capturing 106 kB of real audio with the FM model code in
 the filename.
 
-**Outstanding, and Andrew's to run:** the ear pass on the corpus, the eye pass on the `graph` theme and on the
-flowsheet itself, and the Firefox/Safari half of §6.1.
+**The human half, closed by Andrew 2026-09-12.**
+
+- **Ear pass on the corpus — passed.** All fourteen voices listened through.
+- **Eye pass on the `graph` theme — passed**, and it had already happened: it is what produced `f3eb1e2`, the
+  gridline fix that took the rule from ink at 6 % to 13 %. The "still outstanding" note carried in this spec and in
+  `CLAUDE.md` after phase 6 was simply stale.
+- **Firefox/Safari (the §6.1 residual) — deferred, and out of this gate.** Andrew's call: it goes to far-deferred
+  work, not to the FM ship list. Nothing about the port or the taps waits on it; what it would tell us is whether
+  worklet scheduling on two non-target browsers costs more than Chromium's measured 0.055 pp, and the fallback that
+  answer might have argued for (SharedArrayBuffer) is already decided against. Recorded below in §9 so it is a
+  known gap rather than a forgotten one.
 
 ---
 
@@ -495,8 +504,10 @@ flowsheet itself, and the Firefox/Safari half of §6.1.
 | 8 | ~~Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions~~ — **done 2026-09-12** | ✅ |
 | 9 | ~~Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates~~ — **done 2026-09-12** | ✅ |
 
-With A–C closed and phase 0 green, **nothing in this plan is blocked.** The remaining §6.1 item is the Firefox/Safari
-pass, which is not a blocker for phases 1–7 but should be run before the flowsheet view ships.
+With A–C closed and phase 0 green, **nothing in this plan is blocked.** All nine phases are complete as of
+2026-09-12, and the human gate (§6.3) is closed. The Firefox/Safari tap pass, once written here as something to run
+before the flowsheet shipped, was **deferred by Andrew on 2026-09-12** and is no longer part of this spec's gate —
+see §6.3 and §9.
 
 ---
 
@@ -580,6 +591,12 @@ flowsheet view and its route, and a shared trace-drawing primitive under `src/vi
   held note: spectral centroid 649 Hz → 1316 Hz turning Brightness up, → 483 Hz turning it down.
 
 **Still open:**
+
+- **Firefox/Safari tap measurements (§6.1's second half) — deferred 2026-09-12, far-deferred work.** The spike ran
+  on Chromium only. Known gap, deliberately carried: worklet scheduling differs between engines, so the 0.055 pp
+  tap cost is a Chromium number and nothing more. It is cheap to close whenever someone has those browsers in front
+  of them — the spike procedure in §6.1 is still valid — but it gates nothing, because the fallback it might have
+  motivated is already decided against.
 
 
 - ~~Whether the flowsheet's spectrum pane reuses `Spectrum.svelte` unmodified or needs a log-frequency axis~~ —

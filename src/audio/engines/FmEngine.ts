@@ -55,6 +55,47 @@ const FM_MAKEUP_GAIN = 2.0;
 /** msfa hardcodes the bend range inside Dx7Note::compute. */
 const FM_BEND_RANGE = 3;
 
+/**
+ * The eight tap traces, in the order the shim writes them (spec §2).
+ *
+ * Operators are PANEL numbers here, not msfa indices -- msfa counts operators
+ * backwards (its index 0 is panel operator 6) and the shim reverses them so
+ * nothing downstream has to remember that. Any label list the flowsheet draws
+ * should come from here rather than being retyped.
+ */
+export const FM_TAP_LABELS = [
+  "Operator 1", "Operator 2", "Operator 3",
+  "Operator 4", "Operator 5", "Operator 6",
+  "Feedback", "Output",
+] as const;
+
+/**
+ * One frame of tap data, as handed to an `onTapSnapshot` listener.
+ *
+ * `data` holds `count` traces of `window` samples each, trace k at
+ * `[k * window, (k + 1) * window)`, every trace covering the *same* span of
+ * time -- that shared time base is what makes phase relationships between
+ * operators readable, and it is the reason this exists instead of six
+ * AnalyserNodes (which could not see inside the worklet anyway).
+ *
+ * **`data` is only valid for the duration of the callback.** It is a view on a
+ * pooled buffer that is transferred straight back to the worklet when the
+ * callback returns, so draw from it or copy out of it -- do not keep it.
+ */
+export interface FmTapSnapshot {
+  /** Monotonic frame counter since taps were enabled. */
+  frame: number;
+  /** The worklet's `currentTime` when the frame was packed. */
+  time: number;
+  /** Capture rate: the engine's own 44.1 kHz, not the context rate. */
+  rate: number;
+  count: number;
+  window: number;
+  /** Frames the worklet skipped because no buffer had come back yet. */
+  dropped: number;
+  data: Float32Array;
+}
+
 export class FmEngine implements ISynthEngine {
   manifest: EngineManifest = {
     id: "fm",
@@ -74,6 +115,8 @@ export class FmEngine implements ISynthEngine {
   private gainNode: GainNode | null = null;
   private activeMidi: number | null = null;
   private currentModelIndex = 0;
+  private tapListener: ((snap: FmTapSnapshot) => void) | null = null;
+  private tapsEnabled = false;
 
   // Mirror of param values for getParameter().
   private params: Record<string, number> = {
@@ -147,6 +190,12 @@ export class FmEngine implements ISynthEngine {
       }, 10_000);
     });
 
+    // Tap snapshots, once something asks for them. Registered after the ready
+    // handshake above has removed its own listener, and left in place for the
+    // life of the node -- it does nothing until setTapsEnabled(true).
+    this.node.port.addEventListener("message", this.onWorkletMessage);
+    if (this.tapsEnabled) this.node.port.postMessage({ type: "taps", on: true });
+
     // Master output level. The operator envelopes shape each note themselves,
     // so this node is level only — plus the fixed make-up factor above.
     this.gainNode = ctx.createGain();
@@ -198,6 +247,56 @@ export class FmEngine implements ISynthEngine {
     const p = this.node.parameters.get("bend");
     if (p) p.setTargetAtTime(clamped, this.ctx.currentTime, 0.005);
   }
+
+  /**
+   * Turn per-operator tap capture on or off. Off is the default and costs
+   * nothing: with taps off the vendored engine's tap pointer is null, so the
+   * capture path is not merely skipped but absent. Only the flowsheet view
+   * should turn it on, and it should turn it off when it unmounts.
+   *
+   * Safe to call before init() -- the request is remembered and applied once
+   * the worklet is up.
+   */
+  setTapsEnabled(on: boolean): void {
+    this.tapsEnabled = on;
+    this.node?.port.postMessage({ type: "taps", on });
+  }
+
+  /**
+   * Listen for tap frames, or pass null to stop. One listener at a time: the
+   * snapshot buffer is pooled and goes straight back to the worklet after the
+   * call, so it cannot be fanned out to several consumers.
+   */
+  onTapSnapshot(cb: ((snap: FmTapSnapshot) => void) | null): void {
+    this.tapListener = cb;
+  }
+
+  /**
+   * The return leg of the snapshot pool: read the frame, then transfer the
+   * buffer back so the worklet can fill it again. Bound as a field so it can be
+   * added and removed as a listener.
+   *
+   * The buffer goes back even if the listener throws -- a drawing bug must not
+   * starve the pool and silently stop the traces.
+   */
+  private onWorkletMessage = (e: MessageEvent): void => {
+    const msg = e.data;
+    if (msg?.type !== "taps") return;
+    const buffer: ArrayBuffer = msg.buffer;
+    try {
+      if (this.tapListener) {
+        this.tapListener({
+          frame: msg.frame, time: msg.time, rate: msg.rate,
+          count: msg.count, window: msg.window, dropped: msg.dropped,
+          data: new Float32Array(buffer),
+        });
+      }
+    } finally {
+      try {
+        this.node?.port.postMessage({ type: "tapReturn", buffer }, [buffer]);
+      } catch { /* node already gone */ }
+    }
+  };
 
   /** Load the patch for a corpus index. Applies to the sounding note too. */
   private setModelIndex(index: number): void {
@@ -289,6 +388,8 @@ export class FmEngine implements ISynthEngine {
     }
     // Stop the worklet (free the WASM buffers + return false from process())
     // so the disposed processor is collected, not left rendering.
+    this.tapListener = null;
+    if (this.node) { try { this.node.port.removeEventListener("message", this.onWorkletMessage); } catch { /* */ } }
     if (this.node) { try { this.node.port.postMessage({ type: "dispose" }); } catch { /* */ } }
     if (this.node) { try { this.node.disconnect(); } catch { /* */ } this.node = null; }
     if (this.gainNode) { try { this.gainNode.disconnect(); } catch { /* */ } this.gainNode = null; }

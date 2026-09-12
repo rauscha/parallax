@@ -156,7 +156,8 @@ The genuinely new part. Full reasoning lives in the idea note's revised architec
 routing sums or overwrites it. Feedback is read from the kernel's feedback state. Capture is at **engine-native rate,
 pre-resample** — the true signal in msfa's own block domain, decoupled from the 128-sample quantum.
 
-**Reading them requires a second modification to vendored code — decided 2026-09-10.** Phase 3's pre-flight read
+**Reading them requires another modification to vendored code — decided 2026-09-10.** (Written when it would
+have been the second; by the time it was built at phase 7 it was the fourth, and the last planned one.) Phase 3's pre-flight read
 `FmCore::compute` and found there is no seam outside it. The operator kernels write straight into three shared buses
 (`buf_`, private to `FmCore`) and into the output buffer, with `add` flags, so each operator's contribution is
 overwritten or summed away in place by the next operator. There is nothing to tap from the shim. Two routes were put to
@@ -201,6 +202,42 @@ locked decision**: GitHub Pages cannot send COOP/COEP headers, so it is reachabl
 shim riding the existing PWA service worker, costing a reload on first visit and shakier Safari behaviour. Named here
 so the trade is known before the spike, not discovered after. It is not the plan, and it is not adopted without a fresh
 decision from Andrew.
+
+### Built 2026-09-12.
+
+The contract above survived contact intact; three things are worth recording.
+
+**The vendored patch is provably transparent.** Patching someone else's render
+path is the kind of change that is either exactly right or quietly wrong, so it
+is not left to review: `src/audio/fm-taps.test.ts` renders the same note twice,
+taps off and taps on, and requires the int16 output to be **bit-for-bit
+identical**. The mechanism is that each operator renders into its own tap block
+and the merge into the bus is the kernel's own `add` folded out by hand — same
+sum, same order. That test is the licence for the patch; if it fails, the patch
+is wrong and the tap design is what changes, not the assertion.
+
+**The feedback wire is restated rather than intercepted.** It lives inside
+`FmOpKernel::compute_fb`, one level below the method we agreed to patch. Rather
+than spend a fifth modification on the kernel, `FmCore::compute` snapshots
+`fb_buf` before the call and replays the kernel's own recurrence — the mean of
+the two preceding output samples, shifted — from the operator's tapped output.
+That is the real signal, computed with the engine's own arithmetic, and it sits
+beside the call that produced it. The cost is a coupling: if that recurrence
+ever changes upstream, this must change with it, which both README and source
+say at the site.
+
+**Taps are exported in panel numbering, not msfa's.** The shim reverses the
+order (msfa's index 0 is panel operator 6) so nothing downstream has to remember
+it, and `FM_TAP_LABELS` in `FmEngine.ts` is the one place the names live. Slot 7
+is the voice output; the test pins it to the sounding carrier precisely because
+a mirrored tap order would otherwise be invisible until the diagram was drawn.
+
+**Measured in the browser, not asserted:** 57 snapshot frames per second against
+a ~60 Hz target, **zero dropped frames**, and the pool round-trip holding steady
+across a sustained note. Turning taps off stops the frames immediately. The
+allocation rule holds for the sample data — nothing per sample and no buffers
+after the first enable — with one honest exception: `postMessage` needs a message
+object, so there is one small short-lived object per frame.
 
 ---
 
@@ -356,7 +393,7 @@ disagrees with its own caption is the worst failure mode this feature has.
 | 4 | ~~Macro parameter set (§3) + schema~~ — **done 2026-09-10** | ✅ |
 | 5 | ~~Model corpus + Explain prose (own voices, designed by ear)~~ — **done 2026-09-10**, 14 voices | ✅ |
 | 6 | ~~The 5th theme (diagram-first)~~ — **done 2026-09-12**, `graph` | ✅ |
-| 7 | Tap exports in the shim + the snapshot protocol in the worklet | 3 |
+| 7 | ~~Tap exports in the shim + the snapshot protocol in the worklet~~ — **done 2026-09-12** | ✅ |
 | 8 | Flowsheet view — graph, scopes, spectrum, freeze/slow, interactions | 7 |
 | 9 | Ear + eye gate (§6.3), docs, roadmap and `CLAUDE.md` updates | all |
 

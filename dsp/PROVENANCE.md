@@ -47,15 +47,16 @@ sha256sum public/braids.wasm public/braids.js \
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
 | `public/rings.wasm`          | `efe916aeb9e65266a45f225061ff0e32bbff5271fe8e49ec698ef93bb85d1d2e` |
 | `public/rings.js`            | `ed18e9fa1605fc86e2df86a0c46902e9a521b67ece1ce942f96b7cd57e288f76` |
-| `public/fm.wasm`             | `799dd13c5c56f12413179f0cccc222579301a47cbec3c4ca05a003c3a5fcec3c` |
-| `public/fm.js`               | `3e426af9030e40ef357d4cbfb43ef0e11b2d415a29819b5735fff87c702328cb` |
+| `public/fm.wasm`             | `9f60dbfdfeed24a9773ebb74d8f40ec2c7ae64495eb61d9f6067317efdff6db7` |
+| `public/fm.js`               | `eb9badd9624aea2221ad5db68cfe61b3aeceff13db3164e8017bfdab4f595fb4` |
 | `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
 | `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
 | `public/laxsynth-worklet.js` | `17fe058a615677abb08338397892f2275cc562bda6447b92896f145314bc13c1` |
 | `public/rings-worklet.js`    | `6a238375d9810163a043c64994c25aea0abdf1332311a6feb9b36ca0b6bee253` |
+| `public/fm-worklet.js`       | `4ebb8e029689de79cbb99c58beb232a190968ccae17c10756d4e236bde7ca57c` |
 
-> Note: `braids-worklet.js`, `plaits-worklet.js`, `laxsynth-worklet.js`, and
-> `rings-worklet.js` are hand-edited JS, so their hashes change whenever those
+> Note: `braids-worklet.js`, `plaits-worklet.js`, `laxsynth-worklet.js`,
+> `rings-worklet.js` and `fm-worklet.js` are hand-edited JS, so their hashes change whenever those
 > files are edited (e.g. the A2 dispose path / A7 envelope clamp) — that's
 > expected, not a rebuild.
 > The `.wasm` + glue `.js` hashes only change on an Emscripten rebuild.
@@ -76,8 +77,8 @@ sha256sum public/braids.wasm public/braids.js \
   (`google/music-synthesizer-for-android`), vendored under `dsp/vendor/msfa/` at
   upstream commit `f67d41d313b7dc85f6fb99e79e515cc9d208cfff` (2017-09-12, repo
   HEAD as of the 2026-09-10 vendoring). Licence in `LICENSE-msfa.txt`,
-  attribution in `NOTICE`, the trimmed file list and the one local modification
-  in `dsp/vendor/msfa/README.md`. Built into `public/fm.wasm` at phase 2
+  attribution in `NOTICE`, the trimmed file list and the four local
+  modifications in `dsp/vendor/msfa/README.md`. Built into `public/fm.wasm` at phase 2
   and rebuilt at phase 5 — the only change being the boot patch's algorithm
   byte, moved from 1 to 2 so the default voice's Feedback macro reaches a
   sounding operator. The two algorithms wire this patch identically, so the
@@ -88,6 +89,13 @@ sha256sum public/braids.wasm public/braids.js \
   Rebuilt once more 2026-09-12 to guard the live update behind key-down — a
   patch change under a RELEASED note was swelling it back up
   (2026-09-10); hashed in the table above.
+  Rebuilt again 2026-09-12 for **phase 7's taps** — the fourth and last planned
+  local modification: an optional tap pointer threaded through `Dx7Note::compute`
+  into `FmCore::compute`, null by default. It is the one patch that had to touch
+  the render path, so it is also the one with a proof: `src/audio/fm-taps.test.ts`
+  renders the same note with taps off and on and requires the int16 output to be
+  **bit-for-bit identical**. There is no local modification count left to spend
+  after this one — see `dsp/vendor/msfa/README.md`.
 - **FM shim (our code, MIT):** `dsp/shim/fm_shim.cc`. Its boot patch is original,
   authored by hand — Parallax ships no factory ROM patch data from any vendor
   (locked decision 5 of the FM spec).

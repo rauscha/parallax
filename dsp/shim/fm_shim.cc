@@ -18,6 +18,13 @@
 // Dx7Note::compute advances envelopes and the operator kernels once per call,
 // assuming exactly N (= 64) samples. Always render in whole blocks of N.
 //
+// --- Taps (phase 7) ---------------------------------------------------------
+// fm_set_tap_buffer() hands the shim a float buffer; while it is set, every
+// rendered block also lands there as eight normalised traces (see
+// fm_tap_count). Passing 0 turns them off and the engine is then exactly the
+// engine it was before -- the vendored tap pointer is null, so not one extra
+// instruction runs inside FmCore::compute. The default app path never sets it.
+//
 // --- Operator numbering -----------------------------------------------------
 // msfa indexes operators 0..5 in DX7 sysex order, which is REVERSED from the
 // panel numbering: index 0 is operator 6, index 5 is operator 1. Algorithm 1
@@ -151,6 +158,29 @@ void LoadBootPatch(char* p) {
   memcpy(p + 145, "PARALLAX 1", 10);
   p[155] = 0x3f;       // all six operators enabled
 }
+
+// --- Tap capture ------------------------------------------------------------
+// Eight traces, in PANEL numbering so the flowsheet does not have to reverse
+// anything at draw time:
+//
+//   0..5  operators 1..6          (msfa index 6 - k; index 0 is operator 6)
+//   6     the feedback wire       (zero unless the patch takes a feedback path)
+//   7     the voice output        (the summed carriers, pre-int16)
+//
+// The engine's own tap buffer is int32 in msfa index order plus the wire; this
+// is the reordered, normalised copy JS reads.
+const int kTapCount = 8;
+const int kTapOps   = 6;
+const int kTapWire  = 6;
+const int kTapOut   = 7;
+
+// Full scale. ToInt16 below is >>4, a clip at +/-(1<<24), then >>9 -- so an
+// int32 sample of 1<<28 is exactly the top of the int16 range, and dividing by
+// it puts every trace on the same +/-1.0 scale as the audio the worklet plays.
+const float kTapScale = 1.0f / 268435456.0f;   // 1 / (1 << 28)
+
+int32_t g_tap_blocks[7 * N];     // what FmCore::compute writes: 6 ops + the wire
+float*  g_tap_out = 0;           // where JS reads; null means taps are off
 
 // msfa's own int32 -> int16 conversion (synth_unit.cc): >>4, clip at +/-(1<<24),
 // then >>9. Saturating, and the reference the HEAP16 contract is built on.
@@ -287,8 +317,35 @@ void fm_free(int16_t* ptr) { free(ptr); }
 EMSCRIPTEN_KEEPALIVE
 int fm_block_size(void) { return N; }
 
+// --- Taps -------------------------------------------------------------------
+
+// How many traces a tap buffer holds. The buffer is fm_tap_count() * N floats.
+EMSCRIPTEN_KEEPALIVE
+int fm_tap_count(void) { return kTapCount; }
+
+// Allocate / release a tap buffer. Separate from fm_alloc because that one
+// hands back int16 for audio; this is float.
+EMSCRIPTEN_KEEPALIVE
+float* fm_tap_alloc(void) {
+  return static_cast<float*>(malloc(sizeof(float) * kTapCount * N));
+}
+
+EMSCRIPTEN_KEEPALIVE
+void fm_tap_free(float* ptr) { free(ptr); }
+
+// Point the shim at a tap buffer, or pass 0 to turn taps off. Each subsequent
+// fm_render block overwrites the whole buffer, so the caller must drain it
+// between calls -- which is exactly what the worklet does, one block at a time.
+EMSCRIPTEN_KEEPALIVE
+void fm_set_tap_buffer(float* ptr) { g_tap_out = ptr; }
+
 // Render n_samples (MUST be a multiple of N = 64) of mono int16 PCM at 44.1 kHz.
 // Dx7Note::compute ADDS into its buffer, so each block is zeroed first.
+//
+// When a tap buffer is set, each block also writes eight normalised traces into
+// it. Note the consequence for callers: with taps on, only the LAST block of a
+// multi-block call survives in the buffer. The worklet renders one block per
+// call, so it sees every one; the offline tests do the same.
 EMSCRIPTEN_KEEPALIVE
 void fm_render(int16_t* out, int n_samples) {
   if (!g_inited || !out || n_samples <= 0) return;
@@ -299,13 +356,32 @@ void fm_render(int16_t* out, int n_samples) {
     int16_t* dst = out + b * N;
     if (!g_note_alive) {
       memset(dst, 0, sizeof(int16_t) * N);
+      // Silence is a real reading, not a missing one: leaving the last live
+      // block in place would draw a note that is no longer playing.
+      if (g_tap_out) memset(g_tap_out, 0, sizeof(float) * kTapCount * N);
       continue;
     }
     memset(block, 0, sizeof(block));
     const int32_t lfo_value = g_lfo.getsample();
     const int32_t lfo_delay = g_lfo.getdelay();
-    g_note.compute(block, lfo_value, lfo_delay, &g_controllers);
+    g_note.compute(block, lfo_value, lfo_delay, &g_controllers,
+                   g_tap_out ? g_tap_blocks : 0);
     for (int i = 0; i < N; ++i) dst[i] = ToInt16(block[i]);
+
+    if (g_tap_out) {
+      // Reverse msfa's index order into panel order: panel operator k (1..6)
+      // is msfa index 6 - k. Get this wrong and every diagram is mirrored.
+      for (int k = 0; k < kTapOps; ++k) {
+        const int32_t* src = g_tap_blocks + (5 - k) * N;
+        float* dstf = g_tap_out + k * N;
+        for (int i = 0; i < N; ++i) dstf[i] = src[i] * kTapScale;
+      }
+      const int32_t* wire = g_tap_blocks + 6 * N;
+      float* wiref = g_tap_out + kTapWire * N;
+      for (int i = 0; i < N; ++i) wiref[i] = wire[i] * kTapScale;
+      float* outf = g_tap_out + kTapOut * N;
+      for (int i = 0; i < N; ++i) outf[i] = block[i] * kTapScale;
+    }
   }
 }
 

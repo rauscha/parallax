@@ -40,7 +40,7 @@ not the FM voice).
 spec names it and it costs nothing; drop it if it is still unused when the port
 finishes.
 
-## Local modifications — three, all marked in the source
+## Local modifications — four, all marked in the source
 
 Every one carries a dated `[Parallax modification]` comment at the site. If you
 re-vendor from upstream, these are the patches to re-apply, and nothing else was
@@ -93,8 +93,40 @@ operator's gain linearly across the 64-sample render block, so it lands as a
 ~1.5 ms fade. `src/data/fm-macros.test.ts` asserts there is no sample-level step
 at the swap and no retrigger.
 
-**Phase 7 will add a fourth**, already agreed: an optional per-operator tap
-pointer on `FmCore::compute`, null by default. See spec §2.
+### 4. The tap path — `FmCore::compute` and `Dx7Note::compute` (2026-09-12)
+
+The one agreed at planning time, now built. Both methods take a trailing
+`int32_t *taps = 0`; `Dx7Note::compute` only passes it through, so the change
+that matters is entirely inside `FmCore::compute`.
+
+**Why it has to be there.** The operator kernels write straight into two shared
+buses (`buf_`, private to `FmCore`) and into the output buffer, with `add` flags
+— so each operator's own contribution is summed or overwritten away in place by
+the next one. By the time control returns to the shim there is nothing left to
+read. The rejected alternative was reimplementing the routing in our own shim,
+which would fork the 32-algorithm table: the one thing most likely to drift from
+the engine and make the flowsheet lie about the signal it is drawing.
+
+**What it does.** With `taps` non-null each operator renders into its own block
+of the caller's buffer, and the merge into the bus happens explicitly afterwards
+— the kernel's `add` folded out by hand into a `+=` or a copy. Same sum, same
+order, so the audio is unchanged. `src/audio/fm-taps.test.ts` does not take that
+on trust: it renders the same note twice, taps off and taps on, and requires the
+int16 output to be **bit-for-bit identical**. If that test ever fails, this patch
+is wrong.
+
+The buffer is `7 * N` int32: six operator blocks in msfa index order, then the
+feedback wire. The wire is restated from `compute_fb`'s own recurrence (the mean
+of the two preceding output samples, shifted) beside the call that produced it,
+with `fb_buf` snapshotted first — that keeps the patch to one method instead of
+reaching into `fm_op_kernel.cc` as well. **If that recurrence ever changes
+upstream, this must change with it.**
+
+With `taps` null — the default, and the whole app outside the flowsheet view —
+not one extra instruction runs.
+
+**That is the last planned modification.** Four is the number; anything further
+needs a fresh decision, not a precedent.
 
 ## Facts confirmed at vendoring (read from the source, not assumed)
 

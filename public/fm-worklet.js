@@ -21,13 +21,40 @@
 //  - The patch is data, not a wasm-side enum: the model corpus lives in TS
 //    (src/data/fm-models.ts) and arrives here as 156 unpacked bytes.
 //
-// Phase 7 will add the tap snapshot loop (spec §2) to this file. It is not
-// here yet, and nothing in the default app path pays for it.
+// --- Taps: the snapshot protocol (spec §2) ---------------------------
+// Off by default. Nothing below runs, and nothing is allocated, until the main
+// thread sends { type: "taps", on: true } -- which only the flowsheet view does.
+//
+// While on: every engine block that is rendered also drops eight traces
+// (operators 1-6 in PANEL numbering, the feedback wire, the voice output) into
+// eight capture rings. The rings share ONE write pointer, so all eight always
+// hold the same time span -- phase coherence between traces is the pedagogy
+// ("watch them lock at 2:1 and drift at 2.01:1"), and it only works if every
+// trace is sampled at identical offsets.
+//
+// Roughly once per display frame, one window from each ring is packed into a
+// pooled ArrayBuffer and posted as a TRANSFERABLE. The main thread reads it and
+// transfers the emptied buffer back, so the same few buffers circulate forever.
+// Capture is at the engine's own 44.1 kHz, before the resampler -- the true
+// signal in msfa's block domain, not the 128-sample render quantum.
+//
+// What allocates, honestly: nothing per sample and no buffers, but postMessage
+// needs a message object, so there is one small short-lived object per frame
+// (~60/s). The sample data itself never allocates after the first enable.
+//
+// Not done here, on purpose: no decimation (naive decimation aliases, and an
+// aliased modulator trace would be a lie about the signal) and no triggering.
+// Both are draw-time concerns and belong on the main thread.
 
 import createFmModule from "./fm.js";
 
 const FM_RATE = 44100;
 const RB_BLOCKS = 64;             // ring-buffer capacity in engine blocks
+
+const TAP_WINDOW = 1024;          // samples per trace in one snapshot (~23 ms)
+const TAP_RING = 2048;            // capture ring per trace: a window plus slack
+const TAP_POOL = 3;               // snapshot buffers in circulation
+const TAP_FRAME = Math.round(FM_RATE / 60);   // emit cadence, in engine samples
 
 class FmProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -64,6 +91,13 @@ class FmProcessor extends AudioWorkletProcessor {
     // A patch posted before the wasm is up (the engine seeds its initial model
     // during init) is held here and applied as soon as the module exists.
     this.pendingPatch = null;
+
+    // Taps. `tapsOn` gates the capture; `taps` holds everything it needs and
+    // stays null until the first enable, so the default app path allocates
+    // nothing for a view it never opens.
+    this.tapsOn = false;
+    this.taps = null;
+    this.pendingTaps = false;     // enable arriving before the wasm is up
 
     // Scheduled note events { t, on, midi, vel }, sorted ascending by time.
     this.pendingEvents = [];
@@ -114,6 +148,11 @@ class FmProcessor extends AudioWorkletProcessor {
       this.pendingPatch = null;
     }
 
+    if (this.pendingTaps) {
+      this.pendingTaps = false;
+      this.setTaps(true);
+    }
+
     this.ready = true;
     this.port.postMessage({ type: "ready", blockSize: this.block });
   }
@@ -135,6 +174,128 @@ class FmProcessor extends AudioWorkletProcessor {
     m._fm_update_patch(this.patchPtr, n);
   }
 
+  /**
+   * Turn tap capture on or off.
+   *
+   * Everything is allocated on the FIRST enable and then kept: the wasm-side
+   * float block, the eight capture rings, and the snapshot pool. That happens
+   * here, on a message, never inside process() -- which is the one hard rule
+   * this protocol has. Turning taps off afterwards only clears the shim's
+   * pointer (so not one extra instruction runs inside the engine) and keeps the
+   * memory, because the flowsheet gets opened and closed repeatedly and
+   * re-allocating each time would be churn for nothing.
+   */
+  setTaps(on) {
+    const m = this.module;
+    if (!m) { this.pendingTaps = !!on; return; }
+
+    if (!on) {
+      this.tapsOn = false;
+      m._fm_set_tap_buffer(0);
+      return;
+    }
+
+    if (!this.taps) {
+      const count = m._fm_tap_count() | 0;
+      const ptr = m._fm_tap_alloc();
+      if (!ptr || count <= 0) {
+        this.port.postMessage({ type: "error", message: "fm_tap_alloc failed" });
+        return;
+      }
+      const rings = [];
+      for (let t = 0; t < count; ++t) rings.push(new Float32Array(TAP_RING));
+      const pool = [];
+      for (let i = 0; i < TAP_POOL; ++i) {
+        const buf = new ArrayBuffer(count * TAP_WINDOW * 4);
+        pool.push({ buf, view: new Float32Array(buf) });
+      }
+      this.taps = {
+        count,
+        ptr,
+        // One view over the shim's tap block for all `count` traces. The heap
+        // cannot move (ALLOW_MEMORY_GROWTH=0), so caching this is safe.
+        view: new Float32Array(m.HEAPF32.buffer, ptr, count * this.block),
+        rings,
+        w: 0,          // shared write cursor: every trace holds the same span
+        filled: 0,     // samples captured since enable, capped at TAP_RING
+        acc: 0,        // engine samples since the last snapshot
+        pool,
+        frame: 0,
+        dropped: 0,    // frames skipped because the pool was empty
+      };
+    }
+
+    const t = this.taps;
+    t.w = 0;
+    t.filled = 0;
+    t.acc = 0;
+    m._fm_set_tap_buffer(t.ptr);
+    this.tapsOn = true;
+  }
+
+  /** Copy this block's traces into the rings. Called once per engine block. */
+  captureTaps() {
+    const t = this.taps;
+    const n = this.block;
+    const view = t.view;
+    const rings = t.rings;
+    for (let k = 0; k < t.count; ++k) {
+      const ring = rings[k];
+      const src = k * n;
+      let w = t.w;
+      for (let i = 0; i < n; ++i) {
+        ring[w] = view[src + i];
+        w = w + 1 === TAP_RING ? 0 : w + 1;
+      }
+      if (k === t.count - 1) t.w = w;
+    }
+    t.filled = Math.min(TAP_RING, t.filled + n);
+    t.acc += n;
+    if (t.acc >= TAP_FRAME && t.filled >= TAP_WINDOW) {
+      t.acc = 0;
+      this.emitTapSnapshot();
+    }
+  }
+
+  /**
+   * Pack the most recent window of every trace into a pooled buffer and hand it
+   * over. Copied with explicit loops rather than subarray/set: a subarray is a
+   * small allocation, and this runs inside process().
+   *
+   * If the pool is empty the main thread has not returned a buffer yet, so the
+   * frame is dropped. Dropping a frame of a 60 Hz display refresh is invisible;
+   * allocating a new buffer on the audio thread to avoid it would not be.
+   */
+  emitTapSnapshot() {
+    const t = this.taps;
+    const slot = t.pool.pop();
+    if (!slot) { t.dropped++; return; }
+
+    const view = slot.view;
+    let start = t.w - TAP_WINDOW;
+    if (start < 0) start += TAP_RING;
+    for (let k = 0; k < t.count; ++k) {
+      const ring = t.rings[k];
+      const out = k * TAP_WINDOW;
+      let r = start;
+      for (let i = 0; i < TAP_WINDOW; ++i) {
+        view[out + i] = ring[r];
+        r = r + 1 === TAP_RING ? 0 : r + 1;
+      }
+    }
+
+    this.port.postMessage({
+      type: "taps",
+      frame: t.frame++,
+      time: currentTime,
+      rate: FM_RATE,
+      count: t.count,
+      window: TAP_WINDOW,
+      dropped: t.dropped,
+      buffer: slot.buf,
+    }, [slot.buf]);
+  }
+
   onMessage(msg) {
     switch (msg.type) {
       case "setPatch": {
@@ -154,6 +315,21 @@ class FmProcessor extends AudioWorkletProcessor {
         this.queueEvent({ t: when, on: false, midi: 0, vel: 0 });
         break;
       }
+      case "taps":
+        // { on: true } only from the flowsheet view; everything else pays nothing.
+        this.setTaps(!!msg.on);
+        break;
+      case "tapReturn": {
+        // The emptied snapshot buffer, transferred back. Its view died with the
+        // transfer, so a fresh one is made here -- on the message path, never in
+        // process().
+        const t = this.taps;
+        const buf = msg.buffer;
+        if (t && buf && buf.byteLength === t.count * TAP_WINDOW * 4 && t.pool.length < TAP_POOL) {
+          t.pool.push({ buf, view: new Float32Array(buf) });
+        }
+        break;
+      }
       case "allNotesOff":
         // Panic: drop everything queued and release now. Unlike Rings (whose
         // panic is ring-out), FM has a real gate to close, so closing it is
@@ -166,10 +342,14 @@ class FmProcessor extends AudioWorkletProcessor {
         // Engine swap: stop rendering and free both heap buffers (see the
         // plaits-worklet note — without this the processor leaks per swap).
         this.disposed = true;
+        this.tapsOn = false;
         if (this.module) {
+          try { this.module._fm_set_tap_buffer(0); } catch {}
+          if (this.taps?.ptr) { try { this.module._fm_tap_free(this.taps.ptr); } catch {} }
           if (this.bufPtr) { try { this.module._fm_free(this.bufPtr); } catch {} this.bufPtr = 0; }
           if (this.patchPtr) { try { this.module._free(this.patchPtr); } catch {} this.patchPtr = 0; }
           this.bufView = null;
+          this.taps = null;
         }
         break;
     }
@@ -200,6 +380,9 @@ class FmProcessor extends AudioWorkletProcessor {
     const m = this.module;
     const n = this.block;
     m._fm_render(this.bufPtr, n);
+    // Captured here, one engine block at a time, because that is the only place
+    // the shim's tap buffer is guaranteed fresh -- it holds exactly one block.
+    if (this.tapsOn) this.captureTaps();
     const rb = this.rb, cap = rb.length;
     let w = this.rbWrite;
     for (let i = 0; i < n; ++i) {

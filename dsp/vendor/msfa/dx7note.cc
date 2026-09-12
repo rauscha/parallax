@@ -219,7 +219,7 @@ void Dx7Note::update(const char patch[156], int midinote, int velocity) {
 }
 
 void Dx7Note::compute(int32_t *buf, int32_t lfo_val, int32_t lfo_delay,
-  const Controllers *ctrls) {
+  const Controllers *ctrls, int32_t *taps) {
   int32_t pitchmod = pitchenv_.getsample();
   uint32_t pmd = pitchmoddepth_ * lfo_delay;  // Q32
   // TODO: add modulation sources (mod wheel, etc)
@@ -238,7 +238,7 @@ void Dx7Note::compute(int32_t *buf, int32_t lfo_val, int32_t lfo_delay,
     params_[op].freq = Freqlut::lookup(basepitch_[op] + pitchmod);
     params_[op].gain[1] = gain;
   }
-  core_.compute(buf, params_, algorithm_, fb_buf_, fb_shift_);
+  core_.compute(buf, params_, algorithm_, fb_buf_, fb_shift_, taps);
 }
 
 void Dx7Note::keyup() {

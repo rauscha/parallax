@@ -33,8 +33,12 @@ class Dx7Note {
 
   // Note: this _adds_ to the buffer. Interesting question whether it's
   // worth it...
+  //
+  // [Parallax modification, 2026-09-12] `taps` threads straight through to
+  // FmCore::compute and is null by default -- see fm_core.h for the layout and
+  // README.md for why it exists. Patch 4 of four.
   void compute(int32_t *buf, int32_t lfo_val, int32_t lfo_delay,
-    const Controllers *ctrls);
+    const Controllers *ctrls, int32_t *taps = 0);
 
   void keyup();
 

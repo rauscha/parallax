@@ -107,6 +107,17 @@ src/
   just alias it. The scope is a **plot** here — `--scope-persist: 0`, `--scope-bloom: 0`, hairline frame — which is
   why those two tokens exist as numbers rather than as booleans. `contrast.test.ts` now guards five themes.
   Spec §5 carries the reasoning. Andrew's eye pass on it is still outstanding.
+- **Phase 7 done 2026-09-12 — the taps.** `FmCore::compute` takes an optional tap pointer (**the fourth and
+  last planned local patch to msfa** — four is the number now), the shim exports **8 traces in PANEL numbering**
+  (operators 1–6, the feedback wire, the voice output) through `fm_set_tap_buffer`, and `public/fm-worklet.js`
+  ships them to the main thread as pooled transferables at ~60 Hz. Three things to know before phase 8:
+  **(a)** `src/audio/fm-taps.test.ts` asserts taps-on audio is **bit-for-bit identical** to taps-off — that test
+  is the licence for patching vendored DSP, so it is never relaxed;
+  **(b)** the snapshot's `Float32Array` is **only valid inside the `onTapSnapshot` callback** — it goes straight
+  back to the worklet pool afterwards, so draw from it or copy, never keep it;
+  **(c)** taps are **off by default and cost nothing off** — only the flowsheet view calls
+  `FmEngine.setTapsEnabled(true)`, and it must turn them off when it unmounts.
+  Measured live: 57 frames/s, 0 dropped. Spec §2 carries the reasoning.
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 

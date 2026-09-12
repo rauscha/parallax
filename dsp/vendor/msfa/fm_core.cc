@@ -108,10 +108,17 @@ void FmCore::dump() {
 }
 
 void FmCore::compute(int32_t *output, FmOpParams *params, int algorithm,
-                     int32_t *fb_buf, int feedback_shift) {
+                     int32_t *fb_buf, int feedback_shift, int32_t *taps) {
   const int kLevelThresh = 1120;
   const FmAlgorithm alg = algorithms[algorithm];
   bool has_contents[3] = { true, false, false };
+  // [Parallax modification, 2026-09-12] The feedback wire's tap block is
+  // cleared up front, because most algorithms and every feedback-off patch
+  // never take the feedback path at all and would otherwise leave stale data.
+  // Operator blocks are each written or cleared inside the loop below.
+  if (taps) {
+    for (int i = 0; i < N; i++) taps[6 * N + i] = 0;
+  }
   for (int op = 0; op < 6; op++) {
     int flags = alg.ops[op];
     bool add = (flags & OUT_BUS_ADD) != 0;
@@ -121,30 +128,71 @@ void FmCore::compute(int32_t *output, FmOpParams *params, int algorithm,
     int32_t *outptr = (outbus == 0) ? output : buf_[outbus - 1].get();
     int32_t gain1 = param.gain[0];
     int32_t gain2 = param.gain[1];
+    // [Parallax modification, 2026-09-12] With taps on, the kernel renders into
+    // this operator's tap block and the merge into the bus happens explicitly
+    // below. The kernel's own `add` is folded out into that merge, so the sum is
+    // the same sum in the same order and the audio is bit-for-bit identical --
+    // which src/audio/fm-taps.test.ts asserts against a taps-off render.
+    int32_t *tapptr = taps ? taps + op * N : 0;
     if (gain1 >= kLevelThresh || gain2 >= kLevelThresh) {
       if (!has_contents[outbus]) {
         add = false;
       }
+      int32_t *dest = tapptr ? tapptr : outptr;
+      const bool kernel_add = tapptr ? false : add;
       if (inbus == 0 || !has_contents[inbus]) {
         // todo: more than one op in a feedback loop
         if ((flags & 0xc0) == 0xc0 && feedback_shift < 16) {
           // cout << op << " fb " << inbus << outbus << add << endl;
-          FmOpKernel::compute_fb(outptr, param.phase, param.freq,
+          // [Parallax modification] fb_buf carries the two output samples that
+          // precede this block, and compute_fb consumes them; snapshot them
+          // first so the wire can be restated afterwards.
+          int32_t fb0 = fb_buf[0];
+          int32_t fb1 = fb_buf[1];
+          FmOpKernel::compute_fb(dest, param.phase, param.freq,
                                  gain1, gain2,
-                                 fb_buf, feedback_shift, add);
+                                 fb_buf, feedback_shift, kernel_add);
+          if (tapptr) {
+            // The feedback wire, restated from compute_fb's own recurrence
+            // (fm_op_kernel.cc): the value mixed into sample i's phase is the
+            // mean of the two preceding output samples, shifted. It is written
+            // here, beside the call that produced it, rather than inside the
+            // kernel -- that keeps the patch to one method. If that recurrence
+            // ever changes upstream, this must change with it.
+            int32_t *fbtap = taps + 6 * N;
+            for (int i = 0; i < N; i++) {
+              fbtap[i] = (fb0 + fb1) >> (feedback_shift + 1);
+              fb0 = fb1;
+              fb1 = tapptr[i];
+            }
+          }
         } else {
           // cout << op << " pure " << inbus << outbus << add << endl;
-          FmOpKernel::compute_pure(outptr, param.phase, param.freq,
-                                   gain1, gain2, add);
+          FmOpKernel::compute_pure(dest, param.phase, param.freq,
+                                   gain1, gain2, kernel_add);
         }
       } else {
         // cout << op << " normal " << inbus << outbus << " " << param.freq << add << endl;
-        FmOpKernel::compute(outptr, buf_[inbus - 1].get(),
-                            param.phase, param.freq, gain1, gain2, add);
+        FmOpKernel::compute(dest, buf_[inbus - 1].get(),
+                            param.phase, param.freq, gain1, gain2, kernel_add);
+      }
+      if (tapptr) {
+        if (add) {
+          for (int i = 0; i < N; i++) outptr[i] += tapptr[i];
+        } else {
+          for (int i = 0; i < N; i++) outptr[i] = tapptr[i];
+        }
       }
       has_contents[outbus] = true;
-    } else if (!add) {
-      has_contents[outbus] = false;
+    } else {
+      // Below the level threshold the operator renders nothing at all, so its
+      // tap is silence -- not the previous block left lying around.
+      if (tapptr) {
+        for (int i = 0; i < N; i++) tapptr[i] = 0;
+      }
+      if (!add) {
+        has_contents[outbus] = false;
+      }
     }
     param.phase += param.freq << LG_N;
   }

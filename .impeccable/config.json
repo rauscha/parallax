@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/ui/flowsheet/Flowsheet.svelte"
+        ],
+        "createdAt": "2026-09-13T19:11:23.698Z",
+        "reason": "Claude: carrier marker on a signal-flow node, not card decoration. The graph theme block in tokens.css states hue is never the only channel, and the user is colourblind; the 4px left edge IS the weight channel, paired with the CARRIER text label (see the comment above .node.carrier). Removing or softening it would weaken an accessibility accommodation. Predates this session."
+      }
+    ]
+  }
+}

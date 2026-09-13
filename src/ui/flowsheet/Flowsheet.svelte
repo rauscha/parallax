@@ -389,34 +389,58 @@
     const lit = (a: number, b?: number) =>
       hoverOp !== null && (hoverOp === a || hoverOp === b);
 
+    /**
+     * Is this path actually carrying anything? A modulator at index 0 and a
+     * carrier at volume 0 both contribute nothing, and roughly two thirds of
+     * the wires on a typical voice are in that state — on Parallax Bell, four
+     * of six operators are silent. Drawing them identically to the live ones
+     * made "which operators make this sound" a thing you had to reconstruct by
+     * reading six IDX labels in sequence.
+     *
+     * A dead path is drawn as structure rather than as signal: hairline grey,
+     * thinner, and on a tighter dash. Three channels, not one — the user is
+     * colourblind, so hue never carries this alone, and the node's own
+     * "IDX 0 / silent" text remains the fourth.
+     */
+    const sounding = (op: number) => (patch.ops[op - 1]?.outLevel ?? 0) > 0;
+
     // Modulation wires: dashed, control colour. Dash is the channel that
     // survives when colour does not.
     for (const e of layout.edges) {
       const on = lit(e.from, e.to);
-      ctx.strokeStyle = p.accent;
-      ctx.globalAlpha = hoverOp === null || on ? 1 : 0.25;
-      ctx.lineWidth = on ? 2.6 : 1.6;
-      ctx.setLineDash([5, 4]);
+      const live = sounding(e.from);
+      ctx.strokeStyle = live ? p.accent : p.hairline;
+      ctx.globalAlpha = (hoverOp === null || on ? 1 : 0.25) * (live ? 1 : 0.75);
+      ctx.lineWidth = live ? (on ? 2.6 : 1.6) : 1;
+      ctx.setLineDash(live ? [5, 4] : [3, 3]);
       wirePath(ctx, e.x1, e.y1, e.x2, e.y2);
     }
 
-    // Audio wires into the output sum: solid, signal colour.
-    ctx.setLineDash([]);
+    // Audio wires into the output sum: solid, signal colour. A carrier at
+    // volume 0 reaches the output on paper and contributes nothing in fact,
+    // so its wire ghosts too — that is the whole of what makes OP 3 on
+    // Parallax Bell different from a silent modulator.
     for (const e of outEdges) {
       const on = lit(e.from);
-      ctx.strokeStyle = p.signal;
-      ctx.globalAlpha = hoverOp === null || on ? 1 : 0.25;
-      ctx.lineWidth = on ? 2.8 : 1.8;
+      const live = sounding(e.from);
+      ctx.strokeStyle = live ? p.signal : p.hairline;
+      ctx.globalAlpha = (hoverOp === null || on ? 1 : 0.25) * (live ? 1 : 0.75);
+      ctx.lineWidth = live ? (on ? 2.8 : 1.8) : 1;
+      ctx.setLineDash(live ? [] : [3, 3]);
       wirePath(ctx, e.x1, e.y1, e.x2, e.y2);
     }
 
-    // The feedback loop: a small return arc on its own node, dotted.
+    // The feedback loop: a small return arc on its own node, dotted. Ghosted at
+    // zero feedback, which is what the summary line under the sheet has always
+    // said in words — "at zero, so this path is not taken" — while the diagram
+    // went on drawing it as live.
     const fb = layout.nodes.find((n) => n.feedback);
     if (fb) {
-      ctx.globalAlpha = hoverOp === null || hoverOp === fb.op ? 1 : 0.25;
-      ctx.strokeStyle = p.accent;
-      ctx.lineWidth = 1.6;
-      ctx.setLineDash([2, 3]);
+      const live = patch.feedback > 0 && sounding(fb.op);
+      ctx.globalAlpha = (hoverOp === null || hoverOp === fb.op ? 1 : 0.25) * (live ? 1 : 0.75);
+      ctx.strokeStyle = live ? p.accent : p.hairline;
+      ctx.lineWidth = live ? 1.6 : 1;
+      ctx.setLineDash(live ? [2, 3] : [3, 3]);
       const r = 16;
       const x = fb.x + NODE_W;
       const yTop = fb.y + 14;
@@ -738,7 +762,19 @@
                 {formatDb(relDb[node.op - 1])}
               </span>
             </div>
-            {#if ro.outLevel === 0}<span class="silent-tag">silent</span>{/if}
+            <!-- Two operators can both be at zero for entirely different
+                 reasons, and the difference is the useful part. A carrier at
+                 volume 0 still reaches the output and adds nothing to it; a
+                 modulator at index 0 leaves the operator below it running as a
+                 bare sine. One word for both hid that. -->
+            {#if ro.outLevel === 0}
+              <span
+                class="silent-tag"
+                title={node.carrier
+                  ? "This carrier reaches the output, but its volume is 0 — it adds nothing to the sound."
+                  : "This modulator's index is 0 — the operator it feeds runs unmodulated, as a bare sine."}
+              >{node.carrier ? "not sounding" : "not modulating"}</span>
+            {/if}
           </button>
         {/each}
 
@@ -757,6 +793,7 @@
       <span class="key">
         <span class="swatch mod" aria-hidden="true"></span> dashed = modulation
         <span class="swatch aud" aria-hidden="true"></span> solid = audio to output
+        <span class="swatch off" aria-hidden="true"></span> grey = path not taken
       </span>
       {routingText}
     </p>
@@ -1031,6 +1068,10 @@
   .swatch { display: inline-block; width: 22px; height: 0; border-top-width: 2px; }
   .swatch.mod { border-top: 2px dashed var(--accent); }
   .swatch.aud { border-top: 2px solid var(--signal); margin-left: 8px; }
+  /* The third wire state, added with the ghosting. Thinner and on a tighter
+     dash than either live style, so it reads as dead by weight and rhythm and
+     not only by being grey. */
+  .swatch.off { border-top: 1px dashed var(--hairline); margin-left: 8px; }
 
   .panes { display: flex; flex-direction: column; gap: 12px; }
   figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }

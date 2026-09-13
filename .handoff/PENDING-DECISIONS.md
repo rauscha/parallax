@@ -1,5 +1,19 @@
 # Waiting on you
 
+## Nothing is pending as of 2026-09-13.
+
+Everything below is **historical**. The last live item — item 4, the ear pass on the fourteen FM
+voices — was answered 2026-09-12: **passed**, all fourteen. The `graph` theme eye pass passed too
+(it had already happened, at `f3eb1e2`). Firefox/Safari tap measurements were deferred to
+far-deferred work and gate nothing.
+
+Three FM things remain **open calls rather than pending decisions** — they are recorded in
+`.handoff/NEXT-STEPS.md` item 7, not here: a version tag (FM is untagged; Rings got `v1.2.0`), an
+eye pass on the flowsheet *view* (the theme was cleared, the view was not), and per-operator
+in-place editing (deliberately unbuilt — needs a patch-override layer).
+
+---
+
 ## Overnight run 2026-09-10 → 11 — FM engine phases 3–5 shipped
 
 Full write-up: `.handoff/OVERNIGHT-LOG-2026-09-10.md`. The engine plays, has its four macro

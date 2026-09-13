@@ -1,28 +1,30 @@
-# Session hand-off — 2026-07-11 (machine: laptop · c:\parallax)
+# Session hand-off — 2026-09-13 (machine: desktop · c:\parallax)
 
 ## STATE (read this first)
-- Branch: `main`, **clean + synced** (HEAD `d0c1a33` == origin/main). **One worktree only** — nothing stranded.
-- One-loop audio export is **fully closed** (Andrew's ear-check confirmed; roadmap marked shipped `a004bfa`). **Rings — engine #4, the v1.2 marquee — is now THE ACTIVE WORK:** spec + implementation plan are written, committed, pushed. **Nothing has been built yet.**
-- **NEXT ACTION (fresh session):** execute `docs/superpowers/plans/2026-07-11-rings-engine.md` via **superpowers:subagent-driven-development** — fresh implementer subagent per task (deliberately lower-model implementers; the plan was written on Fable with complete code in every step so they can't wander), review between tasks. The plan is fully self-contained; no conversation context needed. Start at Task 1 (vendor).
+- Branch: `main`, **clean + synced** (HEAD `05714ec` == origin/main). **One worktree only** — nothing stranded.
+- **Engine #5 — FM — is finished.** All nine spec phases are built, tested and gate-passed: the msfa port at 44.1 kHz, 14 hand-authored voices, the `graph` theme, per-operator scope taps, the flowsheet teacher at `#view=flowsheet`, and the §6.3 claims gate. **222 tests across 19 files**, `npm run check` clean, `npm run build` clean. Andrew's ear pass on all fourteen voices: passed. The `graph` theme eye pass: passed. **It carries no version tag** — that is a deliberate open call, not an oversight.
+- **NEXT ACTION:** the roadmap's remaining "After v1.0" item ② — **swing + Euclidean / arp / mutate melody tools**. Spec is already written and its decisions already resolved (`docs/superpowers/specs/2026-06-20-melody-tools.md`). Pure TS in `src/sequencer/`; no WASM, no emsdk, no vendored DSP.
 
 ## Done this session
-1. **Export close-out.** Ear-check confirmed by Andrew → marked shipped in `docs/roadmap-v1.0.md` (`a004bfa`). Feature ② patch-lineage also marked shipped in the same roadmap line.
-2. **Rings design — brainstormed with Andrew, all decisions locked** (spec `docs/superpowers/specs/2026-07-11-rings-engine-design.md`, `447bd41`):
-   - **One comprehensive spec** for the whole port (his explicit call over incremental slices).
-   - **Full model set incl. the "Disastrous Peace" easter egg**: 12 models = 6 `rings::Part` resonator models + 6 `StringSynthPart` FX variants.
-   - **Note model:** internal exciter — noteOn = strum, noteOff = ring out (no-op), polyphony pinned 1, no external audio input.
-   - **Theme = "Soundboard"** (his pick of 3 directions): warm-dark walnut/espresso + brass-amber + parchment ivory, luminance-led scope shimmer. The first engine that needs a brand-new (4th) theme.
-   - Plaits-port survey (subagent): every cross-cutting system is **engine-agnostic via the registry** — Rings inherits pickers/serialization/share-URL/Surprise/undo/lineage free; vendored stmlib already has every header Rings needs; the PWA precache glob picks up `rings.wasm` automatically.
-3. **Implementation plan** (`docs/superpowers/plans/2026-07-11-rings-engine.md`, `d0c1a33`): 9 tasks — vendor → shim+build → worklet → engine class → corpus+tests (TDD) → registry+in-app audio verify → Soundboard theme+contrast test (TDD, guards all 4 themes) → Surprise clamp+provenance → **HUMAN GATE** (ear/eye). Complete code in every step; explicit verify-against-source steps for every firmware assumption.
+1. **Phase 9 — the gate, the log2 drop, the docs** (`84b21c2`). New `src/ui/flowsheet/claims.test.ts` (15 tests) automates the one §6.3 clause specific to this engine: *a trace shown beside a claim must demonstrate that claim*. `fm-voices.test.ts` already guarded the prose against the **audio**; this guards it against the **picture**, which is a different code path entirely (`readout.ts` + `trace.ts` + `fft.ts`) that no test had touched.
+   - Strongest assertion: **the ratio a node prints is the measured frequency of the trace beside it** — interpolated upward zero crossings, 18 operator traces plus the 8 ratios the prose names. Traces with no single period (an open feedback loop, a hard-modulated carrier) are skipped by a **crossing-uniformity rule** (`hi/lo > 1.05 → skip`), never a hand-written exception list, so adding a voice needs no test edit.
+   - Also in it: silent-tag equivalence for all 6×14 operators, shared-trigger proof (a whole-number ratio holds phase, a 1.41:1 walks), and an agreement test between the app's two ratio formulas (`fm-macros.ratioOf` vs the engine log table in `readout.ratioOf` — within 0.05 % across coarse 0–31).
+   - **It caught a real product bug.** Hollow Reed's description claimed a 3:1 modulator leaves "the harmonics in between" thin. It does not: the lower sidebands fold back through zero, so 2 and 5 are as strong as 4 and 7 — what is actually missing is every **multiple of three**. Measured, then the prose was rewritten in `src/data/fm-models.ts`. This is exactly the failure mode §6.3 exists to catch.
+   - **`log2.{cc,h}` dropped** from the vendored msfa set (spec §9's open item). Rebuilt `fm.wasm` is **byte-identical** — the hashes in `dsp/PROVENANCE.md` are unchanged, which is the proof the removal was safe rather than merely plausible.
+   - Live §6.2 checks run in-browser too: pitch, model-switch stability, dispose/swap, `allNotesOff`, share-URL round-trip, preset save/load, and the export path (exercised through `AudioExporter` directly so nothing downloaded).
+2. **Human gate closed** (`05714ec`). Andrew's ear pass on all fourteen voices passed. The `graph` theme eye pass passed **and already had** — it is what produced `f3eb1e2` ("the graph rule is ink at 13 %, not 6 %"). The "still outstanding" line carried in `CLAUDE.md` and the spec since phase 6 **was stale, not accurate**; both corrected. Firefox/Safari worklet measurements **deferred to far-deferred work** and removed from the gate — recorded in spec §9 as a known gap, with the honest consequence stated: the 0.055 pp tap cost is a **Chromium** figure and the docs now say so.
 
 ## Next up
-1. **Fresh session → /pick-up → subagent-driven execution of the Rings plan.** Tasks 1 and 3–5 need no toolchain; **Task 2 needs emsdk** (`$env:USERPROFILE\emsdk` — desktop has it; check `emcc` before starting Task 2). Commit + push lands after every task.
-2. **Task 9 is the human gate** (Andrew's ear/eye pass + docs close-out + consider tagging `v1.2.0`) — everything before it is autonomous-safe.
-3. After Rings: **melody tools**, then **Parallax Daily** — both specced with decisions resolved (NEXT-STEPS items 3–4).
+1. **Build ② melody tools** — `docs/superpowers/specs/2026-06-20-melody-tools.md`. Decisions already resolved (2026-06-21): swing = Tone transport, playback-only; build order **Mutate → Euclidean → Arp → Swing**, shipped incrementally. Pure TS, no toolchain. Write it against an **injected RNG** from the start — that makes ③ nearly free instead of a retrofit.
+2. **Then ③ Parallax Daily** — `docs/superpowers/specs/2026-06-20-parallax-daily.md`. Date-seeded surprise; needs `surprise.ts` / `randomizeMelody` taking an injected RNG (see above), seed = date string, algorithm drift accepted.
+3. **Two small things that are Andrew's call, not build work** (see "Watch out for").
+4. **Backlog, half an hour:** braids / plaits / rings have no committed-binary test guard equivalent to `src/audio/fm-wasm.test.ts`. FM is the only engine that would catch a bad `.wasm` shipping to Pages. Copy the existing pattern.
 
 ## Watch out for
-- **The plan's enum orders are best-knowledge, not yet source-verified** (`ResonatorModel`, `FxType`). Task 2 Step 1 / Task 5 Step 1 greps are mandatory; if the source order differs, the shim constants and catalogue order follow the source, not the plan.
-- **Pitch convention (note 69 = A440) is assumed** from the Plaits precedent. Task 6 Step 3.5 has the calibration procedure (compare against Braids; fix in the worklet's note push only).
-- **PENDING-DECISIONS is empty** — everything for Rings was decided this session and encoded in the spec/plan. Don't re-ask Andrew; just execute.
-- Implementer subagents should run on a **smaller model (sonnet-class)** — Andrew's explicit instruction ("plan on running the plan with lower model subagents"). Reviews can stay on the stronger model.
-- `.superpowers/sdd/` is git-ignored scratch — per-feature SDD ledgers live there and won't sync across machines; everything durable is in the spec/plan/handoff.
+- **FM is untagged, on purpose.** Rings shipped as `v1.2.0`; FM is built and gate-passed with no tag. `v1.3.0` is the obvious number, but it needs Andrew's explicit OK — a tag is a remote write.
+- **The flowsheet view's own eye pass was never cleared.** Andrew cleared the `graph` **theme**; he did not mention the **view**. Don't record it as done. `#view=flowsheet` on any FM voice.
+- **If `claims.test.ts` fails, the default diagnosis is "the words are wrong", not "the test is strict."** That is how the Hollow Reed bug surfaced. Measure the actual spectrum before touching a threshold.
+- **Per-operator in-place editing is deliberately not built** (spec §4.2). It needs a patch-override layer, because the engine rebuilds from `FM_PATCHES[i]` plus macro positions. Don't half-start it.
+- **There are four local patches to vendored msfa**, all documented in `dsp/vendor/msfa/README.md` (`aligned_buf.h`, `Env::update`, `Dx7Note::update`, `FmCore::compute`'s tap pointer). `src/audio/fm-taps.test.ts` asserts taps-on audio is **bit-for-bit identical** to taps-off — that test is the licence for patching vendored DSP, so it is never relaxed.
+- **Emscripten:** source the env before the first `emcc` call in any session — `& "$env:USERPROFILE\emsdk\emsdk_env.ps1"`. Only needed if a `.wasm` is being rebuilt; the melody tools need none.
+- **`.handoff/PENDING-DECISIONS.md` is now historical.** Everything it lists for FM was answered. Nothing in it is live.

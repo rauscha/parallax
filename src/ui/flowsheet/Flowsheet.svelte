@@ -44,6 +44,7 @@
     layoutAlgorithm, NODE_W, NODE_H, OUT_H,
   } from "./layout";
   import { drawTrace, findTrigger, fitCanvas, peak, readToken, tokenFloat } from "../../viz/trace";
+  import { traceGain } from "../../viz/trace-gain";
   import { spectrumDb, fftWork } from "../../viz/fft";
   import Knob from "../Knob.svelte";
   import type { ParameterDescriptor } from "../../audio/types";
@@ -241,9 +242,7 @@
       const ctx = ctxOf(canvas, w, h);
       if (!ctx) continue;
       const base = k * 1024;
-      const gain = fitEach
-        ? 1 / Math.max(0.002, peak(frame, base, 1024))
-        : 1 / scaleRef;
+      const gain = traceGain(peak(frame, base, 1024), scaleRef, fitEach);
       // The feedback wire is a control signal, not audio: dashed and vermillion,
       // matching the wires it corresponds to. Everything else is the audio path.
       const isControl = k === WIRE_TAP;

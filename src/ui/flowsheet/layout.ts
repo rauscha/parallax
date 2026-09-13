@@ -29,15 +29,66 @@
  */
 import { algorithmRoles } from "../../data/fm-algorithms";
 
-/** Node box, CSS pixels. Sized for a legible scope inside, per spec §4.4. */
-export const NODE_W = 160;
-export const NODE_H = 132;
-/** Distance between slot centres, and between row centres. */
-export const COL_PITCH = 184;
-export const ROW_PITCH = 164;
-/** Space reserved under row 0 for the output sum node. */
-export const OUT_H = 92;
+/**
+ * Node box, CSS pixels. Sized for a legible scope inside, per spec §4.4.
+ *
+ * Re-proportioned 2026-09-13, after measuring the view on a 1536×864 laptop.
+ * Two things came out of that measurement and both are encoded here.
+ *
+ * **Wider, because a waveform is wide.** The box was 160×132 — nearly square —
+ * holding a 144×46 trace. The scarce axis on a laptop is vertical (four rows of
+ * this plus a header did not fit in 864), and the abundant one is horizontal, so
+ * the box grows the way the content wants: 216 wide gives the scope 200.
+ *
+ * **Shorter, because 20 px of it were empty.** The old box spent 70 px on chrome
+ * for 49.84 px of actual head, foot, padding, border and gaps — measured in
+ * Chromium, not estimated. That slack is now given to the scope (46 → 60) and
+ * the box still comes out 4 px shorter than before.
+ *
+ * Net: the trace goes from 6,624 px² to 12,000 px², and a four-row algorithm
+ * gets shorter rather than taller.
+ */
+export const NODE_W = 216;
+export const NODE_H = 128;
+/**
+ * Distance between slot centres, and between row centres. ROW_PITCH − NODE_H is
+ * the gap the wires cross: 20 px, down from 32. The wires read as connections at
+ * 20 px and the four-row algorithms need the 36 px it saves.
+ */
+export const COL_PITCH = 240;
+export const ROW_PITCH = 148;
+/**
+ * Space reserved under row 0 for the output sum node. The node itself is drawn
+ * 10 px below the last row and is ~40 px tall, so 64 holds it with room; the old
+ * 92 was reserving space nothing used.
+ */
+export const OUT_H = 64;
 export const PAD = 16;
+
+/**
+ * Above this overall diagram width, the view stops putting the output and
+ * spectrum in a column beside the diagram and stacks them underneath instead.
+ *
+ * Why a width and not a media query: the diagram's width is a property of the
+ * *algorithm*, not of the window. `width` here is `248 + maxSlot * COL_PITCH`,
+ * so a two-column algorithm is 488 px and algorithm 32 — all six operators as
+ * carriers in one row — is 1448. Beside a 1448 px diagram there is no column
+ * left worth having, and the summaries are better full-width below.
+ *
+ * Set from the actual distribution rather than from a round number. Diagram
+ * widths across the 32 algorithms are 488 (×4), 728 (×14), 968 (×10), 1208 (×3)
+ * and 1448 (×1), and on a 1536 px screen the side column gets 1468 − width:
+ *
+ *   width  968 → side 500 px — narrower than today but a trace still reads
+ *   width 1208 → side 260 px — useless
+ *
+ * So the cliff is between those two, and 1000 sits in it. That stacks 4 of 32
+ * algorithms and leaves the other 28 side by side. Keeping the flip rare
+ * matters: the view changing shape as you page through voices is its own kind
+ * of hard-to-read, and a threshold that caught half the corpus would trade one
+ * legibility problem for another.
+ */
+export const STACK_SUMMARIES_ABOVE = 1000;
 
 export interface FlowNode {
   /** Panel operator number, 1..6. */

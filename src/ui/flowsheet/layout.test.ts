@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { FM_ALGORITHMS } from "../../data/fm-algorithms";
-import { layoutAlgorithm, NODE_W, NODE_H, COL_PITCH } from "./layout";
+import { layoutAlgorithm, NODE_W, NODE_H, COL_PITCH, STACK_SUMMARIES_ABOVE } from "./layout";
 
 const ALL = FM_ALGORITHMS.map((a) => a.algorithm);
 
@@ -138,5 +138,77 @@ describe("flowsheet layout — the shapes people recognise", () => {
     const l = layoutAlgorithm(23);
     expect(l.edges.some((e) => e.to === 1)).toBe(false);
     expect(l.byOp.get(1)!.row).toBe(0);
+  });
+});
+
+/**
+ * The 2026-09-13 re-proportioning. These are the two claims the new constants
+ * make, and neither is obvious from reading them: that the diagram now fits a
+ * laptop, and that the stacking threshold splits the algorithms where intended.
+ */
+describe("fits a 1536x864 laptop", () => {
+  /**
+   * What sits above the diagram: the sticky bar (57) plus the macro row (72,
+   * once the 445-character hint moves behind the ? in the bar), plus the
+   * workspace's own 20 top / 32 bottom padding.
+   */
+  const CHROME = 57 + 72 + 20 + 32;
+  const VIEWPORT_H = 864;
+
+  it("draws every algorithm without pushing the carriers below the fold", () => {
+    for (let a = 1; a <= 32; ++a) {
+      const l = layoutAlgorithm(a);
+      expect(CHROME + l.height, `algorithm ${a}`).toBeLessThanOrEqual(VIEWPORT_H);
+    }
+  });
+
+  it("keeps the carrier row itself on screen, which is the actual complaint", () => {
+    // The bug that started this: OP 1 and OP 3 sat at y 751..883 in an 864
+    // viewport, so the operators you actually hear were the ones you could not
+    // see. Row 0 is the carrier row.
+    for (let a = 1; a <= 32; ++a) {
+      const l = layoutAlgorithm(a);
+      const lowest = Math.max(...l.nodes.filter((n) => n.row === 0).map((n) => n.y + NODE_H));
+      expect(CHROME + lowest, `algorithm ${a} carriers`).toBeLessThanOrEqual(VIEWPORT_H);
+    }
+  });
+
+  it("is shorter than the layout it replaced, for every algorithm", () => {
+    // Old constants: NODE_H 132, ROW_PITCH 164, OUT_H 92, PAD 16.
+    for (let a = 1; a <= 32; ++a) {
+      const l = layoutAlgorithm(a);
+      const before = 32 + (l.rows - 1) * 164 + 132 + 92;
+      expect(l.height, `algorithm ${a}`).toBeLessThan(before);
+    }
+  });
+});
+
+describe("STACK_SUMMARIES_ABOVE", () => {
+  it("stacks the six-carrier algorithm, which has no room for a side column", () => {
+    expect(layoutAlgorithm(32).width).toBeGreaterThan(STACK_SUMMARIES_ABOVE);
+  });
+
+  it("keeps the narrow majority in two columns", () => {
+    const stacked = [];
+    for (let a = 1; a <= 32; ++a) {
+      if (layoutAlgorithm(a).width > STACK_SUMMARIES_ABOVE) stacked.push(a);
+    }
+    // The side-by-side reading is the normal one; stacking is the exception for
+    // genuinely wide algorithms. The view changing shape as you page through
+    // voices is its own kind of hard-to-read, so this stays a small minority:
+    // 4 of 32 as set. If a constant change ever flips a big share of the corpus
+    // over, that is a redesign and should fail here first.
+    expect(stacked.length).toBeLessThanOrEqual(6);
+  });
+
+  it("leaves a side column at least 480px wide whenever it does NOT stack", () => {
+    // 1536 viewport, 40px of page padding, 28px grid gap. The narrowest
+    // non-stacking case is a 968px diagram, which leaves 500.
+    const AVAILABLE = 1536 - 40 - 28;
+    for (let a = 1; a <= 32; ++a) {
+      const l = layoutAlgorithm(a);
+      if (l.width > STACK_SUMMARIES_ABOVE) continue;
+      expect(AVAILABLE - l.width, `algorithm ${a} side column`).toBeGreaterThanOrEqual(480);
+    }
   });
 });

@@ -41,7 +41,7 @@
   import { modulatorsOf } from "../../data/fm-algorithms";
   import { readPatch, formatRatio } from "./readout";
   import {
-    layoutAlgorithm, NODE_W, NODE_H, OUT_H,
+    layoutAlgorithm, NODE_W, NODE_H, OUT_H, STACK_SUMMARIES_ABOVE,
   } from "./layout";
   import { drawTrace, findTrigger, fitCanvas, peak, readToken, tokenFloat } from "../../viz/trace";
   import { traceGain } from "../../viz/trace-gain";
@@ -56,7 +56,12 @@
 
   /** Scope sizes, CSS pixels. The node box in layout.ts is sized around these. */
   const SCOPE_W = NODE_W - 16;
-  const SCOPE_H = 46;
+  /**
+   * Grown 46 → 60 without growing the node: the box was carrying ~20 px of
+   * unused vertical slack (70 px of chrome for 49.84 px of content). See the
+   * NODE_H comment in layout.ts for the measurement.
+   */
+  const SCOPE_H = 60;
   const ENV_W = SCOPE_W;
   const ENV_H = 16;
   const OUT_SCOPE_H = 96;
@@ -113,6 +118,13 @@
   const effective = $derived(applyMacros(FM_PATCHES[modelIndex], macros));
   const patch = $derived(readPatch(effective));
   const layout = $derived(layoutAlgorithm(patch.algorithm));
+  /**
+   * Wide algorithms put the output and spectrum UNDER the diagram rather than
+   * beside it. Keyed on the diagram's own width, which is a property of the
+   * algorithm rather than of the window — see STACK_SUMMARIES_ABOVE. Algorithm
+   * 32 is 1448 px wide and leaves no column worth having next to it.
+   */
+  const stacked = $derived(layout.width > STACK_SUMMARIES_ABOVE);
   const model = $derived(FM_MODELS[modelIndex]);
   const modulators = $derived(new Set(modulatorsOf(patch.algorithm)));
 
@@ -147,6 +159,8 @@
    * stays on the screen as a number even when it is not on the screen as a size.
    */
   let fitEach = $state(true);
+  /** The long "how to read this" note, behind the ? in the bar. Off by default. */
+  let showHelp = $state(false);
   let hoverOp = $state<number | null>(null);
 
   // -------------------------------------------------------- tap frame buffers
@@ -630,6 +644,10 @@
           : "All traces share one scale — heights are comparable between operators"}>
         {fitEach ? "Fit each" : "Shared scale"}
       </button>
+      <button class="help-toggle" class:on={showHelp} aria-pressed={showHelp}
+        aria-label="How to read this sheet"
+        title="How to read this sheet"
+        onclick={() => (showHelp = !showHelp)}>?</button>
     </div>
   </header>
 
@@ -652,17 +670,29 @@
       {#each macroSpecs as spec (spec.id)}
         <Knob {spec} value={params[spec.id] ?? spec.default} onchange={(v) => setParam(spec.id, v)} />
       {/each}
-      <p class="hint">
-        Turn these and watch which traces move. Every trace is read inside the
-        engine, at its own 44.1&nbsp;kHz, on one shared trigger — so an operator at
-        a whole-number ratio stands still and one a hair off it walks sideways.
-        Each trace is scaled to its own peak so its shape is readable; the dB
-        figure on each node is its real level against the loudest trace here.
-        Switch to <em>Shared scale</em> to compare heights directly.
-      </p>
+      <p class="hint">Turn these and watch which traces move.</p>
     </div>
 
-    <div class="workspace">
+    <!-- The rest of that explanation, on request. It cost 142px of a 864px
+         screen on every visit — enough to push the carriers off the bottom —
+         for something read once. The one line that earns permanent space stays
+         above; this is the part you come back for, not the part you re-read. -->
+    {#if showHelp}
+      <div class="help" role="note">
+        <p>
+          Every trace is read inside the engine, at its own 44.1&nbsp;kHz, on one
+          shared trigger — so an operator at a whole-number ratio stands still and
+          one a hair off it walks sideways.
+        </p>
+        <p>
+          Each trace is scaled to its own peak so its shape is readable; the dB
+          figure on each node is its real level against the loudest trace here.
+          Switch to <em>Shared scale</em> to compare heights directly.
+        </p>
+      </div>
+    {/if}
+
+    <div class="workspace" class:stacked={stacked}>
     <div class="sheet-scroll">
       <div
         class="sheet"
@@ -774,7 +804,10 @@
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px 20px 32px;
+    /* 12px, not 32, at the bottom: with the re-proportioned nodes the tallest
+       algorithm lands within a pixel or two of 864, and 20px of dead padding
+       was the only thing still putting a scrollbar on the landing view. */
+    padding: 16px 20px 12px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -860,6 +893,31 @@
     color: var(--text-dim);
   }
 
+  /* The long note. Two columns so it stays a band rather than a wall, and it
+     never gets a scrollbar of its own — it is short enough to read at once. */
+  .help {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 6px 28px;
+    padding: 10px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm, 1px);
+    background: var(--surface);
+  }
+  .help p {
+    margin: 0;
+    max-width: 62ch;
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .help-toggle {
+    width: 26px;
+    padding: 5px 0;
+    text-align: center;
+  }
+
   /* flex: none matters. The column flexbox above will happily shrink this to
      fit the viewport, and with overflow-x:auto the vertical axis can no longer
      be `visible` (CSS forces it to auto/hidden), so a squeezed container clips
@@ -876,6 +934,14 @@
     gap: 28px;
     align-items: start;
   }
+  /* A wide algorithm (see STACK_SUMMARIES_ABOVE) drops the summaries below the
+     diagram and takes the full width, because beside a 1448px diagram there is
+     no column left worth reading a trace in. Sticky comes off with it: a
+     full-width band pinned under a tall diagram would cover the thing it is
+     explaining. */
+  .workspace.stacked { grid-template-columns: minmax(0, 1fr); }
+  .workspace.stacked .side { position: static; }
+
   .side { position: sticky; top: 44px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .sheet-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
   .sheet { position: relative; }

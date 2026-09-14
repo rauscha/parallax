@@ -606,6 +606,34 @@
 
   const roleOf = (op: number) => (modulators.has(op) ? "Modulator" : "Carrier");
 
+  /**
+   * The corpus, grouped for the voice picker, in FM_MODELS order within each
+   * family. Built once — the model list is a compile-time constant, not state.
+   */
+  const VOICE_GROUPS: Array<{ family: string; models: typeof FM_MODELS }> = (() => {
+    const byFamily = new Map<string, typeof FM_MODELS>();
+    for (const m of FM_MODELS) {
+      const g = byFamily.get(m.family);
+      if (g) g.push(m);
+      else byFamily.set(m.family, [m]);
+    }
+    return [...byFamily].map(([family, models]) => ({ family, models }));
+  })();
+
+  /**
+   * Load another voice. Lowercase, because that is the case `bindings.ts` and
+   * ModelPicker both write and `indexForCode` matches on — writing the code as
+   * authored looks like it works and silently changes nothing.
+   *
+   * Everything downstream is already derived from `modelId`: the patch bytes,
+   * the readout, the layout, the wires and every trace. The instrument stays
+   * mounted offstage reading the same store, so its own picker follows along.
+   */
+  function pickVoice(code: string): void {
+    if (!code) return;
+    patchStore.setKey("modelId", code.toLowerCase());
+  }
+
   /** Plain-language routing, for the summary line and for screen readers. */
   const routingText = $derived.by(() => {
     const parts: string[] = [];
@@ -631,7 +659,28 @@
     <div class="title">
       <h1>Flowsheet</h1>
       <p class="sub">
-        <strong>{model?.name ?? "—"}</strong>
+        <!-- The voice name IS the picker. Putting it here rather than adding a
+             control to the bar costs no vertical space, which the sheet does
+             not have — the tallest algorithms land within a pixel or two of
+             864. A native select also steps with the arrow keys once focused,
+             which is the "sweep the corpus and watch the algorithm change" move
+             this view exists for, without two more buttons to do it. -->
+        <label class="voice">
+          <span class="sr-only">Voice</span>
+          <select
+            value={model?.code?.toLowerCase() ?? ""}
+            onchange={(e) => pickVoice((e.currentTarget as HTMLSelectElement).value)}
+            title="Load another FM voice without leaving the sheet"
+          >
+            {#each VOICE_GROUPS as group (group.family)}
+              <optgroup label={group.family}>
+                {#each group.models as m (m.code)}
+                  <option value={m.code.toLowerCase()}>{m.name}</option>
+                {/each}
+              </optgroup>
+            {/each}
+          </select>
+        </label>
         · Algorithm {patch.algorithm}
         · {patch.ops.filter((o) => o.outLevel > 0).length} of 6 operators sounding
       </p>
@@ -876,6 +925,39 @@
     margin: 2px 0 0;
     font-size: 0.78rem;
     color: var(--text-muted);
+  }
+
+  /* The voice picker reads as the heading it replaced until you engage with it:
+     no border or chrome at rest, a hairline and a caret on hover/focus. The
+     name was already bold text here, so the resting state is unchanged from
+     before it became a control — nothing moves when the sheet loads. */
+  .voice { display: inline-flex; }
+  .voice select {
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 1px);
+    padding: 1px 4px;
+    margin: -1px 0;
+    cursor: pointer;
+    /* Keep the native caret — it is the affordance that says "this opens". */
+  }
+  .voice select:hover { border-color: var(--hairline); background: var(--surface); }
+  .voice select:focus-visible {
+    outline: none;
+    border-color: var(--signal);
+    box-shadow: 0 0 0 2px var(--signal-glow);
+    background: var(--surface);
+  }
+  .voice select optgroup { font-style: normal; text-transform: capitalize; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
 
   button, select {

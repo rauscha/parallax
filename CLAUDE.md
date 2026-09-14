@@ -153,6 +153,15 @@ src/
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 
+- **Flowsheet redesign 2026-09-14 (built, pre-tag).** `v1.3.0` waits on Impeccable audit + Andrew's eye pass —
+  see `.handoff/NEXT-STEPS.md` 7a. Four things to know:
+  **(a)** fit-each gain lives in `src/viz/trace-gain.ts`; its floor is **relative** (60 dB under the sheet's
+  loudest trace). The old absolute `0.002` silently clamped every quiet modulator — never reintroduce an absolute floor;
+  **(b)** node geometry in `layout.ts` is set from measurement and `layout.test.ts` asserts every algorithm fits
+  1536×864 with carriers on screen — change a constant and that test is the arbiter;
+  **(c)** `patchStore.setKey("modelId", …)` must be **lowercase** — the authored code silently does nothing;
+  **(d)** the browser pane blocks Web MIDI (`NotAllowedError`) — test MIDI input in real Chrome only.
+
 ## Memory pointers (read on resume)
 - `braids-synth-project` — project memory entry (decisions, plan path).
 - `braids-key-architecture` — to be written when M1 lands (engine interface shape).

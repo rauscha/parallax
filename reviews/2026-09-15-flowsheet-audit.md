@@ -86,6 +86,17 @@ This is a product-specific system, not a template. Every trace is tap data from 
 - Taps off by default and off on unmount; 58–60 fps with 8 live traces and an FFT.
 - Every text token clears AA on `--bg` and `--surface`; all controls in the bar clear the 24 px target minimum.
 
+## Resolution (same day)
+
+| Finding | Commit | Outcome |
+|---|---|---|
+| [P1] 1366×768 layout | `4f69772` | Compact node geometry chosen per window (`geometryFor`); `layout.test.ts` asserts 1920×1080, 1536×864, 1440×900, 1366×768. Measured live: 0 px horizontal scroll on all 14 voices, carriers and sum on screen, Feedback Alone's OP 6 at x 1274 of 1366. 1536×864 unchanged. |
+| [P2] Output below the fold | `4f69772` | Sum bottom 762 of 768 on the four-row voices; the sum no longer wraps; stacked algorithms lay their three summaries side by side. |
+| [P1] `FB` contrast | `cac7932` | Graph `--accent` → `#A84100` (4.95:1 on sunken); `--signal-ink` split to `#0066A0` (was 4.18:1 on sunken). `contrast.test.ts` now covers all four grounds in all five themes; three older `--text-dim` shortfalls in lab/sandbox recorded in `KNOWN_SHORTFALLS`, not fixed — they are outside the flowsheet and touch eye-passed themes. |
+| [P2] Mouse-only explanations | `a8f3121` | One `explain()` feeds a visible reading panel and each node's `aria-describedby`; nodes are focusable groups, not inert buttons. Two wording errors corrected on the way (IDX 0 "bare sine"; whole-number feedback operators "stand still"). |
+| [P2] Wire emphasis by translucency | polish commit | Hover now thickens lit wires and thins the rest at full opacity. Dead paths stay hairline grey at ~2:1, backed by dash rhythm, weight, the legend and node text — still under 1.4.11's 3:1 as a graphic, deliberately. |
+| [P3] polish | polish commit | Palette cached per theme; wires redrawn only on hover/patch change; `var(--font-mono)` throughout; `--t-spring` deleted; legend entries no longer split. |
+
 ## Recommended Actions
 1. **[P1] `/impeccable adapt src/ui/flowsheet`** — add 1366×768 to `layout.test.ts`, then make algorithms 32, 20, 12 fit (and 1/2/18 if the geometry allows).
 2. **[P1] contrast fix** — `.fb` on silent nodes; extend `contrast.test.ts` to `--surface` and `--surface-sunken`.

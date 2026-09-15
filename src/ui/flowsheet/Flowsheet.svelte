@@ -230,17 +230,28 @@
     return c.getContext("2d");
   }
 
-  /** Colours, read from the theme once per draw (cheap, and follows a swap). */
-  function palette() {
-    const el = sheet ?? document.body;
+  /**
+   * Colours and the mono stack, read from the theme. Cached against the theme
+   * name: this runs every frame, and seven getComputedStyle calls a frame were
+   * paying for a value that only changes when the theme does.
+   */
+  let paletteCache: { theme: string | undefined; value: ReturnType<typeof readPalette> } | null = null;
+  function readPalette(el: Element) {
     return {
       signal: readToken(el, "--scope-trace", "#0072B2"),
       accent: readToken(el, "--accent", "#A84100"),
       grid: readToken(el, "--scope-grid", "rgba(20,22,26,0.13)"),
       dim: readToken(el, "--text-dim", "#5A626F"),
       hairline: readToken(el, "--hairline", "#A8B0BC"),
+      mono: readToken(el, "--font-mono", "ui-monospace, monospace"),
       lineW: tokenFloat(el, "--scope-trace-w", 1.6),
     };
+  }
+  function palette() {
+    if (!sheet) return readPalette(document.body);
+    const theme = document.documentElement.dataset.theme;
+    if (paletteCache?.theme !== theme) paletteCache = { theme, value: readPalette(sheet) };
+    return paletteCache!.value;
   }
 
   function drawAll(): void {
@@ -336,7 +347,7 @@
     ctx.fillStyle = p.dim;
     ctx.lineWidth = 1;
     const scale = ctx.canvas.width / paneW;
-    ctx.font = `${Math.round(9 * scale)}px ui-monospace, monospace`;
+    ctx.font = `${Math.round(9 * scale)}px ${p.mono}`;
     for (const hz of [100, 250, 500, 1000, 2500, 5000, 10000]) {
       const x = Math.round(xOfHz(hz, W));
       ctx.beginPath();
@@ -377,9 +388,17 @@
    * accessible description of the routing lives in the node text and in the
    * summary below the sheet, not in this canvas.
    */
+  /** What the wires were last drawn from. They change on hover or patch, not per frame. */
+  let wiresDrawn = "";
   function drawWires(p: ReturnType<typeof palette>): void {
     const ctx = ctxOf(wireCanvas, layout.width, layout.height);
     if (!ctx) return;
+    const key = [
+      layout.algorithm, layout.geo.name, ctx.canvas.width, ctx.canvas.height, hoverOp,
+      patch.feedback, patch.ops.map((o) => o.outLevel).join(","), p.signal, p.accent, p.hairline,
+    ].join("|");
+    if (key === wiresDrawn) return;
+    wiresDrawn = key;
     const scale = ctx.canvas.width / layout.width;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
@@ -387,6 +406,13 @@
 
     const lit = (a: number, b?: number) =>
       hoverOp !== null && (hoverOp === a || hoverOp === b);
+    /**
+     * Pointing at a node thickens its wires and thins everything else. It used
+     * to fade the rest to 25 % opacity instead, which put the whole emphasis on
+     * translucency — the one channel the project's colourblind rule says may
+     * not be seen at all. Weight survives where opacity does not.
+     */
+    const receded = (on: boolean) => hoverOp !== null && !on;
 
     /**
      * Is this path actually carrying anything? A modulator at index 0 and a
@@ -409,8 +435,7 @@
       const on = lit(e.from, e.to);
       const live = sounding(e.from);
       ctx.strokeStyle = live ? p.accent : p.hairline;
-      ctx.globalAlpha = (hoverOp === null || on ? 1 : 0.25) * (live ? 1 : 0.75);
-      ctx.lineWidth = live ? (on ? 2.6 : 1.6) : 1;
+      ctx.lineWidth = live ? (on ? 2.6 : receded(on) ? 1 : 1.6) : 1;
       ctx.setLineDash(live ? [5, 4] : [3, 3]);
       wirePath(ctx, e.x1, e.y1, e.x2, e.y2);
     }
@@ -423,8 +448,7 @@
       const on = lit(e.from);
       const live = sounding(e.from);
       ctx.strokeStyle = live ? p.signal : p.hairline;
-      ctx.globalAlpha = (hoverOp === null || on ? 1 : 0.25) * (live ? 1 : 0.75);
-      ctx.lineWidth = live ? (on ? 2.8 : 1.8) : 1;
+      ctx.lineWidth = live ? (on ? 2.8 : receded(on) ? 1 : 1.8) : 1;
       ctx.setLineDash(live ? [] : [3, 3]);
       wirePath(ctx, e.x1, e.y1, e.x2, e.y2);
     }
@@ -436,9 +460,8 @@
     const fb = layout.nodes.find((n) => n.feedback);
     if (fb) {
       const live = patch.feedback > 0 && sounding(fb.op);
-      ctx.globalAlpha = (hoverOp === null || hoverOp === fb.op ? 1 : 0.25) * (live ? 1 : 0.75);
       ctx.strokeStyle = live ? p.accent : p.hairline;
-      ctx.lineWidth = live ? 1.6 : 1;
+      ctx.lineWidth = live ? (hoverOp === fb.op ? 2.6 : receded(false) ? 1 : 1.6) : 1;
       ctx.setLineDash(live ? [2, 3] : [3, 3]);
       const r = 16;
       const x = fb.x + layout.geo.nodeW;
@@ -450,7 +473,6 @@
       ctx.stroke();
     }
 
-    ctx.globalAlpha = 1;
     ctx.setLineDash([]);
     ctx.restore();
   }
@@ -889,9 +911,9 @@
     <div class="side">
     <p class="routing">
       <span class="key">
-        <span class="swatch mod" aria-hidden="true"></span> dashed = modulation
-        <span class="swatch aud" aria-hidden="true"></span> solid = audio to output
-        <span class="swatch off" aria-hidden="true"></span> grey = path not taken
+        <span class="key-item"><span class="swatch mod" aria-hidden="true"></span> dashed = modulation</span>
+        <span class="key-item"><span class="swatch aud" aria-hidden="true"></span> solid = audio to output</span>
+        <span class="key-item"><span class="swatch off" aria-hidden="true"></span> grey = path not taken</span>
       </span>
       {routingText}
     </p>
@@ -1050,7 +1072,7 @@
 
   .stats {
     display: flex; gap: 10px;
-    font: 0.7rem ui-monospace, monospace;
+    font: 0.7rem var(--font-mono);
     color: var(--text-dim);
   }
   .stats .warn { color: var(--accent); font-weight: 600; }
@@ -1186,7 +1208,7 @@
 
   .node-foot {
     display: flex; justify-content: space-between; gap: 4px;
-    font: 0.66rem ui-monospace, monospace;
+    font: 0.66rem var(--font-mono);
     color: var(--text-muted);
   }
 
@@ -1219,7 +1241,7 @@
     border-radius: var(--radius-md, 2px);
   }
   .out-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; color: var(--text); }
-  .out-sub { font: 0.7rem ui-monospace, monospace; color: var(--text-muted); }
+  .out-sub { font: 0.7rem var(--font-mono); color: var(--text-muted); }
 
   .routing {
     margin: 0;
@@ -1242,14 +1264,17 @@
   .reading p { margin: 0; max-width: 72ch; }
   .reading strong { color: var(--text); }
   .reading-idle { color: var(--text-dim); }
-  .key { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; }
+  /* Each entry is kept whole: in a 433 px side column the key used to break
+     between a swatch and its words, pairing "modulation" with the next swatch. */
+  .key { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 16px; margin-bottom: 2px; }
+  .key-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .swatch { display: inline-block; width: 22px; height: 0; border-top-width: 2px; }
   .swatch.mod { border-top: 2px dashed var(--accent); }
-  .swatch.aud { border-top: 2px solid var(--signal); margin-left: 8px; }
+  .swatch.aud { border-top: 2px solid var(--signal); }
   /* The third wire state, added with the ghosting. Thinner and on a tighter
      dash than either live style, so it reads as dead by weight and rhythm and
      not only by being grey. */
-  .swatch.off { border-top: 1px dashed var(--hairline); margin-left: 8px; }
+  .swatch.off { border-top: 1px dashed var(--hairline); }
 
   .panes { display: flex; flex-direction: column; gap: 12px; }
   figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }

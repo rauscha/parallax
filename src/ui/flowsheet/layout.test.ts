@@ -7,7 +7,10 @@
 
 import { describe, it, expect } from "vitest";
 import { FM_ALGORITHMS } from "../../data/fm-algorithms";
-import { layoutAlgorithm, NODE_W, NODE_H, COL_PITCH, STACK_SUMMARIES_ABOVE } from "./layout";
+import {
+  layoutAlgorithm, geometryFor, NODE_W, NODE_H, COL_PITCH, STACK_SUMMARIES_ABOVE,
+  STANDARD, COMPACT, CHROME_H, COLUMN_INSET, type Geometry,
+} from "./layout";
 
 const ALL = FM_ALGORITHMS.map((a) => a.algorithm);
 
@@ -180,6 +183,103 @@ describe("fits a 1536x864 laptop", () => {
       const before = 32 + (l.rows - 1) * 164 + 132 + 92;
       expect(l.height, `algorithm ${a}`).toBeLessThan(before);
     }
+  });
+});
+
+/**
+ * The 2026-09-15 audit: the standard proportions held at 1536×864 and broke at
+ * 1366×768 — algorithm 32's only sounding operator behind a scrollbar, the 968 px
+ * algorithms clipping OP 6 by 30 px, the default voice's output below the fold.
+ * Each screen here is a viewport the flowsheet must serve without a horizontal
+ * scroll, with its carriers and its output sum visible on landing.
+ */
+describe("fits the laptops it is used on", () => {
+  /**
+   * The output sum's rendered height, tallest case: two lines when six carriers
+   * are summed. Measured in Chromium — carriers' bottom at 769, the sum's bottom
+   * at 830, less the 10 px it is drawn below the carrier row.
+   */
+  const OUT_NODE_H = 52;
+  /** The side column's minimum, from `.workspace` in Flowsheet.svelte, plus the grid gap. */
+  const SIDE_MIN = 360;
+  const GRID_GAP = 28;
+
+  const SCREENS: Array<[number, number, Geometry["name"]]> = [
+    [1920, 1080, "standard"],
+    [1536, 864, "standard"],
+    [1440, 900, "compact"],
+    [1366, 768, "compact"],
+  ];
+
+  for (const [w, h, expected] of SCREENS) {
+    describe(`${w}×${h}`, () => {
+      const geo = geometryFor(w, h);
+      const column = w - COLUMN_INSET;
+
+      it(`uses the ${expected} proportions`, () => {
+        expect(geo.name).toBe(expected);
+      });
+
+      it("never needs a horizontal scroll to reach an operator", () => {
+        for (let a = 1; a <= 32; ++a) {
+          const l = layoutAlgorithm(a, geo);
+          const right = Math.max(...l.nodes.map((n) => n.x + geo.nodeW));
+          expect(right, `algorithm ${a}`).toBeLessThanOrEqual(column);
+          expect(l.width, `algorithm ${a} sheet`).toBeLessThanOrEqual(column);
+        }
+      });
+
+      it("leaves the side column its minimum whenever it sits beside the diagram", () => {
+        for (let a = 1; a <= 32; ++a) {
+          const l = layoutAlgorithm(a, geo);
+          if (l.width > STACK_SUMMARIES_ABOVE) continue;
+          expect(column - GRID_GAP - l.width, `algorithm ${a}`).toBeGreaterThanOrEqual(SIDE_MIN);
+        }
+      });
+
+      it("keeps the carriers and the output sum on screen", () => {
+        for (let a = 1; a <= 32; ++a) {
+          const l = layoutAlgorithm(a, geo);
+          const carriers = Math.max(...l.nodes.filter((n) => n.row === 0).map((n) => n.y + geo.nodeH));
+          expect(CHROME_H + carriers, `algorithm ${a} carriers`).toBeLessThanOrEqual(h);
+          const sumBottom = l.outY - geo.outH / 2 + 10 + OUT_NODE_H;
+          expect(CHROME_H + sumBottom, `algorithm ${a} output sum`).toBeLessThanOrEqual(h);
+        }
+      });
+    });
+  }
+
+  it("keeps every structural property under the compact proportions too", () => {
+    for (let a = 1; a <= 32; ++a) {
+      const s = layoutAlgorithm(a);
+      const c = layoutAlgorithm(a, COMPACT);
+      // Same shape, smaller boxes: rows and slots are the algorithm's, not the size's.
+      expect(c.nodes.map((n) => [n.row, n.slot]), `algorithm ${a}`)
+        .toEqual(s.nodes.map((n) => [n.row, n.slot]));
+      for (const e of c.edges) expect(e.y1, `algorithm ${a}`).toBeLessThan(e.y2);
+      for (let i = 0; i < c.nodes.length; ++i) {
+        for (let j = i + 1; j < c.nodes.length; ++j) {
+          const p = c.nodes[i];
+          const q = c.nodes[j];
+          const overlap =
+            p.x < q.x + COMPACT.nodeW && q.x < p.x + COMPACT.nodeW &&
+            p.y < q.y + COMPACT.nodeH && q.y < p.y + COMPACT.nodeH;
+          expect(overlap, `algorithm ${a}: ops ${p.op} and ${q.op}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("stacks the same algorithms at either size, so the view keeps its shape", () => {
+    for (let a = 1; a <= 32; ++a) {
+      expect(layoutAlgorithm(a, COMPACT).width > STACK_SUMMARIES_ABOVE, `algorithm ${a}`)
+        .toBe(layoutAlgorithm(a).width > STACK_SUMMARIES_ABOVE);
+    }
+  });
+
+  it("derives each scope height from its node, so the two cannot drift apart", () => {
+    expect(STANDARD.scopeH).toBe(60);
+    expect(COMPACT.scopeH).toBe(46);
   });
 });
 

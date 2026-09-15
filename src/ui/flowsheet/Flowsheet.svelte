@@ -40,9 +40,7 @@
   import { applyMacros, FM_MACRO_DEFAULTS, type FmMacros } from "../../data/fm-macros";
   import { modulatorsOf } from "../../data/fm-algorithms";
   import { readPatch, formatRatio } from "./readout";
-  import {
-    layoutAlgorithm, NODE_W, NODE_H, OUT_H, STACK_SUMMARIES_ABOVE,
-  } from "./layout";
+  import { layoutAlgorithm, geometryFor, STACK_SUMMARIES_ABOVE } from "./layout";
   import { drawTrace, findTrigger, fitCanvas, peak, readToken, tokenFloat } from "../../viz/trace";
   import { traceGain } from "../../viz/trace-gain";
   import { spectrumDb, fftWork } from "../../viz/fft";
@@ -54,15 +52,10 @@
   const WIRE_TAP = 6;
   const OUT_TAP = 7;
 
-  /** Scope sizes, CSS pixels. The node box in layout.ts is sized around these. */
-  const SCOPE_W = NODE_W - 16;
   /**
-   * Grown 46 → 60 without growing the node: the box was carrying ~20 px of
-   * unused vertical slack (70 px of chrome for 49.84 px of content). See the
-   * NODE_H comment in layout.ts for the measurement.
+   * Operator scope sizes come from the node geometry (layout.ts), which changes
+   * with the viewport: 200×60 at standard size, 172×46 on a 1366×768 laptop.
    */
-  const SCOPE_H = 60;
-  const ENV_W = SCOPE_W;
   const ENV_H = 16;
   const OUT_SCOPE_H = 96;
   const SPEC_H = 132;
@@ -93,7 +86,13 @@
   // acceptable failure mode. A bound innerWidth is re-read on every resize and
   // is correct on first render too.
   let innerWidth = $state(typeof window === "undefined" ? 1280 : window.innerWidth);
+  let innerHeight = $state(typeof window === "undefined" ? 800 : window.innerHeight);
   const wideEnough = $derived(innerWidth >= MIN_WIDTH);
+  /** Node proportions for this window — standard, or compact where standard would not fit. */
+  const geo = $derived(geometryFor(innerWidth, innerHeight));
+  const SCOPE_W = $derived(geo.nodeW - 16);
+  const SCOPE_H = $derived(geo.scopeH);
+  const ENV_W = $derived(SCOPE_W);
 
   // ------------------------------------------------------------- the patch
   /**
@@ -117,7 +116,7 @@
   /** The bytes the engine is actually running — base voice plus macro positions. */
   const effective = $derived(applyMacros(FM_PATCHES[modelIndex], macros));
   const patch = $derived(readPatch(effective));
-  const layout = $derived(layoutAlgorithm(patch.algorithm));
+  const layout = $derived(layoutAlgorithm(patch.algorithm, geo));
   /**
    * Wide algorithms put the output and spectrum UNDER the diagram rather than
    * beside it. Keyed on the diagram's own width, which is a property of the
@@ -131,8 +130,8 @@
   /** Wires from each carrier down into the output sum. */
   const outEdges = $derived(
     layout.nodes.filter((n) => n.carrier).map((n) => ({
-      x1: n.x + NODE_W / 2, y1: n.y + NODE_H,
-      x2: layout.outX, y2: layout.outY - OUT_H / 2 + 10,
+      x1: n.x + layout.geo.nodeW / 2, y1: n.y + layout.geo.nodeH,
+      x2: layout.outX, y2: layout.outY - layout.geo.outH / 2 + 10,
       from: n.op,
     })),
   );
@@ -442,9 +441,9 @@
       ctx.lineWidth = live ? 1.6 : 1;
       ctx.setLineDash(live ? [2, 3] : [3, 3]);
       const r = 16;
-      const x = fb.x + NODE_W;
+      const x = fb.x + layout.geo.nodeW;
       const yTop = fb.y + 14;
-      const yBot = fb.y + NODE_H - 14;
+      const yBot = fb.y + layout.geo.nodeH - 14;
       ctx.beginPath();
       ctx.moveTo(x - 2, yBot);
       ctx.bezierCurveTo(x + r, yBot, x + r, yTop, x - 2, yTop);
@@ -649,7 +648,7 @@
   });
 </script>
 
-<svelte:window bind:innerWidth />
+<svelte:window bind:innerWidth bind:innerHeight />
 
 <section class="flowsheet" aria-label="FM flowsheet">
   <header class="bar">
@@ -782,7 +781,7 @@
             class:carrier={node.carrier}
             class:silent={ro.outLevel === 0}
             class:lit={hoverOp === node.op || litByMacro.has(node.op)}
-            style="left:{node.x}px; top:{node.y}px; width:{NODE_W}px; height:{NODE_H}px"
+            style="left:{node.x}px; top:{node.y}px; width:{layout.geo.nodeW}px; height:{layout.geo.nodeH}px"
             onmouseenter={() => (hoverOp = node.op)}
             onmouseleave={() => (hoverOp = null)}
             onfocusin={() => (hoverOp = node.op)}
@@ -829,7 +828,7 @@
 
         <div
           class="out-node"
-          style="left:{layout.outX - 80}px; top:{layout.outY - OUT_H / 2 + 10}px"
+          style="left:{layout.outX}px; top:{layout.outY - layout.geo.outH / 2 + 10}px"
         >
           <span class="out-label">OUTPUT — SUM</span>
           <span class="out-sub">{layout.nodes.filter((n) => n.carrier).map((n) => n.op).join(" + ")}</span>
@@ -847,8 +846,8 @@
       {routingText}
     </p>
 
-    <div class="panes" bind:clientWidth={paneW}>
-      <figure>
+    <div class="panes">
+      <figure bind:clientWidth={paneW}>
         <figcaption>
           {FM_TAP_LABELS[OUT_TAP]} — the voice, before the resampler
         </figcaption>
@@ -1060,6 +1059,15 @@
      explaining. */
   .workspace.stacked { grid-template-columns: minmax(0, 1fr); }
   .workspace.stacked .side { position: static; }
+  /* Full width is wide enough for the three summaries side by side, and a
+     column of them under a stacked diagram pushed the feedback wire — the
+     whole subject of Feedback Alone — below a 768 px fold. */
+  .workspace.stacked .panes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 24px;
+    align-items: start;
+  }
 
   .side { position: sticky; top: 44px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .sheet-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
@@ -1126,9 +1134,15 @@
     color: var(--text-dim);
   }
 
+  /* Centred on the carriers it sums by transform rather than by a fixed half
+     width, so it can grow to hold "1 + 2 + 3 + 4 + 5 + 6" on one line. At a
+     fixed 160 px that sum wrapped, and the extra line was the difference
+     between the output being on a 1366×768 screen and not. */
   .out-node {
     position: absolute;
-    width: 160px;
+    min-width: 160px;
+    transform: translateX(-50%);
+    white-space: nowrap;
     box-sizing: border-box;
     display: flex; flex-direction: column; gap: 2px;
     padding: 8px 10px;

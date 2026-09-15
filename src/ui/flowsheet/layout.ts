@@ -64,6 +64,98 @@ export const ROW_PITCH = 148;
  */
 export const OUT_H = 64;
 export const PAD = 16;
+/**
+ * Everything in a node box that is not the scope: head, envelope strip, foot,
+ * padding, border and the gaps between them — measured in Chromium when the box
+ * was re-proportioned (128 − 60). A geometry's scope height is its node height
+ * minus this, so the two can never disagree.
+ */
+export const NODE_CHROME_H = 68;
+
+/** One set of node proportions. The algorithm decides the shape; this decides the size. */
+export interface Geometry {
+  name: "standard" | "compact";
+  nodeW: number;
+  nodeH: number;
+  colPitch: number;
+  rowPitch: number;
+  outH: number;
+  /** Height of the operator scope inside a node. */
+  scopeH: number;
+}
+
+/** The 2026-09-13 proportions, for a 1536×864 laptop and anything larger. */
+export const STANDARD: Geometry = {
+  name: "standard",
+  nodeW: NODE_W, nodeH: NODE_H,
+  colPitch: COL_PITCH, rowPitch: ROW_PITCH,
+  outH: OUT_H, scopeH: NODE_H - NODE_CHROME_H,
+};
+
+/**
+ * For a 1366×768 laptop, added after the 2026-09-15 audit found the standard
+ * proportions failing there in both directions:
+ *
+ * - **Width.** Algorithm 32 is 1448 px standard in a ~1311 px column, which put
+ *   OP 6 — the only sounding operator on *Feedback Alone*, and the loop the voice
+ *   is named for — behind a scrollbar. Here it is 32 + 5·210 + 188 = 1270.
+ *   The 968 px algorithms (20, 12) overran their column by 30 px beside the
+ *   360 px side column; here they are 850 and leave 433.
+ * - **Height.** A four-row algorithm put the carriers' bottom edge at 769 and
+ *   the output sum at 830 of 768. Here the carriers end at 701 and the sum sits
+ *   on screen under them.
+ *
+ * The scope pays for it: 172×46 instead of 200×60. 46 is exactly the height the
+ * scope had before the redesign, so this is a size the traces have already been
+ * read at, not a new guess. The gaps the wires cross stay wide enough to read
+ * as connections (22 across, 16 down).
+ */
+export const COMPACT: Geometry = {
+  name: "compact",
+  nodeW: 188, nodeH: 114,
+  colPitch: 210, rowPitch: 130,
+  outH: OUT_H, scopeH: 114 - NODE_CHROME_H,
+};
+
+/**
+ * What sits above the diagram: the sticky bar (57) plus the macro row (72),
+ * plus the workspace's 20 top / 32 bottom padding. Measured the same at 1536
+ * and 1366 wide — the bar does not wrap at either.
+ */
+export const CHROME_H = 57 + 72 + 20 + 32;
+/** The flowsheet's own side padding (20 + 20) plus room for a vertical scrollbar. */
+export const COLUMN_INSET = 40 + 16;
+
+/** The widest and tallest any algorithm gets under a geometry. */
+export function extentsOf(geo: Geometry): { width: number; height: number } {
+  let width = 0;
+  let height = 0;
+  for (let a = 1; a <= 32; ++a) {
+    const l = layoutAlgorithm(a, geo);
+    width = Math.max(width, l.width);
+    height = Math.max(height, l.height);
+  }
+  return { width, height };
+}
+
+let standardExtents: { width: number; height: number } | null = null;
+
+/**
+ * Pick the proportions for a viewport. Standard whenever every algorithm fits
+ * the screen at standard size — so a 1536×864 laptop and anything bigger look
+ * exactly as they did — and compact otherwise.
+ *
+ * Chosen per *window*, never per algorithm: node size changing as you step
+ * through voices would make the one comparison this view exists for, "how is
+ * this algorithm shaped differently from the last", harder rather than easier.
+ */
+export function geometryFor(viewportW: number, viewportH: number): Geometry {
+  standardExtents ??= extentsOf(STANDARD);
+  const fits =
+    standardExtents.width <= viewportW - COLUMN_INSET &&
+    standardExtents.height + CHROME_H <= viewportH;
+  return fits ? STANDARD : COMPACT;
+}
 
 /**
  * Above this overall diagram width, the view stops putting the output and
@@ -128,6 +220,8 @@ export interface FlowLayout {
   outY: number;
   /** Number of rows of operators. */
   rows: number;
+  /** The proportions this layout was built with. */
+  geo: Geometry;
 }
 
 const OPS = [1, 2, 3, 4, 5, 6];
@@ -164,7 +258,8 @@ function spread(entries: Array<{ op: number; slot: number }>): void {
   }
 }
 
-export function layoutAlgorithm(algorithm: number): FlowLayout {
+export function layoutAlgorithm(algorithm: number, geo: Geometry = STANDARD): FlowLayout {
+  const { nodeW, nodeH, colPitch, rowPitch, outH } = geo;
   const roles = algorithmRoles(algorithm);
   const wires = roles.wires;
   const carriers = new Set(roles.carriers);
@@ -196,8 +291,8 @@ export function layoutAlgorithm(algorithm: number): FlowLayout {
   // Normalise so the leftmost slot is 0, then measure.
   const minSlot = Math.min(...OPS.map((op) => slot.get(op) ?? 0));
   const maxSlot = Math.max(...OPS.map((op) => (slot.get(op) ?? 0) - minSlot));
-  const width = PAD * 2 + maxSlot * COL_PITCH + NODE_W;
-  const height = PAD * 2 + (rows - 1) * ROW_PITCH + NODE_H + OUT_H;
+  const width = PAD * 2 + maxSlot * colPitch + nodeW;
+  const height = PAD * 2 + (rows - 1) * rowPitch + nodeH + outH;
 
   const nodes: FlowNode[] = OPS.map((op) => {
     const s = (slot.get(op) ?? 0) - minSlot;
@@ -206,9 +301,9 @@ export function layoutAlgorithm(algorithm: number): FlowLayout {
       op,
       row: r,
       slot: s,
-      x: PAD + s * COL_PITCH,
+      x: PAD + s * colPitch,
       // Row 0 sits at the bottom of the operator area, above the output band.
-      y: PAD + (rows - 1 - r) * ROW_PITCH,
+      y: PAD + (rows - 1 - r) * rowPitch,
       carrier: carriers.has(op),
       feedback: roles.feedbackOp === op,
     };
@@ -220,18 +315,18 @@ export function layoutAlgorithm(algorithm: number): FlowLayout {
     const b = byOp.get(to) as FlowNode;
     return {
       from, to,
-      x1: a.x + NODE_W / 2, y1: a.y + NODE_H,
-      x2: b.x + NODE_W / 2, y2: b.y,
+      x1: a.x + nodeW / 2, y1: a.y + nodeH,
+      x2: b.x + nodeW / 2, y2: b.y,
     };
   });
 
   // The output node sits under the centre of the carriers it sums.
   const carrierNodes = nodes.filter((n) => n.carrier);
-  const outX = carrierNodes.reduce((sum, n) => sum + n.x + NODE_W / 2, 0) / carrierNodes.length;
+  const outX = carrierNodes.reduce((sum, n) => sum + n.x + nodeW / 2, 0) / carrierNodes.length;
 
   return {
-    algorithm, nodes, edges, byOp, width, height, rows,
+    algorithm, nodes, edges, byOp, width, height, rows, geo,
     outX,
-    outY: PAD + (rows - 1) * ROW_PITCH + NODE_H + OUT_H / 2,
+    outY: PAD + (rows - 1) * rowPitch + nodeH + outH / 2,
   };
 }

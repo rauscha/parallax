@@ -68,7 +68,7 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (phases 0–9 done 2026-09-12; ear + eye gate passed; untagged)
+## Engine #5 — FM (phases 0–9 done 2026-09-12; ear + eye gate passed; tagged `v1.3.0` 2026-09-15)
 - **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
   (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
   One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
@@ -153,8 +153,8 @@ src/
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 
-- **Flowsheet redesign 2026-09-14 (built, pre-tag).** Impeccable audit fixed (2026-09-15) and Andrew's eye pass
-  **passed 2026-09-15**; `v1.3.0` waits only on his OK to tag — see `.handoff/NEXT-STEPS.md` 7a. Since the audit:
+- **Flowsheet redesign 2026-09-14 — shipped, tagged `v1.3.0` 2026-09-15** after the Impeccable audit fixes and
+  Andrew's eye pass. Next is `/impeccable document` — see `.handoff/SESSION-HANDOFF.md`. Since the audit:
   node size comes from `geometryFor(viewport)` (standard ≥ 1536×864, compact below; `layout.test.ts` asserts four
   screens), and `contrast.test.ts` checks every ground with a shrink-only `KNOWN_SHORTFALLS` list. Four things to know:
   **(a)** fit-each gain lives in `src/viz/trace-gain.ts`; its floor is **relative** (60 dB under the sheet's

@@ -235,7 +235,7 @@
     const el = sheet ?? document.body;
     return {
       signal: readToken(el, "--scope-trace", "#0072B2"),
-      accent: readToken(el, "--accent", "#B54600"),
+      accent: readToken(el, "--accent", "#A84100"),
       grid: readToken(el, "--scope-grid", "rgba(20,22,26,0.13)"),
       dim: readToken(el, "--text-dim", "#5A626F"),
       hairline: readToken(el, "--hairline", "#A8B0BC"),

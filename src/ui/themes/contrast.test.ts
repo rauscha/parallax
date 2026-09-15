@@ -9,7 +9,28 @@ import { readFileSync } from "node:fs";
 const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
 const THEMES = ["lab", "sandbox", "phosphor", "rings", "graph"] as const;
-const TEXT_TOKENS = ["--text", "--text-muted", "--text-dim", "--danger", "--signal-ink"];
+const TEXT_TOKENS = ["--text", "--text-muted", "--text-dim", "--danger", "--signal-ink", "--accent"];
+/**
+ * Every ground text is set on. Checking --bg alone let the graph theme's "FB"
+ * label ship at 4.41:1 on a silent operator node (--surface-sunken) — found by
+ * the 2026-09-15 flowsheet audit, not by this file.
+ */
+const GROUNDS = ["--bg", "--surface", "--surface-sunken", "--surface-raised"];
+
+/**
+ * Pairs that fall short today, recorded rather than silently skipped. They are
+ * in themes that passed Andrew's eye pass, and raising --text-dim that far would
+ * pull it onto --text-muted, so the fix is a design decision, not a token nudge.
+ * Each entry must still genuinely fail — the test below removes the excuse the
+ * moment a pair is fixed, so this list can only shrink.
+ */
+const KNOWN_SHORTFALLS: ReadonlyArray<readonly [theme: string, token: string, ground: string]> = [
+  ["lab", "--text-dim", "--surface-raised"],       // 4.22:1
+  ["sandbox", "--text-dim", "--surface-sunken"],   // 4.14:1
+  ["sandbox", "--text-dim", "--surface-raised"],   // 3.89:1
+];
+const isKnown = (theme: string, name: string, ground: string) =>
+  KNOWN_SHORTFALLS.some(([t, n, g]) => t === theme && n === name && g === ground);
 
 function block(theme: string): string {
   const m = css.match(new RegExp(`\\[data-theme="${theme}"\\]\\s*\\{([^}]+)\\}`));
@@ -41,14 +62,21 @@ function contrast(a: string, b: string): number {
 
 describe("theme token contrast (WCAG AA)", () => {
   for (const theme of THEMES) {
-    it(`${theme}: text tokens ≥ 4.5:1 on --bg`, () => {
-      const body = block(theme);
-      const bg = token(body, "--bg");
-      for (const name of TEXT_TOKENS) {
-        const c = contrast(token(body, name), bg);
-        expect(c, `${theme} ${name} = ${c.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
-      }
-    });
+    for (const ground of GROUNDS) {
+      it(`${theme}: text tokens ≥ 4.5:1 on ${ground}`, () => {
+        const body = block(theme);
+        const bg = token(body, ground);
+        for (const name of TEXT_TOKENS) {
+          const c = contrast(token(body, name), bg);
+          if (isKnown(theme, name, ground)) {
+            expect(c, `${theme} ${name} on ${ground} now passes — remove it from KNOWN_SHORTFALLS`)
+              .toBeLessThan(4.5);
+            continue;
+          }
+          expect(c, `${theme} ${name} on ${ground} = ${c.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+        }
+      });
+    }
     it(`${theme}: --on-signal ≥ 4.5:1 on --signal`, () => {
       const body = block(theme);
       const c = contrast(token(body, "--on-signal"), token(body, "--signal"));

@@ -242,15 +242,21 @@
   --text-muted:       #3D444F;        /* ~8.7:1 */
   --text-dim:         #5A626F;        /* ~5.6:1 */
 
-  /* Signal — Okabe-Ito blue. Dark enough to be text, saturated enough to be a
-     trace, so one token serves both and --signal-ink needs no separate value. */
+  /* Signal — Okabe-Ito blue, dark enough to be text on the paper and the sheet.
+     --signal-ink is a step darker because text also sits on --surface-sunken,
+     where #0072B2 is 4.18:1 — found by the 2026-09-15 audit once the contrast
+     test checked every ground rather than --bg alone. The trace keeps the true
+     Okabe-Ito value; only lettering moves. */
   --signal:           #0072B2;        /* ~4.7:1 on --bg, ~5.2:1 on --surface */
-  --signal-ink:       var(--signal);
+  --signal-ink:       #0066A0;        /* ~5.0:1 on --surface-sunken, ~5.6:1 on --bg */
   --signal-dim:       rgba(0, 114, 178, 0.38);
   --signal-deep:      rgba(0, 114, 178, 0.12);   /* selected-row wash */
   --signal-glow:      rgba(0, 114, 178, 0.25);
-  --accent:           #B54600;        /* Okabe-Ito vermillion, darkened to ~5.0:1 */
-  --accent-dim:       rgba(181, 70, 0, 0.32);
+  /* Okabe-Ito vermillion, darkened until it clears AA on all three grounds. It
+     was #B54600 — 4.41:1 as the "FB" label on a silent operator node
+     (--surface-sunken), caught by the 2026-09-15 audit. */
+  --accent:           #A84100;        /* ~5.0:1 on --surface-sunken, ~5.5:1 on --bg */
+  --accent-dim:       rgba(168, 65, 0, 0.32);
   --on-signal:        #FFFFFF;        /* ~5.2:1 on the blue fill */
   --danger:           #A81E12;        /* ~6.6:1 */
 

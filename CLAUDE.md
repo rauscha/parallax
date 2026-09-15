@@ -153,8 +153,10 @@ src/
 - **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
   `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
 
-- **Flowsheet redesign 2026-09-14 (built, pre-tag).** `v1.3.0` waits on Impeccable audit + Andrew's eye pass —
-  see `.handoff/NEXT-STEPS.md` 7a. Four things to know:
+- **Flowsheet redesign 2026-09-14 (built, pre-tag).** Impeccable audit fixed (2026-09-15) and Andrew's eye pass
+  **passed 2026-09-15**; `v1.3.0` waits only on his OK to tag — see `.handoff/NEXT-STEPS.md` 7a. Since the audit:
+  node size comes from `geometryFor(viewport)` (standard ≥ 1536×864, compact below; `layout.test.ts` asserts four
+  screens), and `contrast.test.ts` checks every ground with a shrink-only `KNOWN_SHORTFALLS` list. Four things to know:
   **(a)** fit-each gain lives in `src/viz/trace-gain.ts`; its floor is **relative** (60 dB under the sheet's
   loudest trace). The old absolute `0.002` silently clamped every quiet modulator — never reintroduce an absolute floor;
   **(b)** node geometry in `layout.ts` is set from measurement and `layout.test.ts` asserts every algorithm fits

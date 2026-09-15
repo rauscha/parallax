@@ -581,20 +581,71 @@
 
   /**
    * Why the ratio reads "1" on one node and "1.00" on another. That difference
-   * is the whole lesson, so the tooltip says it in words rather than leaving it
-   * to be noticed.
+   * is the whole lesson, so it is said in words rather than left to be noticed.
    */
-  function ratioTitle(r: number | null): string {
-    if (r === null) return "Fixed frequency — this operator ignores the played note.";
+  function ratioSentence(r: number | null, noisy: boolean): string {
+    if (r === null) return "Fixed frequency, so it ignores the played note.";
+    const shown = formatRatio(r);
     const near = Math.round(r);
     if (near > 0 && Math.abs(r - near) < 0.0005) {
-      return `Exactly ${near}x the played note. A whole-number ratio locks to the `
-        + `carrier, so this trace stands still and the result sounds harmonic.`;
+      // Strong self-feedback turns even a whole-number operator to noise, which
+      // does not stand still — Hiss is built on exactly that.
+      return `×${shown}: a whole number, so the trace locks to the note `
+        + (noisy ? "unless feedback turns it to noise." : "and stands still.");
     }
-    return `${r.toFixed(4)}x the played note — not a whole number, so this `
-      + `operator drifts against the carrier instead of locking to it. That is `
-      + `what you are seeing when the trace walks sideways.`;
+    // The printed figure can round a near miss onto a whole number ("1.00"), and
+    // the near miss is the lesson, so the exact value is given when that happens.
+    const exact = Number(shown) === near ? ` (${r.toFixed(4)})` : "";
+    return `×${shown}${exact}: not a whole number, so it drifts against the note `
+      + `and the trace walks sideways.`;
   }
+
+  /**
+   * Everything a node's numbers mean, in words. This used to live only in
+   * `title` tooltips, which keyboard, touch and screen-reader users never get,
+   * and the ratio sentence is the lesson rather than a footnote to it. One
+   * function feeds both the visible reading under the routing line and each
+   * node's accessible description, so the two cannot say different things.
+   */
+  function explain(op: number): { heading: string; lines: string[] } {
+    const node = layout.byOp.get(op);
+    const ro = patch.ops[op - 1];
+    if (!node || !ro) return { heading: "", lines: [] };
+    const targets = layout.edges.filter((e) => e.from === op).map((e) => `OP ${e.to}`);
+    const heading = node.carrier
+      ? `OP ${op}, carrier`
+      : `OP ${op}, modulating ${targets.join(" and ")}`;
+
+    const level = node.carrier
+      ? ro.outLevel === 0
+        ? "VOL 0 of 99: it reaches the output and adds nothing."
+        : `VOL ${ro.outLevel} of 99: its loudness in the output.`
+      : ro.outLevel === 0
+        // Not "runs as a bare sine": that is only true when nothing else feeds
+        // the target too, and on a fan-in algorithm something usually does.
+        ? `IDX 0 of 99: it adds no modulation to ${targets.length > 1 ? "them" : targets[0]}.`
+        : `IDX ${ro.outLevel} of 99: how hard it bends ${targets.length > 1 ? "them" : targets[0]}.`;
+
+    const db = relDb[op - 1];
+    const measured = !Number.isFinite(db)
+      ? "Nothing measurable on it now."
+      : db > -0.5
+        ? "Measured: the loudest trace."
+        : `Measured: ${Math.round(-db)} dB under the loudest.`;
+
+    const lines = [
+      ratioSentence(ro.ratio, node.feedback && patch.feedback > 0),
+      `${level} ${measured}`,
+    ];
+    if (node.feedback) {
+      lines.push(patch.feedback === 0
+        ? "FB 0 of 7: its loop back into itself is off."
+        : `FB ${patch.feedback} of 7: some of its output feeds back in.`);
+    }
+    return { heading, lines };
+  }
+  /** The node being read: pointed at or focused. */
+  const reading = $derived(hoverOp === null ? null : explain(hoverOp));
 
   /** Relative peak, or an em dash when the trace is silent. */
   function formatDb(db: number): string {
@@ -775,8 +826,15 @@
 
         {#each layout.nodes as node (node.op)}
           {@const ro = patch.ops[node.op - 1]}
-          <button
-            type="button"
+          {@const about = explain(node.op)}
+          <!-- A focusable group, not a button: pressing it does nothing, and a
+               button that does nothing is a broken promise to a keyboard user.
+               Focus still matters — it lights the node's wires and fills the
+               reading panel — so it keeps tabindex. -->
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          <div
+            role="group"
+            tabindex="0"
             class="node"
             class:carrier={node.carrier}
             class:silent={ro.outLevel === 0}
@@ -786,8 +844,10 @@
             onmouseleave={() => (hoverOp = null)}
             onfocusin={() => (hoverOp = node.op)}
             onfocusout={() => (hoverOp = null)}
-            aria-label={`Operator ${node.op}, ${roleOf(node.op)}${node.feedback ? ", with feedback" : ""}${ro.outLevel === 0 ? ", silent" : ""}. Ratio ${formatRatio(ro.ratio)}, level ${ro.outLevel}.`}
+            aria-label={`Operator ${node.op}, ${roleOf(node.op).toLowerCase()}`}
+            aria-describedby={`op-about-${node.op}`}
           >
+            <span class="sr-only" id={`op-about-${node.op}`}>{about.lines.join(" ")}</span>
             <div class="node-head">
               <span class="op">OP&nbsp;{node.op}</span>
               <span class="role">{node.carrier ? "CARRIER" : "MOD"}</span>
@@ -800,30 +860,20 @@
             ></canvas>
             <canvas class="env" bind:this={envCanvas[node.op - 1]} aria-hidden="true"></canvas>
             <div class="node-foot">
-              <span class="ratio" title={ratioTitle(ro.ratio)}>
-                ×{formatRatio(ro.ratio)}
-              </span>
-              <span class="level" title={node.carrier ? "Output level from the patch — volume, for a carrier" : "Output level from the patch — the modulation index, for a modulator"}>
-                {node.carrier ? "VOL" : "IDX"}&nbsp;{ro.outLevel}
-              </span>
-              <span class="meas" title="Measured peak of this trace, relative to the loudest trace on the sheet">
-                {formatDb(relDb[node.op - 1])}
-              </span>
+              <span class="ratio">×{formatRatio(ro.ratio)}</span>
+              <span class="level">{node.carrier ? "VOL" : "IDX"}&nbsp;{ro.outLevel}</span>
+              <span class="meas">{formatDb(relDb[node.op - 1])}</span>
             </div>
             <!-- Two operators can both be at zero for entirely different
                  reasons, and the difference is the useful part. A carrier at
                  volume 0 still reaches the output and adds nothing to it; a
                  modulator at index 0 leaves the operator below it running as a
-                 bare sine. One word for both hid that. -->
+                 bare sine. One word for both hid that; the reading panel says
+                 the rest. -->
             {#if ro.outLevel === 0}
-              <span
-                class="silent-tag"
-                title={node.carrier
-                  ? "This carrier reaches the output, but its volume is 0 — it adds nothing to the sound."
-                  : "This modulator's index is 0 — the operator it feeds runs unmodulated, as a bare sine."}
-              >{node.carrier ? "not sounding" : "not modulating"}</span>
+              <span class="silent-tag">{node.carrier ? "not sounding" : "not modulating"}</span>
             {/if}
-          </button>
+          </div>
         {/each}
 
         <div
@@ -845,6 +895,23 @@
       </span>
       {routingText}
     </p>
+
+    <!-- What the pointed-at node's numbers mean. Fixed minimum height, so the
+         panes below do not jump as the pointer crosses the diagram. Not a live
+         region: a screen reader already gets the same words as the focused
+         node's description, and announcing on every mouse move would be noise. -->
+    <div class="reading">
+      {#if reading}
+        {#each reading.lines as line, i (line)}
+          <p>{#if i === 0}<strong>{reading.heading}.</strong>{" "}{/if}{line}</p>
+        {/each}
+      {:else}
+        <p class="reading-idle">
+          Point at an operator, or Tab to one, to read what its ratio, level and
+          measured peak mean.
+        </p>
+      {/if}
+    </div>
 
     <div class="panes">
       <figure bind:clientWidth={paneW}>
@@ -1160,6 +1227,21 @@
     line-height: 1.5;
     color: var(--text-muted);
   }
+  /* Five lines: the longest reading (heading, ratio, level and measurement,
+     feedback) at the 433 px side column of a 1366 px screen. Idle or busy, the
+     box is the same height, so nothing below it moves. */
+  .reading {
+    box-sizing: border-box;
+    min-height: calc(5 * 1.45 * 0.74rem);
+    padding-left: 10px;
+    border-left: 1px solid var(--hairline);
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+  }
+  .reading p { margin: 0; max-width: 72ch; }
+  .reading strong { color: var(--text); }
+  .reading-idle { color: var(--text-dim); }
   .key { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; }
   .swatch { display: inline-block; width: 22px; height: 0; border-top-width: 2px; }
   .swatch.mod { border-top: 2px dashed var(--accent); }

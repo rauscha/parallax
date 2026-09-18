@@ -15,8 +15,25 @@
 import { atom, map } from "nanostores";
 import { audioEngine } from "../audio/AudioEngine";
 import { publishActiveNotes } from "./stores";
+import {
+  chooseInputId, readRememberedName, writeRememberedName,
+  type MidiInputInfo,
+} from "./midi-input-core";
 
-export interface MidiInputInfo { id: string; name: string; }
+export type { MidiInputInfo };
+
+/**
+ * localStorage, or null where it is unavailable. Reading the property itself
+ * throws in a private window or with site data blocked, so the access — not
+ * just the call — has to be guarded.
+ */
+function prefs(): Storage | null {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
 
 export const midiSupported =
   typeof navigator !== "undefined" && typeof navigator.requestMIDIAccess === "function";
@@ -145,12 +162,14 @@ function refreshInputs() {
   if (!access) return;
   const inputs = listInputs();
   midiStateStore.setKey("inputs", inputs);
-  // Keep the current selection if it's still present; else auto-pick the first.
+  // Keep the current selection if it's still present; else fall back to the
+  // remembered device, then to the first input.
   const selId = midiStateStore.get().selectedId;
   const stillThere = selId && inputs.some((i) => i.id === selId);
   if (!stillThere) {
-    const first = access.inputs.values().next().value as MIDIInput | undefined;
-    bindInput(first ?? null);
+    const store = prefs();
+    const wanted = chooseInputId(inputs, store ? readRememberedName(store) : null);
+    bindInput(wanted ? access.inputs.get(wanted) ?? null : null);
   }
 }
 
@@ -178,7 +197,13 @@ export async function enableMidi(): Promise<void> {
 
 export function selectMidiInput(id: string): void {
   if (!access) return;
-  bindInput(access.inputs.get(id) ?? null);
+  const input = access.inputs.get(id) ?? null;
+  bindInput(input);
+  // Remember only an EXPLICIT choice. Auto-binding must never overwrite it, or
+  // unplugging the remembered device would quietly rewrite the preference to
+  // whatever happened to be first.
+  const store = prefs();
+  if (store && input) writeRememberedName(store, input.name || input.id);
 }
 
 export function disableMidi(): void {

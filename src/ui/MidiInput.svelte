@@ -7,7 +7,7 @@
   import { onDestroy } from "svelte";
   import {
     midiSupported, midiStateStore, midiActivityStore,
-    enableMidi, selectMidiInput, disableMidi, midiPanic,
+    enableMidi, selectMidiInput, rememberMidiInput, disableMidi, midiPanic,
   } from "../state/midi-input";
 
   const unsubs: Array<() => void> = [];
@@ -30,6 +30,9 @@
   function onSelect(e: Event) {
     selectMidiInput((e.currentTarget as HTMLSelectElement).value);
   }
+
+  // The name of the port actually bound, for the recall notice.
+  const boundName = $derived(midi.inputs.find((i) => i.id === midi.selectedId)?.name ?? "");
 </script>
 
 <div class="midi-in" role="group" aria-label="MIDI input">
@@ -54,6 +57,20 @@
     {/if}
     <button class="ghost" onclick={() => midiPanic()} title="Stop all notes">Panic</button>
     <button class="ghost" onclick={() => disableMidi()} title="Turn MIDI input off" aria-label="Disable MIDI input">×</button>
+
+    <!-- The remembered port was not found by name. Never switch silently: an
+         8-port interface bound to the wrong jack just goes quiet. -->
+    {#if midi.recall && boundName}
+      <p class="recall" role="status">
+        {#if midi.recall.match === "renamed"}
+          Saved port “{midi.recall.rememberedName}” found as “{boundName}”.
+        {:else}
+          Saved port “{midi.recall.rememberedName}” not found. Using “{boundName}”.
+        {/if}
+        <button class="ghost" onclick={() => rememberMidiInput()}
+          title="Remember “{boundName}” as the MIDI input">Remember</button>
+      </p>
+    {/if}
   {/if}
 
   {#if midi.error}<span class="err" role="alert">{midi.error}</span>{/if}
@@ -126,6 +143,20 @@
     transition: color var(--t-fast), border-color var(--t-fast);
   }
   .ghost:hover { color: var(--text); border-color: var(--text-dim); }
+  .recall {
+    margin: 0;
+    flex-basis: 100%;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding-left: 8px;
+    border-left: 2px solid var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
   .err {
     font-family: var(--font-mono);
     font-size: 0.66rem;

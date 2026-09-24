@@ -16,11 +16,11 @@ import { atom, map } from "nanostores";
 import { audioEngine } from "../audio/AudioEngine";
 import { publishActiveNotes } from "./stores";
 import {
-  chooseInputId, readRememberedName, writeRememberedName,
-  type MidiInputInfo,
+  chooseInput, recallNotice, shouldRechoose, readRememberedName, writeRememberedName,
+  type MidiInputInfo, type RecallNotice,
 } from "./midi-input-core";
 
-export type { MidiInputInfo };
+export type { MidiInputInfo, RecallNotice };
 
 /**
  * localStorage, or null where it is unavailable. Reading the property itself
@@ -42,8 +42,10 @@ export const midiStateStore = map<{
   enabled: boolean;
   inputs: MidiInputInfo[];
   selectedId: string | null;
+  /** Set when the bound input is not the remembered name verbatim — the UI shows it. */
+  recall: RecallNotice | null;
   error: string | null;
-}>({ enabled: false, inputs: [], selectedId: null, error: null });
+}>({ enabled: false, inputs: [], selectedId: null, recall: null, error: null });
 
 /** Bumped (to performance.now()) on every incoming message — drives the UI's activity dot. */
 export const midiActivityStore = atom<number>(0);
@@ -162,15 +164,19 @@ function refreshInputs() {
   if (!access) return;
   const inputs = listInputs();
   midiStateStore.setKey("inputs", inputs);
-  // Keep the current selection if it's still present; else fall back to the
-  // remembered device, then to the first input.
-  const selId = midiStateStore.get().selectedId;
-  const stillThere = selId && inputs.some((i) => i.id === selId);
-  if (!stillThere) {
-    const store = prefs();
-    const wanted = chooseInputId(inputs, store ? readRememberedName(store) : null);
-    bindInput(wanted ? access.inputs.get(wanted) ?? null : null);
+  // Keep the current selection if it's still present (and not a stand-in);
+  // else the remembered device, then the same port renamed, then the first.
+  const { selectedId, recall } = midiStateStore.get();
+  const stillThere = selectedId !== null && inputs.some((i) => i.id === selectedId);
+  if (!shouldRechoose(stillThere, recall)) return;
+  const store = prefs();
+  const remembered = store ? readRememberedName(store) : null;
+  const choice = chooseInput(inputs, remembered);
+  // Rebinding panics held notes, so don't rebind to the input already bound.
+  if (!stillThere || choice?.id !== selectedId) {
+    bindInput(choice ? access.inputs.get(choice.id) ?? null : null);
   }
+  midiStateStore.setKey("recall", recallNotice(choice, remembered));
 }
 
 function onWindowBlur() { panic(); }
@@ -197,13 +203,20 @@ export async function enableMidi(): Promise<void> {
 
 export function selectMidiInput(id: string): void {
   if (!access) return;
-  const input = access.inputs.get(id) ?? null;
-  bindInput(input);
-  // Remember only an EXPLICIT choice. Auto-binding must never overwrite it, or
-  // unplugging the remembered device would quietly rewrite the preference to
-  // whatever happened to be first.
+  bindInput(access.inputs.get(id) ?? null);
+  rememberMidiInput();
+}
+
+/**
+ * Remember the bound input by its current name, and drop any recall notice.
+ * Remember only an EXPLICIT choice — a pick, or the notice's button. Auto-
+ * binding must never overwrite it, or unplugging the remembered device would
+ * quietly rewrite the preference to whatever happened to be first.
+ */
+export function rememberMidiInput(): void {
   const store = prefs();
-  if (store && input) writeRememberedName(store, input.name || input.id);
+  if (store && boundInput) writeRememberedName(store, boundInput.name || boundInput.id);
+  midiStateStore.setKey("recall", null);
 }
 
 export function disableMidi(): void {
@@ -212,7 +225,7 @@ export function disableMidi(): void {
   window.removeEventListener("blur", onWindowBlur);
   document.removeEventListener("visibilitychange", onVisibility);
   access = null;
-  midiStateStore.set({ enabled: false, inputs: [], selectedId: null, error: null });
+  midiStateStore.set({ enabled: false, inputs: [], selectedId: null, recall: null, error: null });
 }
 
 /** Manual all-notes-off for the UI "panic" button. */

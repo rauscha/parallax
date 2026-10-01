@@ -98,6 +98,10 @@ export default defineConfig(({ command, isPreview }) => ({
       manifest: {
         name: 'Parallax',
         short_name: 'Parallax',
+        // Pin the app's identity (it resolves against start_url, /parallax/), so a
+        // future change to start_url or base can't fork installed copies. See
+        // ~/tools/pwa-manifest-check.py.
+        id: './',
         description: 'A macro-oscillator playground — explained as you play.',
         theme_color: '#0B0E11',
         background_color: '#0B0E11',

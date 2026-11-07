@@ -8,7 +8,8 @@
   import { onDestroy } from "svelte";
   import { trapFocus } from "./trapFocus";
   import { melodyStore } from "../state/stores";
-  import { exportMelodyToFile, importMelodyFromFile } from "../sequencer/midi";
+  // The MIDI file reader/writer (@tonejs/midi) loads on first use.
+  const midiIo = () => import("../sequencer/midi/io");
   import { captureUndo } from "../state/undo";
 
   let eventCount = $state(melodyStore.get().events.length);
@@ -35,7 +36,8 @@
     };
   });
 
-  function onExport() {
+  async function onExport() {
+    const { exportMelodyToFile } = await midiIo();
     exportMelodyToFile(melodyStore.get());
     status = "Exported parallax.mid";
   }
@@ -48,6 +50,7 @@
     busy = true;
     status = null;
     try {
+      const { importMelodyFromFile } = await midiIo();
       const res = await importMelodyFromFile(file);
       const cur = melodyStore.get();
       // Snapshot before the replace so the import is one-tap reversible.

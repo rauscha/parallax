@@ -15,7 +15,6 @@
   import PresetMenu from "./PresetMenu.svelte";
   import RecentSoundsMenu from "./RecentSoundsMenu.svelte";
   import MidiMenu from "./MidiMenu.svelte";
-  import PostcardModal from "./PostcardModal.svelte";
   import ExportButton from "./ExportButton.svelte";
 
   let ready = $state(audioReadyStore.get());
@@ -26,6 +25,14 @@
   let resetTimer = 0;
   onDestroy(() => { clearTimeout(resetTimer); unsubReady(); });
   let postcardOpen = $state(false);
+  // The postcard (and its QR encoder) loads the first time it's opened, then
+  // stays mounted so reopening is instant.
+  let Postcard = $state<typeof import("./PostcardModal.svelte").default | null>(null);
+  $effect(() => {
+    if (postcardOpen && !Postcard) {
+      import("./PostcardModal.svelte").then((m) => { Postcard = m.default; });
+    }
+  });
 
   async function share() {
     const url = writeShareUrl();
@@ -62,7 +69,7 @@
   <ExportButton />
 </div>
 
-<PostcardModal bind:open={postcardOpen} />
+{#if Postcard}<Postcard bind:open={postcardOpen} />{/if}
 
 <style>
   .io-bar {

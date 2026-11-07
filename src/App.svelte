@@ -10,7 +10,6 @@
   import KeyboardHarness from "./ui/KeyboardHarness.svelte";
   import MidiInput from "./ui/MidiInput.svelte";
   import NoteStrip from "./ui/NoteStrip.svelte";
-  import MatchPanel from "./ui/MatchPanel.svelte";
   import PwaToast from "./ui/PwaToast.svelte";
   import UndoToast from "./ui/UndoToast.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
@@ -37,6 +36,14 @@
   unsubs.push(audioReadyStore.subscribe((v) => { ready = v; }));
   let viz = $state<"scope" | "spectrum">("scope");
   let matchOpen = $state(false);
+  // Match (the audio-analysis panel) loads the first time it's opened, then
+  // stays mounted so a loaded track survives closing it.
+  let Match = $state<typeof import("./ui/MatchPanel.svelte").default | null>(null);
+  $effect(() => {
+    if (matchOpen && !Match) {
+      import("./ui/MatchPanel.svelte").then((m) => { Match = m.default; });
+    }
+  });
   let surface = $state<Surface>(surfaceStore.get());
   unsubs.push(surfaceStore.subscribe((v) => { surface = v; }));
 
@@ -190,7 +197,7 @@
 
 <NoteStrip />
 
-<MatchPanel bind:open={matchOpen} />
+{#if Match}<Match bind:open={matchOpen} />{/if}
 
 <PwaToast />
 <UndoToast />

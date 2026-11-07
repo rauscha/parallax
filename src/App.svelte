@@ -350,7 +350,7 @@
     font-family: var(--font-mono);
     font-size: var(--fs-label);
     letter-spacing: 0.08em;
-    padding: 3px 8px;
+    padding: 4px 8px;     /* 25px tall: clear of the 24px target minimum */
     border-radius: calc(var(--radius-sm) - 2px);
     color: var(--text-dim);
     transition: color var(--t-fast), background var(--t-fast);
@@ -503,7 +503,7 @@
     font-family: var(--font-mono);
     font-size: var(--fs-label);
     letter-spacing: 0.06em;
-    padding: 3px 8px;
+    padding: 4px 8px;     /* 25px tall: clear of the 24px target minimum */
     color: var(--text-dim);
     background: transparent;
     border: none;

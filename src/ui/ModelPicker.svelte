@@ -234,7 +234,7 @@
   /* Small tactile pulse whenever the model changes. The whole point of Braids
      is cycling through models, so the act of changing one earns a beat. */
   .code-pill.pulse {
-    animation: pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: pop 320ms cubic-bezier(0.25, 1, 0.5, 1);   /* ease-out; the keyframes already carry the swell */
   }
   @keyframes pop {
     0%   { transform: scale(1); }
@@ -298,8 +298,11 @@
     font-family: var(--font-mono);
     font-size: 0.78rem;
   }
+  /* A ring, not just a recoloured hairline: a hue change on a 1px border is
+     close to invisible to a colourblind eye. Matches the global focus ring. */
   .search:focus-visible {
-    outline: none;
+    outline: 2px solid var(--signal);
+    outline-offset: 1px;
     border-color: var(--signal);
   }
   .search:disabled { opacity: 0.4; }

@@ -615,8 +615,9 @@
     gap: 6px;
     padding: 10px 12px;
     background: var(--surface-raised);
-    border: var(--hairline-w) solid var(--hairline);
-    border-left: 2px solid var(--signal);
+    /* Outlined in the signal colour, the same treatment as the active Explain
+       card; it already leads by position and size over the alternative chips. */
+    border: var(--hairline-w) solid var(--signal);
     border-radius: var(--radius-sm);
   }
   .suggest-head {

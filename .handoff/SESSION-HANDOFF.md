@@ -16,17 +16,15 @@
    said to propose this first since both skins had passed his eye; it was applied under "run
    through them step by step". Revert that one commit if it reads wrong.
 2. **Explain at 1440×900**: knob cards now sit side by side and the prose is 13px with an 80ch
-   measure. Braids, Plaits and Laxsynth fit; Rings (four long cards) scrolls, with a fade at the
-   bottom edge. Grid mode gives the sequencer more height.
+   measure. Explain no longer repeats the model header the Controls column shows (Andrew's call),
+   so all four engines fit, Rings included; a bottom-edge fade appears if it ever overflows (e.g.
+   1280×720). Grid mode gives the sequencer more height.
 
 ## Next up
 1. `/impeccable document`: DESIGN.md for the **four** themes (lab, sandbox, phosphor, rings).
    Record the type roles (`--fs-label`, `--fs-prose` in `base.css`) and the new lab/sandbox text
    values.
-2. Open question for Andrew: Explain repeats the model code, name, family and one-line
-   description that the Controls column already shows. Dropping it from Explain would free ~70px
-   for the cards. Not done, since it removes content.
-3. Then the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
+2. Then the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
 
 ## Watch out for
 - **The Bash sandbox cannot reach the preview dev server** (`localhost:5173` is refused from Bash). For scripted screenshots:

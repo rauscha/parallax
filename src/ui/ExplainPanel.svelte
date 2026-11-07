@@ -1,7 +1,9 @@
 <script lang="ts">
   /**
-   * Explain panel — surfaces what the current Braids model actually is and what
-   * its two macro knobs (TIMBRE, COLOR) do *for this model*. Per-model knob
+   * Explain panel — what the current model's macro knobs do *for this model*,
+   * plus its "listen for / good for" notes. The model's code, name, family and
+   * one-line description live in the Controls column (ModelPicker), so they are
+   * not repeated here; only a visually hidden heading names the model. Per-model knob
    * meaning is the whole reason this app exists (see data/braids-models.ts), so
    * the text comes straight from that table; the % readouts mirror the live
    * patch so the words line up with what you're hearing.
@@ -42,9 +44,6 @@
     const i = models.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
     return models[i >= 0 ? i : 0];
   });
-  let familyLabel = $derived(
-    model ? (entry.families.find((f) => f.id === model.family)?.label ?? "") : ""
-  );
 
   // Live macro value for a knob card, as a percent (macro knobs are 0..1 in both
   // engines). Falls back to 50% before the patch seeds.
@@ -69,15 +68,7 @@
 
 <div class="explain-panel">
   {#if model}
-    <div class="head">
-      <span class="code">{model.code}</span>
-      <div class="titles">
-        <h3 class="name">{model.name}</h3>
-        <span class="family">{familyLabel}</span>
-      </div>
-    </div>
-
-    <p class="desc">{model.description}</p>
+    <h3 class="sr-only">{model.name}</h3>
 
     {#if model.detail}
       <div class="detail">
@@ -133,54 +124,7 @@
     font-family: var(--font-mono);
   }
 
-  .head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .code {
-    flex: 0 0 auto;
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--signal-ink);
-    padding: 3px 8px;
-    background: var(--surface-sunken);
-    border: var(--hairline-w) solid var(--hairline);
-    border-radius: var(--radius-sm);
-  }
-  .titles {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-  }
-  .name {
-    font-family: inherit;   /* h3 for structure; stays in the panel's face */
-    letter-spacing: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.2;
-  }
-  .family {
-    font-size: var(--fs-label);
-    letter-spacing: 0.08em;
-    text-transform: var(--label-case);
-    color: var(--text-dim);
-  }
-
-  .desc {
-    margin: 0;
-    max-width: 80ch;          /* the panel is ~115ch wide on a laptop; long lines lose the eye */
-    font-size: var(--fs-prose);
-    line-height: 1.5;
-    color: var(--text-dim);
-  }
-
-  /* Deeper explanation — split into "Listen for" / "Good for" lines. Set off
-     from the one-line description with a left rule so it reads as "the longer
-     story." */
+  /* "Listen for" / "Good for" — the model's longer story, set off by a rule. */
   .detail {
     max-width: 80ch;
     display: flex;

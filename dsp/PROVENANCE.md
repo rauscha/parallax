@@ -9,13 +9,12 @@ them. (security M-3)
 ## What's opaque vs. readable
 
 - **Opaque (compiled):** `public/braids.wasm`, `public/plaits.wasm`,
-  `public/rings.wasm`, `public/fm.wasm`, and their Emscripten JS glue
-  `public/braids.js`, `public/plaits.js`, `public/rings.js`, `public/fm.js`.
+  `public/rings.wasm`, and their Emscripten JS glue
+  `public/braids.js`, `public/plaits.js`, `public/rings.js`.
   These come out of the Emscripten build of the C++ shim + vendored DSP and
-  can't be eyeballed — hence this file. `fm.wasm` is the exception to "nothing
-  else would notice a bad rebuild": `src/audio/fm-wasm.test.ts` renders real
-  audio through the committed binary and asserts block size, pitch and level, so
-  `npm test` catches a broken FM build. The other three have no such guard yet.
+  can't be eyeballed — hence this file. None of the three has a render test
+  guarding the committed binary yet. (The retired FM engine had one; see the
+  note under Source.)
 - **Hand-maintained (readable):** the AudioWorklet processors
   `public/braids-worklet.js`, `public/plaits-worklet.js`,
   `public/laxsynth-worklet.js`, `public/rings-worklet.js` are plain JS, edited
@@ -47,16 +46,13 @@ sha256sum public/braids.wasm public/braids.js \
 | `public/plaits.js`           | `c23a94ed8ef53d380d42ab89ca860980acf1a72520bc2d9990dd9a6ef3649df0` |
 | `public/rings.wasm`          | `efe916aeb9e65266a45f225061ff0e32bbff5271fe8e49ec698ef93bb85d1d2e` |
 | `public/rings.js`            | `ed18e9fa1605fc86e2df86a0c46902e9a521b67ece1ce942f96b7cd57e288f76` |
-| `public/fm.wasm`             | `9f60dbfdfeed24a9773ebb74d8f40ec2c7ae64495eb61d9f6067317efdff6db7` |
-| `public/fm.js`               | `eb9badd9624aea2221ad5db68cfe61b3aeceff13db3164e8017bfdab4f595fb4` |
 | `public/braids-worklet.js`   | `72f8d02a291ee03f10218cf3b40614652b55361235c4ef93c21ba8fc1b0a4d78` |
 | `public/plaits-worklet.js`   | `f1d9a7aa2124b798375330fb1366366ac59276e57853c533326fd1b3fdcd9cb5` |
 | `public/laxsynth-worklet.js` | `17fe058a615677abb08338397892f2275cc562bda6447b92896f145314bc13c1` |
 | `public/rings-worklet.js`    | `6a238375d9810163a043c64994c25aea0abdf1332311a6feb9b36ca0b6bee253` |
-| `public/fm-worklet.js`       | `4ebb8e029689de79cbb99c58beb232a190968ccae17c10756d4e236bde7ca57c` |
 
 > Note: `braids-worklet.js`, `plaits-worklet.js`, `laxsynth-worklet.js`,
-> `rings-worklet.js` and `fm-worklet.js` are hand-edited JS, so their hashes change whenever those
+> and `rings-worklet.js` are hand-edited JS, so their hashes change whenever those
 > files are edited (e.g. the A2 dispose path / A7 envelope clamp) — that's
 > expected, not a rebuild.
 > The `.wasm` + glue `.js` hashes only change on an Emscripten rebuild.
@@ -73,38 +69,12 @@ sha256sum public/braids.wasm public/braids.js \
     for `rings/` only.
 - **Shim (our code, MIT):** `dsp/shim/braids_shim.cc`, `dsp/shim/plaits_shim.cc`,
   `dsp/shim/rings_shim.cc`.
-- **Vendored FM DSP (Apache-2.0):** Raph Levien's msfa
-  (`google/music-synthesizer-for-android`), vendored under `dsp/vendor/msfa/` at
-  upstream commit `f67d41d313b7dc85f6fb99e79e515cc9d208cfff` (2017-09-12, repo
-  HEAD as of the 2026-09-10 vendoring). Licence in `LICENSE-msfa.txt`,
-  attribution in `NOTICE`, the trimmed file list and the four local
-  modifications in `dsp/vendor/msfa/README.md`. Built into `public/fm.wasm` at phase 2
-  and rebuilt at phase 5 — the only change being the boot patch's algorithm
-  byte, moved from 1 to 2 so the default voice's Feedback macro reaches a
-  sounding operator. The two algorithms wire this patch identically, so the
-  rendered audio is unchanged; `src/data/fm-models.test.ts` asserts that.
-  Rebuilt again 2026-09-11 with `Env::update` / `Dx7Note::update` added to the
-  vendored engine so macro knobs reach the note already sounding — additive
-  methods, note-on rendering unchanged, which the same test still proves.
-  Rebuilt once more 2026-09-12 to guard the live update behind key-down — a
-  patch change under a RELEASED note was swelling it back up
-  (2026-09-10); hashed in the table above.
-  Rebuilt again 2026-09-12 for **phase 7's taps** — the fourth and last planned
-  local modification: an optional tap pointer threaded through `Dx7Note::compute`
-  into `FmCore::compute`, null by default. It is the one patch that had to touch
-  the render path, so it is also the one with a proof: `src/audio/fm-taps.test.ts`
-  renders the same note with taps off and on and requires the int16 output to be
-  **bit-for-bit identical**. There is no local modification count left to spend
-  after this one — see `dsp/vendor/msfa/README.md`.
-  Rebuilt a final time 2026-09-12 at **phase 9**, after dropping the unreferenced
-  `log2.{cc,h}` from the vendored set. The hashes in the table above did **not
-  change** — the binary is byte-identical with and without those files, which is
-  the proof that the compiler had been dead-stripping them all along and that
-  nothing reachable ever called `Log2`. A removal from a vendored tree is worth
-  that kind of evidence rather than an argument.
-- **FM shim (our code, MIT):** `dsp/shim/fm_shim.cc`. Its boot patch is original,
-  authored by hand — Parallax ships no factory ROM patch data from any vendor
-  (locked decision 5 of the FM spec).
+- **Retired: the FM engine (2026-11-07).** A six-operator FM engine built on
+  msfa (`google/music-synthesizer-for-android`, Apache-2.0) shipped in `v1.3.0`
+  and was removed afterwards as scope creep. Its vendored DSP, shim, binaries,
+  licence and NOTICE left the tree with it; the `v1.3.0` tag is the place to
+  recover any of it, including this file's record of its builds and local
+  patches.
 
 ## Rebuild
 
@@ -127,9 +97,6 @@ The scripts copy the emitted `.wasm` + `.js` into `public/`. After a rebuild:
    predates this rebuild and its emcc version was not captured at the time.
    The `rings.wasm` was built 2026-07-11, also with **emcc 5.0.7**
    (`263db4cffa6f9fc2ec514a70abac81362ea41849`) — same toolchain, no drift.
-   The `fm.wasm` was built 2026-09-10, again with **emcc 5.0.7**
-   (`263db4cffa6f9fc2ec514a70abac81362ea41849`) — still no drift across four
-   engines.
 3. record the **eurorack commit** the build was made from (see Source above) —
    *still unrecorded:* the M1 vendoring didn't capture upstream `HEAD`, and it
    can't be recovered from the vendored tree after the fact. Capture it at the

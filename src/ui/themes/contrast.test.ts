@@ -8,12 +8,11 @@ import { readFileSync } from "node:fs";
  */
 const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
-const THEMES = ["lab", "sandbox", "phosphor", "rings", "graph"] as const;
+const THEMES = ["lab", "sandbox", "phosphor", "rings"] as const;
 const TEXT_TOKENS = ["--text", "--text-muted", "--text-dim", "--danger", "--signal-ink", "--accent"];
 /**
- * Every ground text is set on. Checking --bg alone let the graph theme's "FB"
- * label ship at 4.41:1 on a silent operator node (--surface-sunken) — found by
- * the 2026-09-15 flowsheet audit, not by this file.
+ * Every ground text is set on. Checking --bg alone once let a label ship at
+ * 4.41:1 on --surface-sunken (the 2026-09-15 audit), so all four are checked.
  */
 const GROUNDS = ["--bg", "--surface", "--surface-sunken", "--surface-raised"];
 

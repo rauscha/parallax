@@ -1,11 +1,8 @@
-// The parts of the trace primitive that can be checked without a canvas: the
-// edge trigger and the min/max column reduction. Both are load-bearing for the
-// flowsheet's honesty claim — the trigger is what makes eight traces comparable
-// (they all share one offset), and the reduction is what stops a dense trace
-// from being drawn as a waveform it doesn't have.
+// The edge trigger, checked without a canvas: it is what makes a periodic
+// waveform stand still on the scope instead of sliding.
 
 import { describe, it, expect } from "vitest";
-import { findTrigger, columns, peak } from "./trace";
+import { findTrigger } from "./trace";
 
 /** `n` samples of a sine at `cycles` cycles across the buffer, phase in turns. */
 function sine(n: number, cycles: number, phase = 0): Float32Array {
@@ -34,7 +31,7 @@ describe("findTrigger", () => {
   });
 
   it("finds the same phase regardless of where the window starts", () => {
-    // The property the flowsheet depends on: trigger on a signal, shift the
+    // The property the scope depends on: trigger on a signal, shift the
     // signal, and the triggered waveform is the same waveform. Checked by
     // sampling the wave at the trigger point plus a quarter cycle — it must be
     // near the peak in both cases.
@@ -69,54 +66,5 @@ describe("findTrigger", () => {
     const t = findTrigger(buf, 500, 200);
     expect(t).toBeGreaterThanOrEqual(500);
     expect(t).toBeLessThan(700);
-  });
-});
-
-describe("columns", () => {
-  it("keeps the true excursion of a signal denser than the display", () => {
-    // The aliasing case, stated as a test: 200 cycles reduced to 50 columns.
-    // Point-sampling would return some slow beat pattern with a small range;
-    // min/max must report the full ±1 in every column.
-    const buf = sine(4000, 200);
-    const out = new Float32Array(100);
-    columns(buf, 0, 4000, 50, out);
-    for (let c = 0; c < 50; ++c) {
-      expect(out[2 * c], `col ${c} min`).toBeLessThan(-0.9);
-      expect(out[2 * c + 1], `col ${c} max`).toBeGreaterThan(0.9);
-    }
-  });
-
-  it("reports min <= max everywhere, including a single-sample column", () => {
-    const buf = sine(64, 3);
-    const out = new Float32Array(256);
-    columns(buf, 0, 64, 128, out);      // fewer samples than columns
-    for (let c = 0; c < 128; ++c) {
-      expect(out[2 * c]).toBeLessThanOrEqual(out[2 * c + 1]);
-    }
-  });
-
-  it("does not wrap past the end of the buffer", () => {
-    // A window is a window. Reading past the end must read as zero, not as the
-    // start of the buffer — joining the two would draw a discontinuity that is
-    // not in the signal.
-    const buf = new Float32Array(100).fill(1);
-    const out = new Float32Array(20);
-    columns(buf, 90, 40, 10, out);      // asks for 40 from index 90
-    expect(out[0]).toBe(1);             // first columns are inside the buffer
-    expect(out[19]).toBe(0);            // last is past the end: zero, not buf[0]
-  });
-
-  it("writes zero, not Infinity, for an empty column", () => {
-    const out = new Float32Array(8).fill(NaN);
-    columns(new Float32Array(0), 0, 4, 4, out);
-    for (const v of out) expect(Number.isFinite(v)).toBe(true);
-  });
-});
-
-describe("peak", () => {
-  it("measures the largest absolute sample in a range", () => {
-    const buf = new Float32Array([0.1, -0.9, 0.3, 0.5]);
-    expect(peak(buf)).toBeCloseTo(0.9);
-    expect(peak(buf, 2, 2)).toBeCloseTo(0.5);
   });
 });

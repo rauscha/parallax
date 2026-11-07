@@ -1,7 +1,7 @@
 # Waiting on you
 
-## Heads-up from tend, 2026-11-07: two FM patches, not applied
-tend lifted FM's ±3 semitone bend clamp and added a way to revive a faded note without a strike. Nothing here has changed. Patches and notes are in `.handoff/from-tend-2026-11-07/`. No rush, and it's fine to say no.
+## Closed 2026-11-07: tend's two FM patches. Moot, FM is retired here
+tend lifted FM's ±3 semitone bend clamp and added a way to revive a faded note without a strike (`.handoff/from-tend-2026-11-07/`). The same day Andrew retired FM from Parallax, so there is nothing to apply them to. tend is unaffected: it pins Parallax at `0c4da8f` and carries its own FM build in `engines/fm/`, which is where these patches already live.
 
 ## Nothing is pending as of 2026-09-13.
 

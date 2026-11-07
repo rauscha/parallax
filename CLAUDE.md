@@ -68,101 +68,16 @@ src/
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
 
-## Engine #5 — FM (phases 0–9 done 2026-09-12; ear + eye gate passed; tagged `v1.3.0` 2026-09-15)
-- **Spec:** `docs/superpowers/specs/2026-09-10-fm-engine-and-flowsheet.md` — 6-op FM ported from **msfa**
-  (`google/music-synthesizer-for-android`, Apache-2.0), plus per-node **scope taps** and the **flowsheet teacher** view.
-  One port, two features. Locked: msfa is the engine; taps read the **real** engine (no TS model); the teacher is
-  **designed for a computer screen** (its own route — the app stays a responsive PWA).
-- **All design decisions closed 2026-09-10:** the 5th theme is designed *for* the diagram surface; the model axis is
-  **voices** (algorithm shown as a property); the corpus is **our own, built by ear — never from ROM patch data**
-  (msfa's Apache-2.0 covers the engine, not Yamaha's factory voices). Nothing in the plan is blocked.
-- **Phase 0 (tap spike) passed** — `docs/superpowers/specs/2026-09-10-tap-spike-results.md`. 8 taps cost
-  +0.055 pp of the audio-thread budget; the SharedArrayBuffer fallback is **not** built. **Chromium only** — the
-  Firefox/Safari half was **deferred 2026-09-12** to far-deferred work and gates nothing. Treat 0.055 pp as a
-  Chromium figure, not a cross-browser one.
-- **Phase 1 (vendoring) done** — msfa DSP under `dsp/vendor/msfa/` at upstream `f67d41d3`, Apache-2.0
-  (`LICENSE-msfa.txt`, `NOTICE`). Read `dsp/vendor/msfa/README.md` before writing the shim: render block `N = 64`,
-  one local patch to `aligned_buf.h`, and **`Env` is sample-rate-blind** — which is why the engine runs at **44.1 kHz**
-  (spec §1 amended 2026-09-10) and the worklet resamples, exactly as Braids does from 96 kHz.
-- **Phase 2 (shim + build) done** — `dsp/shim/fm_shim.cc`, `dsp/shim/build-fm.ps1`, `npm run wasm:fm`,
-  `public/fm.{js,wasm}` committed. Pitch is exact with no trim; `HEAP16` stands (−2.5 dBFS worst case) but a normal
-  voice sits ~17 dB down, so phase 3 owes it make-up gain in the engine's `GainNode`. `src/audio/fm-wasm.test.ts`
-  renders through the committed binary and guards block size, pitch and level — the only engine with that guard.
-  The boot patch is **ours, authored by hand**; msfa's own `synth_unit.cc` carries a factory voice and is not
-  vendored.
-- **Phases 3–5 done (overnight 2026-09-10 → 11)** — `.handoff/OVERNIGHT-LOG-2026-09-10.md`. The engine plays from
-  the staff (`public/fm-worklet.js`, `src/audio/engines/FmEngine.ts`, registry entry), has its four macro knobs,
-  and carries **14 hand-authored voices** across six families with verified Explain prose. Make-up gain is **×2.0**
-  in the engine's `GainNode`, measured against Rings rather than against full scale. Three things to know before
-  touching this engine:
-  **(a)** an FM "model" is *data* — 156 patch bytes in `src/data/fm-voices.ts`, not a firmware enum;
-  **(b)** `src/data/fm-algorithms.ts` is **generated** from the vendored algorithm table, not hand-typed;
-  **(c)** silencing an operator in the middle of a chain makes the carrier render as a bare sine, silently —
-  read the header of `fm-voices.ts` before authoring a patch.
-- **Macro knobs reach the note already sounding** (decided + built 2026-09-11). That needed `Env::update` and
-  `Dx7Note::update` — additive local modifications to the vendored engine, patches 2 and 3 of three, all documented
-  in `dsp/vendor/msfa/README.md`. **There are now three local patches to msfa, not one**; phase 7's tap pointer
-  will be the fourth.
-- **Phase 6 done 2026-09-12 — the `graph` theme.** A drafting surface, not an instrument panel: cool paper, ruled
-  24 px grid on the body background, near-black ink, Okabe-Ito blue signal that is text-safe so `--signal-ink` can
-  just alias it. The scope is a **plot** here — `--scope-persist: 0`, `--scope-bloom: 0`, hairline frame — which is
-  why those two tokens exist as numbers rather than as booleans. `contrast.test.ts` now guards five themes.
-  Spec §5 carries the reasoning. **Andrew's eye pass passed** — it is what produced `f3eb1e2`, the fix taking the
-  rule from ink at 6 % to 13 %.
-- **Phase 7 done 2026-09-12 — the taps.** `FmCore::compute` takes an optional tap pointer (**the fourth and
-  last planned local patch to msfa** — four is the number now), the shim exports **8 traces in PANEL numbering**
-  (operators 1–6, the feedback wire, the voice output) through `fm_set_tap_buffer`, and `public/fm-worklet.js`
-  ships them to the main thread as pooled transferables at ~60 Hz. Three things to know before phase 8:
-  **(a)** `src/audio/fm-taps.test.ts` asserts taps-on audio is **bit-for-bit identical** to taps-off — that test
-  is the licence for patching vendored DSP, so it is never relaxed;
-  **(b)** the snapshot's `Float32Array` is **only valid inside the `onTapSnapshot` callback** — it goes straight
-  back to the worklet pool afterwards, so draw from it or copy, never keep it;
-  **(c)** taps are **off by default and cost nothing off** — only the flowsheet view calls
-  `FmEngine.setTapsEnabled(true)`, and it must turn them off when it unmounts.
-  Measured live: 57 frames/s, 0 dropped. Spec §2 carries the reasoning.
-- **Phase 8 done 2026-09-12 — the flowsheet view.** Route is `#view=flowsheet` (the fragment was never "taken" —
-  share links are `#p=<blob>` read with `URLSearchParams`, so it is a key/value space). Four things to know:
-  **(a)** `FM_ALGORITHMS[].wires` is **generated** by simulating `FmCore::compute`'s bus machine, and
-  `src/data/fm-algorithms.test.ts` asserts it **against the engine** — silence an operator and the wiring predicts
-  which traces change. Never hand-edit a wire;
-  **(b)** all eight traces share ONE trigger, taken on the output. That is what makes a whole-number ratio stand
-  still and a near-miss walk. Do not "fix" a drifting trace by triggering it on itself;
-  **(c)** the instrument stays **mounted** behind the flowsheet (`.offstage`, `display:none`) so keyboard, MIDI and
-  transport keep working and the note keeps sounding — do not switch it to `{#if}`;
-  **(d)** the loaded voice is `patchStore.modelId` resolved via `indexForCode`, **not** `params.model`, which
-  `bindings.ts` deliberately skips.
-  Not built, on purpose: per-operator in-place editing (spec §4.2) — needs a patch-override layer. Spec §4 carries
-  the reasoning.
-- **Phase 9 done 2026-09-12 — the gate and the docs.** The §6.3 clause that is specific to this engine ("a trace
-  shown next to a claim must demonstrate that claim") is **automated**, in `src/ui/flowsheet/claims.test.ts`.
-  `fm-voices.test.ts` checks the prose against the *audio*; this one checks it against the *picture*, which is a
-  different code path entirely (`readout.ts` + `trace.ts` + `fft.ts`). Three things to know:
-  **(a)** the strongest assertion is that **the ratio a node prints is the measured frequency of the trace beside
-  it** — interpolated zero crossings, 18 operator traces plus the 8 ratios the prose names. Traces with no single
-  period (an open feedback loop, a hard-modulated carrier) are skipped by a **crossing-uniformity test**, never by a
-  hand-written exception list; if you add a voice, nothing needs updating;
-  **(b)** it caught a real one: Hollow Reed's description claimed a 3:1 modulator leaves "the harmonics in between"
-  thin. The lower sidebands fold back through zero, so 2 and 5 are as strong as 4 and 7 — what is missing is every
-  **multiple of three**. The prose now says that. Treat a failure here as "the words are wrong", not "the test is
-  strict";
-  **(c)** `log2.{cc,h}` was dropped from the vendored msfa set, and the rebuilt `fm.wasm` is **byte-identical** —
-  the hashes in `dsp/PROVENANCE.md` are unchanged, which is what proves the removal was safe.
-  **The human half of the gate closed the same day.** Andrew's ear pass on all fourteen voices: passed. The `graph`
-  theme eye pass: passed, and already had — it produced `f3eb1e2`. Firefox/Safari: deferred to far-deferred work,
-  out of the gate.
-- **Origin notes (reasoning trail, superseded by the spec):** `docs/ideas/2026-09-10-diy-synth-engine-survey.md`,
-  `docs/ideas/2026-09-10-fm-flowsheet-teacher.md`.
-
-- **Flowsheet redesign 2026-09-14 — shipped, tagged `v1.3.0` 2026-09-15** after the Impeccable audit fixes and
-  Andrew's eye pass. Next is `/impeccable document` — see `.handoff/SESSION-HANDOFF.md`. Since the audit:
-  node size comes from `geometryFor(viewport)` (standard ≥ 1536×864, compact below; `layout.test.ts` asserts four
-  screens), and `contrast.test.ts` checks every ground with a shrink-only `KNOWN_SHORTFALLS` list. Four things to know:
-  **(a)** fit-each gain lives in `src/viz/trace-gain.ts`; its floor is **relative** (60 dB under the sheet's
-  loudest trace). The old absolute `0.002` silently clamped every quiet modulator — never reintroduce an absolute floor;
-  **(b)** node geometry in `layout.ts` is set from measurement and `layout.test.ts` asserts every algorithm fits
-  1536×864 with carriers on screen — change a constant and that test is the arbiter;
-  **(c)** `patchStore.setKey("modelId", …)` must be **lowercase** — the authored code silently does nothing;
-  **(d)** the browser pane blocks Web MIDI (`NotAllowedError`) — test MIDI input in real Chrome only.
+## Engine #5 — FM: retired 2026-11-07
+- A six-operator FM engine (ported from msfa, Apache-2.0) and its **flowsheet** teaching view
+  (`#view=flowsheet`, per-operator scope taps, the `graph` theme) shipped in **`v1.3.0`** and were
+  removed afterwards: Andrew's call, "too much of a scope creep". Everything (engine, shim,
+  vendored msfa, binaries, licence/NOTICE, tests, specs) is recoverable from the `v1.3.0` tag; the
+  specs under `docs/superpowers/specs/2026-09-10-*` stay as history.
+- **Saved FM sounds degrade, not break.** A preset, recent sound or share link naming `fm` boots
+  the default engine (`engineEntryOrDefault`) and keeps only its melody: `applySharedState`
+  skips the patch when the saved engine isn't the one that loaded (`share-url.test.ts`).
+- Don't re-add FM or a fifth engine without asking; deepen the explain loop on the four instead.
 
 ## Memory pointers (read on resume)
 - `braids-synth-project` — project memory entry (decisions, plan path).

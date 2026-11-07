@@ -19,7 +19,6 @@ import {
 } from "lz-string";
 import { patchStore, melodyStore, engineIdStore } from "./stores";
 import { encodeState, decodeState, type SharedState } from "./serialization";
-import { viewStore } from "./route";
 
 const HASH_KEY = "p";
 
@@ -35,21 +34,11 @@ export function readSharedState(): SharedState | null {
   return decodeState(json);
 }
 
-/**
- * Build a full shareable URL from the current store state (does not navigate).
- *
- * The fragment is a key/value space, and `view` shares it (see `route.ts`), so
- * the current view is carried along: a link reproduces what the sender was
- * looking at, which is the same promise the patch and melody already make.
- * `writeShareUrl` puts this string straight into the address bar, so dropping
- * the key here would silently walk the sender out of the flowsheet.
- */
+/** Build a full shareable URL from the current store state (does not navigate). */
 export function buildShareUrl(): string {
   const json = encodeState(patchStore.get(), melodyStore.get());
   const blob = compressToEncodedURIComponent(json);
   const frag = new URLSearchParams(`${HASH_KEY}=${blob}`);
-  const view = viewStore.get();
-  if (view !== "instrument") frag.set("view", view);
   return `${location.origin}${location.pathname}#${frag.toString()}`;
 }
 
@@ -66,13 +55,21 @@ export function writeShareUrl(): string {
 
 /**
  * Apply a decoded shared state to the stores. The engine must already be the
- * one named in `resolvedEngineId` (the caller starts it first); we stamp that
- * id onto the patch so an unavailable-engine link can't leave the picker and
- * the live engine out of sync. The melody is set with a fresh events array, so
- * the Part rebuilds. Call AFTER installBindings/installPart have seeded.
+ * one named in `resolvedEngineId` (the caller starts it first). The melody is
+ * set with a fresh events array, so the Part rebuilds. Call AFTER
+ * installBindings/installPart have seeded.
+ *
+ * When the state names an engine this build doesn't have (a preset, recent
+ * sound or link saved with the retired FM engine, or one from a future build),
+ * only the melody carries over. Its model code and knob values belong to the
+ * missing engine; laid over the fallback they would put unknown keys in the
+ * patch and leave the fallback's own knobs unset. So the fallback keeps the
+ * defaults it was just seeded with.
  */
 export function applySharedState(state: SharedState, resolvedEngineId: string): void {
   engineIdStore.set(resolvedEngineId);
-  patchStore.set({ ...state.patch, engineId: resolvedEngineId });
+  if (state.patch.engineId === resolvedEngineId) {
+    patchStore.set({ ...state.patch, engineId: resolvedEngineId });
+  }
   melodyStore.set(state.melody);
 }

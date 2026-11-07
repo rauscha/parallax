@@ -1,0 +1,1142 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T21:44:35+00:00",
+  "title": "Design System: Parallax",
+  "extensions": {
+    "colorMeta": {
+      "phosphor-bg": {
+        "role": "neutral",
+        "displayName": "CRT Black",
+        "canonical": "#0A0805",
+        "oklch": "oklch(13.6% 0.009 82.5)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#44423E",
+          "#63615C",
+          "#85827D",
+          "#A7A5A1",
+          "#CAC9C6",
+          "#EFEEED"
+        ]
+      },
+      "phosphor-surface": {
+        "role": "neutral",
+        "displayName": "Phosphor surface",
+        "canonical": "#100C07",
+        "oklch": "oklch(15.8% 0.013 74.5)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#272522",
+          "#45413D",
+          "#65605A",
+          "#86817B",
+          "#A8A49F",
+          "#CBC9C5",
+          "#F0EEEC"
+        ]
+      },
+      "phosphor-surface-raised": {
+        "role": "neutral",
+        "displayName": "Phosphor surface raised",
+        "canonical": "#15110A",
+        "oklch": "oklch(18.0% 0.015 81.4)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#272521",
+          "#45423C",
+          "#656159",
+          "#868279",
+          "#A8A49E",
+          "#CBC9C4",
+          "#F0EEEB"
+        ]
+      },
+      "phosphor-surface-sunken": {
+        "role": "neutral",
+        "displayName": "Phosphor surface sunken",
+        "canonical": "#070503",
+        "oklch": "oklch(11.7% 0.009 73.5)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#44413E",
+          "#64615C",
+          "#85827D",
+          "#A7A4A1",
+          "#CBC9C6",
+          "#EFEEED"
+        ]
+      },
+      "phosphor-hairline": {
+        "role": "neutral",
+        "displayName": "Phosphor hairline",
+        "canonical": "#2C2418",
+        "oklch": "oklch(26.6% 0.024 77.5)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#28241F",
+          "#474138",
+          "#686054",
+          "#8A8174",
+          "#ABA49A",
+          "#CDC8C1",
+          "#F1EEEA"
+        ]
+      },
+      "phosphor-text": {
+        "role": "neutral",
+        "displayName": "Phosphor text",
+        "canonical": "#D5E6CC",
+        "oklch": "oklch(90.5% 0.039 134.6)",
+        "tonalRamp": [
+          "#090C08",
+          "#21271E",
+          "#3C4537",
+          "#596652",
+          "#7A8772",
+          "#9EA998",
+          "#C4CCC0",
+          "#EBF0E9"
+        ]
+      },
+      "phosphor-text-muted": {
+        "role": "neutral",
+        "displayName": "Phosphor text muted",
+        "canonical": "#8FA682",
+        "oklch": "oklch(69.8% 0.057 134.3)",
+        "tonalRamp": [
+          "#080D06",
+          "#1F281A",
+          "#394731",
+          "#55684A",
+          "#768A6A",
+          "#9BAB92",
+          "#C2CDBC",
+          "#EAF1E6"
+        ]
+      },
+      "phosphor-text-dim": {
+        "role": "neutral",
+        "displayName": "Phosphor text dim",
+        "canonical": "#7D9A6F",
+        "oklch": "oklch(65.2% 0.070 135.7)",
+        "tonalRamp": [
+          "#080D06",
+          "#1E2918",
+          "#36482E",
+          "#516A45",
+          "#728B65",
+          "#98AC8E",
+          "#C0CFB9",
+          "#E9F2E5"
+        ]
+      },
+      "phosphor-signal": {
+        "role": "primary",
+        "displayName": "Phosphor Trace",
+        "canonical": "#7DFF6B",
+        "oklch": "oklch(89.5% 0.221 141.3)",
+        "tonalRamp": [
+          "#001100",
+          "#003000",
+          "#005300",
+          "#007900",
+          "#239D08",
+          "#6ABC5F",
+          "#A2DB9A",
+          "#D9F9D4"
+        ]
+      },
+      "phosphor-signal-deep": {
+        "role": "primary",
+        "displayName": "Phosphor signal deep",
+        "canonical": "rgba(125, 255, 107, 0.18)",
+        "oklch": "oklch(89.5% 0.221 141.3)",
+        "tonalRamp": [
+          "#001100",
+          "#003000",
+          "#005300",
+          "#007900",
+          "#239D08",
+          "#6ABC5F",
+          "#A2DB9A",
+          "#D9F9D4"
+        ]
+      },
+      "phosphor-accent": {
+        "role": "secondary",
+        "displayName": "Amber",
+        "canonical": "#FFB347",
+        "oklch": "oklch(82.1% 0.149 72.1)",
+        "tonalRamp": [
+          "#150800",
+          "#3A1D00",
+          "#623600",
+          "#8E5100",
+          "#B27300",
+          "#CD9A59",
+          "#E7C296",
+          "#FFEBD2"
+        ]
+      },
+      "phosphor-danger": {
+        "role": "neutral",
+        "displayName": "Phosphor danger",
+        "canonical": "#FF6B5C",
+        "oklch": "oklch(70.9% 0.184 28.4)",
+        "tonalRamp": [
+          "#1C0202",
+          "#470D09",
+          "#771C16",
+          "#AB2C24",
+          "#D35246",
+          "#E98477",
+          "#FEB4A9",
+          "#FFE3DC"
+        ]
+      },
+      "phosphor-scope-bg": {
+        "role": "neutral",
+        "displayName": "Phosphor scope bg",
+        "canonical": "#050402",
+        "oklch": "oklch(10.7% 0.009 89.3)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423E",
+          "#63615C",
+          "#84827D",
+          "#A6A5A0",
+          "#CAC9C6",
+          "#EFEEEC"
+        ]
+      },
+      "sandbox-bg": {
+        "role": "neutral",
+        "displayName": "Warm Body",
+        "canonical": "#E9E5DC",
+        "oklch": "oklch(92.3% 0.013 86.8)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#44423D",
+          "#64615A",
+          "#85827B",
+          "#A7A59F",
+          "#CBC9C5",
+          "#EFEEEC"
+        ]
+      },
+      "sandbox-surface": {
+        "role": "neutral",
+        "displayName": "Sandbox surface",
+        "canonical": "#DAD4C7",
+        "oklch": "oklch(87.1% 0.019 86.2)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#272520",
+          "#45423A",
+          "#656157",
+          "#878277",
+          "#A9A59C",
+          "#CCC9C3",
+          "#F0EEEB"
+        ]
+      },
+      "sandbox-surface-raised": {
+        "role": "neutral",
+        "displayName": "Sandbox surface raised",
+        "canonical": "#C9C2B3",
+        "oklch": "oklch(81.6% 0.022 86.0)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#27251F",
+          "#464239",
+          "#666155",
+          "#888275",
+          "#A9A59B",
+          "#CCC9C2",
+          "#F0EEEA"
+        ]
+      },
+      "sandbox-surface-sunken": {
+        "role": "neutral",
+        "displayName": "Sandbox surface sunken",
+        "canonical": "#CFC8B8",
+        "oklch": "oklch(83.4% 0.023 87.2)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#27251F",
+          "#464238",
+          "#666154",
+          "#888275",
+          "#A9A59A",
+          "#CCC9C1",
+          "#F0EEEA"
+        ]
+      },
+      "sandbox-hairline": {
+        "role": "neutral",
+        "displayName": "Sandbox hairline",
+        "canonical": "#8C8779",
+        "oklch": "oklch(62.4% 0.021 90.6)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#27251F",
+          "#454239",
+          "#656155",
+          "#878276",
+          "#A8A59B",
+          "#CBC9C2",
+          "#F0EEEA"
+        ]
+      },
+      "sandbox-text": {
+        "role": "neutral",
+        "displayName": "Sandbox text",
+        "canonical": "#1A1A1A",
+        "oklch": "oklch(21.8% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "sandbox-text-muted": {
+        "role": "neutral",
+        "displayName": "Sandbox text muted",
+        "canonical": "#3A3A3A",
+        "oklch": "oklch(34.8% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "sandbox-text-dim": {
+        "role": "neutral",
+        "displayName": "Sandbox text dim",
+        "canonical": "#4D4D4D",
+        "oklch": "oklch(42.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "sandbox-signal": {
+        "role": "primary",
+        "displayName": "Hot Signal",
+        "canonical": "#FF5A1F",
+        "oklch": "oklch(68.2% 0.211 37.7)",
+        "tonalRamp": [
+          "#1E0100",
+          "#4A0700",
+          "#7D1300",
+          "#B32000",
+          "#DB4B17",
+          "#F1815F",
+          "#FFB29A",
+          "#FFE2D3"
+        ]
+      },
+      "sandbox-signal-ink": {
+        "role": "primary",
+        "displayName": "Rust Ink",
+        "canonical": "#8A2A0A",
+        "oklch": "oklch(42.9% 0.136 36.8)",
+        "tonalRamp": [
+          "#180502",
+          "#3F170C",
+          "#6B2C1B",
+          "#9A432B",
+          "#BF654C",
+          "#D9907B",
+          "#F0BBAC",
+          "#FFE7DD"
+        ]
+      },
+      "sandbox-signal-deep": {
+        "role": "primary",
+        "displayName": "Sandbox signal deep",
+        "canonical": "rgba(255, 90, 31, 0.22)",
+        "oklch": "oklch(68.2% 0.211 37.7)",
+        "tonalRamp": [
+          "#1E0100",
+          "#4A0700",
+          "#7D1300",
+          "#B32000",
+          "#DB4B17",
+          "#F1815F",
+          "#FFB29A",
+          "#FFE2D3"
+        ]
+      },
+      "sandbox-danger": {
+        "role": "neutral",
+        "displayName": "Sandbox danger",
+        "canonical": "#911B11",
+        "oklch": "oklch(42.7% 0.155 29.7)",
+        "tonalRamp": [
+          "#1A0403",
+          "#42130E",
+          "#70261D",
+          "#A13A2E",
+          "#C85D4F",
+          "#E08B7D",
+          "#F6B8AD",
+          "#FFE5DE"
+        ]
+      },
+      "sandbox-scope-bg": {
+        "role": "neutral",
+        "displayName": "Sandbox scope bg",
+        "canonical": "#0D0D0D",
+        "oklch": "oklch(15.9% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "sandbox-scope-trace": {
+        "role": "primary",
+        "displayName": "Hot Trace",
+        "canonical": "#FF8A4F",
+        "oklch": "oklch(75.2% 0.160 45.9)",
+        "tonalRamp": [
+          "#190500",
+          "#421500",
+          "#6F2900",
+          "#9F3F00",
+          "#C6622D",
+          "#DE8E69",
+          "#F4BA9F",
+          "#FFE6D7"
+        ]
+      },
+      "lab-bg": {
+        "role": "neutral",
+        "displayName": "Console Grey",
+        "canonical": "#24232B",
+        "oklch": "oklch(26.1% 0.015 291.1)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#252428",
+          "#424147",
+          "#616068",
+          "#82818A",
+          "#A5A4AB",
+          "#C9C8CD",
+          "#EEEEF1"
+        ]
+      },
+      "lab-surface": {
+        "role": "neutral",
+        "displayName": "Lab surface",
+        "canonical": "#2D2C35",
+        "oklch": "oklch(29.8% 0.016 290.5)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#252429",
+          "#424148",
+          "#616069",
+          "#82818B",
+          "#A5A4AC",
+          "#C9C8CE",
+          "#EEEEF1"
+        ]
+      },
+      "lab-surface-raised": {
+        "role": "neutral",
+        "displayName": "Lab surface raised",
+        "canonical": "#383640",
+        "oklch": "oklch(33.9% 0.018 294.6)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#252429",
+          "#424148",
+          "#626069",
+          "#83818B",
+          "#A5A4AC",
+          "#C9C8CE",
+          "#EEEEF1"
+        ]
+      },
+      "lab-surface-sunken": {
+        "role": "neutral",
+        "displayName": "Lab surface sunken",
+        "canonical": "#1C1B22",
+        "oklch": "oklch(22.6% 0.014 291.8)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#252428",
+          "#424147",
+          "#616068",
+          "#828189",
+          "#A5A4AB",
+          "#C9C8CD",
+          "#EEEEF1"
+        ]
+      },
+      "lab-hairline": {
+        "role": "neutral",
+        "displayName": "Lab hairline",
+        "canonical": "#46434F",
+        "oklch": "oklch(39.0% 0.020 296.9)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#252429",
+          "#434149",
+          "#625F6B",
+          "#83808C",
+          "#A6A3AD",
+          "#C9C8CF",
+          "#EFEEF2"
+        ]
+      },
+      "lab-text": {
+        "role": "neutral",
+        "displayName": "Lab text",
+        "canonical": "#ECEAF2",
+        "oklch": "oklch(94.1% 0.011 297.6)",
+        "tonalRamp": [
+          "#0B0B0C",
+          "#252527",
+          "#424146",
+          "#626066",
+          "#838188",
+          "#A5A4A9",
+          "#C9C8CC",
+          "#EEEEF0"
+        ]
+      },
+      "lab-text-muted": {
+        "role": "neutral",
+        "displayName": "Lab text muted",
+        "canonical": "#C2BECE",
+        "oklch": "oklch(81.0% 0.023 297.3)",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#25242A",
+          "#434049",
+          "#625F6C",
+          "#83808D",
+          "#A6A3AE",
+          "#CAC8CF",
+          "#EFEEF2"
+        ]
+      },
+      "lab-text-dim": {
+        "role": "neutral",
+        "displayName": "Lab text dim",
+        "canonical": "#A8A4B4",
+        "oklch": "oklch(72.7% 0.023 297.3)",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#25242A",
+          "#43404A",
+          "#625F6C",
+          "#83808E",
+          "#A6A3AE",
+          "#CAC8D0",
+          "#EFEEF2"
+        ]
+      },
+      "lab-signal": {
+        "role": "primary",
+        "displayName": "Console Signal",
+        "canonical": "#4FD6C4",
+        "oklch": "oklch(79.8% 0.119 182.8)",
+        "tonalRamp": [
+          "#000F0C",
+          "#002E28",
+          "#005046",
+          "#007467",
+          "#099788",
+          "#65B6AA",
+          "#A0D6CC",
+          "#D8F6F0"
+        ]
+      },
+      "lab-signal-ink": {
+        "role": "primary",
+        "displayName": "Console Ink",
+        "canonical": "#6FE6D6",
+        "oklch": "oklch(85.2% 0.110 183.8)",
+        "tonalRamp": [
+          "#000F0C",
+          "#002D28",
+          "#004F46",
+          "#007367",
+          "#239589",
+          "#6BB5AA",
+          "#A3D5CD",
+          "#D9F6F1"
+        ]
+      },
+      "lab-signal-deep": {
+        "role": "primary",
+        "displayName": "Lab signal deep",
+        "canonical": "rgba(79, 214, 196, 0.18)",
+        "oklch": "oklch(79.8% 0.119 182.8)",
+        "tonalRamp": [
+          "#000F0C",
+          "#002E28",
+          "#005046",
+          "#007467",
+          "#099788",
+          "#65B6AA",
+          "#A0D6CC",
+          "#D8F6F0"
+        ]
+      },
+      "lab-accent": {
+        "role": "secondary",
+        "displayName": "Gold",
+        "canonical": "#F4C45A",
+        "oklch": "oklch(84.3% 0.134 84.6)",
+        "tonalRamp": [
+          "#120900",
+          "#332200",
+          "#583C00",
+          "#805A00",
+          "#A47B10",
+          "#C0A15F",
+          "#DDC699",
+          "#FAEDD3"
+        ]
+      },
+      "lab-danger": {
+        "role": "neutral",
+        "displayName": "Lab danger",
+        "canonical": "#FF7A7A",
+        "oklch": "oklch(73.5% 0.163 21.9)",
+        "tonalRamp": [
+          "#1A0304",
+          "#441113",
+          "#722226",
+          "#A4353A",
+          "#CB595A",
+          "#E38885",
+          "#F8B6B2",
+          "#FFE4E1"
+        ]
+      },
+      "lab-scope-bg": {
+        "role": "neutral",
+        "displayName": "Lab scope bg",
+        "canonical": "#17161C",
+        "oklch": "oklch(20.4% 0.012 293.0)",
+        "tonalRamp": [
+          "#0B0B0C",
+          "#252528",
+          "#424146",
+          "#616067",
+          "#828188",
+          "#A5A4AA",
+          "#C9C8CD",
+          "#EEEEF0"
+        ]
+      },
+      "rings-bg": {
+        "role": "neutral",
+        "displayName": "Walnut Body",
+        "canonical": "#221A13",
+        "oklch": "oklch(22.5% 0.018 62.9)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#282421",
+          "#47413B",
+          "#685F58",
+          "#8A8079",
+          "#ABA39D",
+          "#CDC8C3",
+          "#F1EEEB"
+        ]
+      },
+      "rings-surface": {
+        "role": "neutral",
+        "displayName": "Soundboard surface",
+        "canonical": "#2B2118",
+        "oklch": "oklch(25.7% 0.022 63.6)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#292420",
+          "#48403A",
+          "#6A5F56",
+          "#8B8076",
+          "#ACA39B",
+          "#CEC8C2",
+          "#F1EEEA"
+        ]
+      },
+      "rings-surface-raised": {
+        "role": "neutral",
+        "displayName": "Soundboard surface raised",
+        "canonical": "#362A1E",
+        "oklch": "oklch(29.5% 0.027 66.4)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#2A241E",
+          "#494038",
+          "#6B5F53",
+          "#8D8073",
+          "#ADA399",
+          "#CFC8C0",
+          "#F2EEE9"
+        ]
+      },
+      "rings-surface-sunken": {
+        "role": "neutral",
+        "displayName": "Soundboard surface sunken",
+        "canonical": "#1B140E",
+        "oklch": "oklch(19.8% 0.016 62.3)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#282421",
+          "#46413C",
+          "#686059",
+          "#89817A",
+          "#AAA49E",
+          "#CDC8C4",
+          "#F1EEEB"
+        ]
+      },
+      "rings-hairline": {
+        "role": "neutral",
+        "displayName": "Soundboard hairline",
+        "canonical": "#4A3B2A",
+        "oklch": "oklch(36.4% 0.035 69.9)",
+        "tonalRamp": [
+          "#0E0A07",
+          "#2A241C",
+          "#4A4034",
+          "#6D5E4E",
+          "#8F7F6F",
+          "#AFA395",
+          "#D0C7BE",
+          "#F3EDE8"
+        ]
+      },
+      "rings-text": {
+        "role": "neutral",
+        "displayName": "Parchment",
+        "canonical": "#F2E9DB",
+        "oklch": "oklch(93.7% 0.021 79.1)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#282520",
+          "#464139",
+          "#676055",
+          "#888176",
+          "#AAA49B",
+          "#CDC8C2",
+          "#F0EEEA"
+        ]
+      },
+      "rings-text-muted": {
+        "role": "neutral",
+        "displayName": "Soundboard text muted",
+        "canonical": "#C9B99F",
+        "oklch": "oklch(79.2% 0.040 80.0)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#2A241B",
+          "#4A4131",
+          "#6C5F4A",
+          "#8E806A",
+          "#AEA492",
+          "#D0C8BC",
+          "#F2EEE6"
+        ]
+      },
+      "rings-text-dim": {
+        "role": "neutral",
+        "displayName": "Soundboard text dim",
+        "canonical": "#A89877",
+        "oklch": "oklch(68.5% 0.050 85.1)",
+        "tonalRamp": [
+          "#0E0B05",
+          "#2A2418",
+          "#4A412D",
+          "#6D6044",
+          "#8F8164",
+          "#AFA48D",
+          "#D0C8B8",
+          "#F3EEE4"
+        ]
+      },
+      "rings-signal": {
+        "role": "primary",
+        "displayName": "Brass",
+        "canonical": "#E3A94C",
+        "oklch": "oklch(77.2% 0.128 76.5)",
+        "tonalRamp": [
+          "#130900",
+          "#362000",
+          "#5C3A00",
+          "#855600",
+          "#A97822",
+          "#C59E64",
+          "#E0C49D",
+          "#FCECD5"
+        ]
+      },
+      "rings-signal-deep": {
+        "role": "primary",
+        "displayName": "Soundboard signal deep",
+        "canonical": "rgba(227, 169, 76, 0.16)",
+        "oklch": "oklch(77.2% 0.128 76.5)",
+        "tonalRamp": [
+          "#130900",
+          "#362000",
+          "#5C3A00",
+          "#855600",
+          "#A97822",
+          "#C59E64",
+          "#E0C49D",
+          "#FCECD5"
+        ]
+      },
+      "rings-accent": {
+        "role": "secondary",
+        "displayName": "Ember Copper",
+        "canonical": "#E77E52",
+        "oklch": "oklch(70.2% 0.142 42.8)",
+        "tonalRamp": [
+          "#180501",
+          "#3F1706",
+          "#6B2D10",
+          "#9B431B",
+          "#C0663F",
+          "#D99173",
+          "#F1BBA6",
+          "#FFE7DA"
+        ]
+      },
+      "rings-danger": {
+        "role": "neutral",
+        "displayName": "Soundboard danger",
+        "canonical": "#FF8A70",
+        "oklch": "oklch(75.6% 0.148 33.6)",
+        "tonalRamp": [
+          "#190502",
+          "#41150C",
+          "#6E291A",
+          "#9E3E2A",
+          "#C4614B",
+          "#DD8D7B",
+          "#F4B9AB",
+          "#FFE6DD"
+        ]
+      },
+      "rings-scope-bg": {
+        "role": "neutral",
+        "displayName": "Soundboard scope bg",
+        "canonical": "#140E08",
+        "oklch": "oklch(16.9% 0.016 67.0)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#282421",
+          "#46413C",
+          "#676059",
+          "#88817A",
+          "#AAA49E",
+          "#CDC8C4",
+          "#F0EEEB"
+        ]
+      },
+      "rings-scope-trace": {
+        "role": "primary",
+        "displayName": "Lit Brass",
+        "canonical": "#FFC46B",
+        "oklch": "oklch(85.6% 0.126 76.0)",
+        "tonalRamp": [
+          "#130900",
+          "#352000",
+          "#5C3A00",
+          "#855600",
+          "#A97825",
+          "#C49E66",
+          "#E0C49E",
+          "#FCECD6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "\"Parallax\" in the header; the page's h1."
+      },
+      "model-code": {
+        "displayName": "Model code",
+        "purpose": "The four-letter model code in the picker, in signal ink."
+      },
+      "model-name": {
+        "displayName": "Model name",
+        "purpose": "The model's full name under its code."
+      },
+      "prose": {
+        "displayName": "Prose",
+        "purpose": "Explain notes and knob cards; capped at 80ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The model's one-line description in the picker."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Region titles, group and knob labels, toggles, meta. Case follows the skin's --label-case."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "Knob values, percentages, tempo; tabular figures."
+      }
+    },
+    "themes": [
+      {
+        "id": "phosphor",
+        "skin": "Phosphor",
+        "engine": "braids",
+        "labelCase": "uppercase",
+        "labelTracking": "0.08em",
+        "colorScheme": "dark",
+        "note": "Landing theme. Mono throughout; scanlines on the scope; no grain."
+      },
+      {
+        "id": "sandbox",
+        "skin": "Sandbox",
+        "engine": "plaits",
+        "labelCase": "lowercase",
+        "labelTracking": "0.04em",
+        "colorScheme": "light",
+        "note": "The one light body; the signal is fill-only, text uses signal-ink."
+      },
+      {
+        "id": "lab",
+        "skin": "Lab Instrument",
+        "engine": "laxsynth",
+        "labelCase": "none",
+        "labelTracking": "0.02em",
+        "colorScheme": "dark",
+        "note": "Also the :root fallback."
+      },
+      {
+        "id": "rings",
+        "skin": "Soundboard",
+        "engine": "rings",
+        "labelCase": "none",
+        "labelTracking": "0.02em",
+        "colorScheme": "dark",
+        "note": "Walnut and brass; the scope trace is a step brighter than the signal."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "popover",
+        "value": "0 14px 40px rgba(0, 0, 0, 0.36)",
+        "purpose": "Overflow menu and the Presets, Recent and MIDI panels."
+      },
+      {
+        "name": "toast",
+        "value": "0 10px 30px rgba(0, 0, 0, 0.4)",
+        "purpose": "Offline and Undo messages."
+      },
+      {
+        "name": "modal",
+        "value": "0 24px 64px rgba(0, 0, 0, 0.45)",
+        "purpose": "Tap to start, Match, Postcard."
+      },
+      {
+        "name": "engaged",
+        "value": "0 0 0 2px var(--signal), 0 0 14px var(--signal-glow)",
+        "purpose": "A knob being turned or lit from its Explain card; the ring carries the state."
+      }
+    ],
+    "motion": [
+      {
+        "name": "t-fast",
+        "value": "120ms cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "Hover, press and selection changes."
+      },
+      {
+        "name": "t-med",
+        "value": "240ms cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "Larger state changes."
+      },
+      {
+        "name": "model-pulse",
+        "value": "320ms cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "The model code plate's swell when the model changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition: none; animation: none",
+        "purpose": "Applied globally under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "(max-width: 720px), (pointer: coarse) and (max-height: 500px)"
+      },
+      {
+        "name": "narrow-phone",
+        "value": "(pointer: coarse) and (max-width: 560px)"
+      },
+      {
+        "name": "small-phone",
+        "value": "(max-width: 400px)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Signal Button",
+      "kind": "button",
+      "refersTo": "button-signal",
+      "description": "The one filled button: Surprise me.",
+      "html": "<button class=\"ds-btn-signal\">⚄ Surprise me</button>",
+      "css": ".ds-btn-signal { font-family: var(--font-mono); font-size: max(11px, 0.7rem); font-weight: 600; letter-spacing: 0.04em; padding: 5px 12px; color: var(--on-signal); background: var(--signal); border: var(--hairline-w, 1px) solid var(--signal); border-radius: var(--radius-sm); cursor: pointer; transition: filter 120ms cubic-bezier(0.2, 0.7, 0.2, 1); } .ds-btn-signal:hover { filter: brightness(1.1); } .ds-btn-signal:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tool Button",
+      "kind": "button",
+      "refersTo": "button-tool",
+      "description": "Header and transport actions: Match, MIDI, Presets, Share, Play.",
+      "html": "<button class=\"ds-btn-tool\">▤ Presets</button>",
+      "css": ".ds-btn-tool { font-family: var(--font-mono); font-size: max(11px, 0.7rem); letter-spacing: 0.04em; padding: 5px 12px; color: var(--text); background: var(--surface-raised); border: var(--hairline-w, 1px) solid var(--hairline); border-radius: var(--radius-sm); cursor: pointer; transition: filter 120ms cubic-bezier(0.2, 0.7, 0.2, 1), border-color 120ms cubic-bezier(0.2, 0.7, 0.2, 1); } .ds-btn-tool:hover { filter: brightness(1.1); border-color: var(--signal); } .ds-btn-tool:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; } .ds-btn-tool:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented-option",
+      "description": "Two to four options in a sunken track: Engine, Scope/Spectrum, Staff/Grid.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Engine\"><button class=\"ds-seg-opt is-on\" aria-current=\"true\">Braids</button><button class=\"ds-seg-opt\">Plaits</button><button class=\"ds-seg-opt\">Laxsynth</button><button class=\"ds-seg-opt\">Rings</button></div>",
+      "css": ".ds-seg { display: inline-flex; gap: 4px; padding: 3px; background: var(--surface-sunken); border: var(--hairline-w, 1px) solid var(--hairline); border-radius: var(--radius-md); } .ds-seg-opt { font-family: var(--font-mono); font-size: max(11px, 0.72rem); letter-spacing: 0.03em; padding: 5px 12px; color: var(--text-muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; } .ds-seg-opt:hover { color: var(--text); background: var(--surface-raised); } .ds-seg-opt.is-on { color: var(--signal-ink); background: var(--signal-deep); border-color: var(--signal); font-weight: 600; } .ds-seg-opt:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }"
+    },
+    {
+      "name": "Model List",
+      "kind": "custom",
+      "refersTo": "model-row",
+      "description": "Codes and names grouped by family; the selection reads by marker, bar and weight.",
+      "html": "<div class=\"ds-list\"><div class=\"ds-fam\">Analog &amp; sub</div><button class=\"ds-row is-sel\"><span class=\"ds-code\">CSAW</span>CS-80 Sawtooth</button><button class=\"ds-row\"><span class=\"ds-code\">MORPH</span>Waveform Trajectory</button><button class=\"ds-row\"><span class=\"ds-code\">FOLD</span>Wavefolder</button></div>",
+      "css": ".ds-list { width: 280px; background: var(--surface-sunken); border: 1px solid var(--hairline-soft); border-radius: var(--radius-sm); } .ds-fam { font-family: var(--font-mono); font-size: max(11px, 0.7rem); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 6px 10px 4px; } .ds-row { display: flex; gap: 10px; width: 100%; padding: 5px 10px; text-align: left; font-family: var(--font-sans); font-size: 0.8rem; color: var(--text-muted); background: none; border: 0; cursor: pointer; } .ds-row:hover { color: var(--text); background: var(--surface-raised); } .ds-code { font-family: var(--font-mono); min-width: 3.5em; } .ds-row.is-sel { color: var(--text); background: var(--signal-deep); box-shadow: inset 3px 0 0 var(--signal); } .ds-row.is-sel .ds-code { color: var(--signal-ink); font-weight: 600; } .ds-row.is-sel .ds-code::before { content: '▸ '; } .ds-row:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }"
+    },
+    {
+      "name": "Explain Card",
+      "kind": "card",
+      "refersTo": "explain-card",
+      "description": "One per macro knob: name, live value, what it does on this model, and Show me.",
+      "html": "<div class=\"ds-card is-active\"><div class=\"ds-card-top\"><span class=\"ds-card-k\">Timbre</span><span class=\"ds-card-v\">50%</span></div><p class=\"ds-card-t\">Width of the notch carved out of the sawtooth.</p><div class=\"ds-card-a\"><button class=\"ds-show\">▸ Show me</button></div></div>",
+      "css": ".ds-card { width: 260px; display: flex; flex-direction: column; padding: 8px 10px; background: var(--surface-sunken); border: 1px solid var(--hairline); border-radius: var(--radius-sm); font-family: var(--font-mono); transition: background 120ms ease, border-color 120ms ease; } .ds-card.is-active, .ds-card:hover { background: var(--signal-deep); border-color: var(--signal); } .ds-card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; } .ds-card-k { font-size: max(11px, 0.7rem); letter-spacing: 0.1em; text-transform: var(--label-case, none); font-weight: 600; color: var(--text); } .ds-card-v { font-size: max(11px, 0.7rem); color: var(--signal-ink); font-variant-numeric: tabular-nums; } .ds-card-t { margin: 0; font-size: max(13px, 0.8rem); line-height: 1.45; color: var(--text-dim); } .ds-card-a { display: flex; justify-content: flex-end; margin-top: auto; padding-top: 6px; } .ds-show { font-family: var(--font-mono); font-size: max(11px, 0.7rem); padding: 3px 9px; color: var(--text-muted); background: var(--surface-raised); border: 1px solid var(--hairline); border-radius: var(--radius-sm); cursor: pointer; } .ds-show:hover { color: var(--text); border-color: var(--signal); } .ds-show:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "A sunken well; focus adds the 2px signal ring.",
+      "html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Search — “bell”, “fm”, “noise”…\" aria-label=\"Search synthesis models\">",
+      "css": ".ds-search { width: 280px; padding: 7px 10px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text); background: var(--surface-sunken); border: 1px solid var(--hairline); border-radius: var(--radius-md); } .ds-search::placeholder { color: var(--text-dim); } .ds-search:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; border-color: var(--signal); }"
+    },
+    {
+      "name": "Knob",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The signature control: arc track, value arc, needle, label and live readout; engaged state is a ring.",
+      "html": "<div class=\"ds-knob is-on\" role=\"slider\" tabindex=\"0\" aria-label=\"Timbre\" aria-valuemin=\"0\" aria-valuemax=\"1\" aria-valuenow=\"0.5\" aria-valuetext=\"0.50\"><span class=\"ds-knob-l\">Timbre</span><svg viewBox=\"0 0 40 40\" width=\"40\" height=\"40\" aria-hidden=\"true\"><path d=\"M 9.39 30.61 A 15 15 0 1 1 30.61 30.61\" fill=\"none\" stroke=\"var(--knob-track)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M 9.39 30.61 A 15 15 0 0 1 20 5\" fill=\"none\" stroke=\"var(--knob-fill)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><line x1=\"20\" y1=\"20\" x2=\"20\" y2=\"8\" stroke=\"var(--knob-pointer)\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"20\" r=\"2.5\" fill=\"var(--knob-pointer)\"/></svg><span class=\"ds-knob-v\">0.50</span></div>",
+      "css": ".ds-knob { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 3.6rem; padding: 4px; border-radius: var(--radius-md); cursor: ns-resize; outline: none; } .ds-knob-l { font-family: var(--font-mono); font-size: max(11px, 0.7rem); letter-spacing: 0.08em; color: var(--text-dim); } .ds-knob-v { font-family: var(--font-mono); font-size: max(11px, 0.7rem); color: var(--text); font-variant-numeric: tabular-nums; } .ds-knob:hover, .ds-knob.is-on { background: var(--surface-raised); box-shadow: 0 0 0 2px var(--signal), 0 0 14px var(--signal-glow); } .ds-knob:focus-visible { box-shadow: 0 0 0 2px var(--signal); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Open Panel",
+    "overview": "Parallax is an instrument with its cover off. While it plays, you can see what each part does: the prose under a knob rewrites itself as you turn it, the scope shows what changed, and Show me performs the control for you. The visual system exists to keep that loop legible. Nothing decorative competes with a readout, and nothing a learner needs is hidden behind a hover.\n\nThe mood is a bench instrument: precise, quiet, legible under work light. Panels are flat and divided by hairlines; corners are barely rounded; type is mostly monospaced because most of what it sets is a measurement, a code or a label. Each engine wears its own skin (a phosphor CRT for Braids, a light hardware body for Plaits, a grey console for Laxsynth, a walnut soundboard for Rings), and the skin changes when the engine does. Character comes from the skin; the chassis underneath, with its layout, components, type roles and token names, is the same for all four.\n\nColor is held back until something is live. Idle controls sit in muted text inside hairline outlines; the signal color appears on what is selected, sounding or being turned, and always alongside a second cue a colorblind eye can read.",
+    "keyCharacteristics": [
+      "Four skins on one shared token schema; the skin follows the engine, never a manual switch.",
+      "Flat panels separated by 1px hairline gaps and small tonal steps; shadows only on things that float.",
+      "Monospace for labels, codes, readouts and the Explain prose; a grotesque for names and the wordmark.",
+      "The scope is always a dark screen set into the body, even on the light Sandbox skin.",
+      "Every state survives desaturation: weight, a ▸ marker, an outline or a label carries it, and color only reinforces."
+    ],
+    "rules": [
+      {
+        "name": "The Second Channel Rule",
+        "body": "No distinction is carried by hue alone. A selected row gets a ▸ marker and an inset bar; a selected pill gets weight and an outline; an engaged knob gets a ring. Test: desaturate the screen; if two states look the same, the design is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink and Fill Rule",
+        "body": "`--signal` is for fills, traces and outlines. Text that wants the signal uses `--signal-ink`. In two skins they are the same value; never assume so.",
+        "section": "colors"
+      },
+      {
+        "name": "The Earned Signal Rule",
+        "body": "Idle controls are muted text in a hairline outline. The signal appears on what is selected, sounding or being touched, and goes away when it isn't.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Wash Rule",
+        "body": "Translucent tints (`*-signal-deep`) may back a state that already reads without them, never carry one on their own.",
+        "section": "colors"
+      },
+      {
+        "name": "The 11px Floor Rule",
+        "body": "No text renders under 11px, on any screen. Two roles in `base.css` hold it: `--fs-label` for labels and readouts, `--fs-prose` for reading text. The floors are absolute, so a phone's smaller root size can't undercut them.",
+        "section": "typography"
+      },
+      {
+        "name": "The Measure Rule",
+        "body": "Reading text stops at 80ch. A wide panel gets empty space, not longer lines.",
+        "section": "typography"
+      },
+      {
+        "name": "The Explain Leads Rule",
+        "body": "When height is scarce, Explain keeps it. The scope has a floor (150px) and the sequencer gives way first.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Panel Rule",
+        "body": "Panels never cast shadows. If something in the frame needs to stand forward, give it a tonal step and a hairline.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do read only semantic tokens (`--signal`, `--surface-sunken`, `--text-dim`) in components; a new skin fills the schema in `tokens.css` and passes `contrast.test.ts`.",
+      "Do pair every color-coded state with weight, a marker, an outline, a label or a luminance step, and check it desaturated.",
+      "Do keep text at 11px or larger (`--fs-label`) and reading text at 13px or larger (`--fs-prose`), capped at 80ch.",
+      "Do use `--signal-ink` for any lettering in the signal color.",
+      "Do keep the scope a dark screen in every skin.",
+      "Do give touch controls at least 36px of height, and 16px text in form fields."
+    ],
+    "donts": [
+      "Don't add a manual theme switcher; the skin follows the engine.",
+      "Don't set text in Sandbox's Hot Signal; it is 2.5:1 on the light body.",
+      "Don't carry meaning with a translucent tint alone.",
+      "Don't put shadows on panels inside the frame; shadows are for popovers, toasts and modals.",
+      "Don't use a colored side stripe as a card's accent; outline the whole card, as the active Explain card does.",
+      "Don't brand anything \"Mutable Instruments\" or \"Braids\"; engine names are factual labels only."
+    ]
+  }
+}

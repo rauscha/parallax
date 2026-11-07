@@ -21,10 +21,13 @@
    1280×720). Grid mode gives the sequencer more height.
 
 ## Next up
-1. `/impeccable document`: DESIGN.md for the **four** themes (lab, sandbox, phosphor, rings).
-   Record the type roles (`--fs-label`, `--fs-prose` in `base.css`) and the new lab/sandbox text
-   values.
-2. Then the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
+1. **DESIGN.md is written** (`/impeccable document`, 2026-11-07): North Star "The Open Panel", bench-instrument
+   mood, "quiet until touched" controls (Andrew's picks). Four palettes in the frontmatter, eight named rules,
+   sidecar at `.impeccable/design.json`. Re-run `document` when tokens change.
+2. **`/impeccable critique` aimed at the explain loop** (knob → card → Show me → prose): the design review the
+   loop has never had. Likely follow-ups: `onboard` (start screen, empty sequencer), `clarify`, `delight`.
+3. Re-run `/impeccable audit` to rescore (15/20 before the fixes).
+4. Then the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
 
 ## Watch out for
 - **The Bash sandbox cannot reach the preview dev server** (`localhost:5173` is refused from Bash). For scripted screenshots:

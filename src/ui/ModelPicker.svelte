@@ -177,7 +177,7 @@
   <input
     class="search"
     type="search"
-    placeholder="Search models — try “bell”, “fm”, “noise”…"
+    placeholder="Search — “bell”, “fm”, “noise”…"
     bind:value={query}
     disabled={!ready}
     aria-label="Search synthesis models"

@@ -90,4 +90,9 @@
   @media (pointer: coarse) {
     .undo { min-height: 36px; }
   }
+  /* On touch screens the on-screen keyboard owns the bottom edge, and a
+     toast there covered the natural keys. Sit under the header instead. */
+  @media (pointer: coarse) {
+    .toast { bottom: auto; top: calc(env(safe-area-inset-top) + 72px); }
+  }
 </style>

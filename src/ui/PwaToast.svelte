@@ -52,6 +52,11 @@
     from { opacity: 0; transform: translate(-50%, 8px); }
     to { opacity: 1; transform: translate(-50%, 0); }
   }
+  /* On touch screens the on-screen keyboard owns the bottom edge, and a
+     toast there covered the natural keys. Sit under the header instead. */
+  @media (pointer: coarse) {
+    .toast { bottom: auto; top: calc(env(safe-area-inset-top) + 72px); }
+  }
   @media (prefers-reduced-motion: reduce) {
     .toast { animation: none; }
   }

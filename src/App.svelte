@@ -419,6 +419,7 @@
     gap: 14px;
   }
   .play-btn {
+    white-space: nowrap;
     font-family: var(--font-mono);
     font-size: 0.8rem;
     letter-spacing: 0.08em;
@@ -589,6 +590,12 @@
      readable in greyscale and remains accessible for colorblind users. */
   .footer-right { display: inline-flex; align-items: baseline; gap: 12px; }
   .build { font-size: var(--fs-label); color: var(--text-dim); opacity: 0.7; letter-spacing: 0.03em; }
+  /* On a phone the transport bar has room for Play, tempo and status only; the
+     build tag (a debugging aid) wrapped the bar onto two lines once labels got
+     their 11px floor. It stays in the desktop footer. */
+  @media (max-width: 720px) {
+    .build { display: none; }
+  }
   .status { display: inline-flex; align-items: baseline; gap: 6px; }
   .status .dot {
     font-family: var(--font-mono);

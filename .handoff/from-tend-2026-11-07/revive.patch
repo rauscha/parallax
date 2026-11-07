@@ -1,0 +1,142 @@
+diff -ruN a/dsp/shim/fm_shim.cc b/dsp/shim/fm_shim.cc
+--- a/dsp/shim/fm_shim.cc	2026-11-07 01:46:11.805149182 -0600
++++ b/dsp/shim/fm_shim.cc	2026-11-07 01:46:11.816775703 -0600
+@@ -304,6 +304,15 @@
+       0x2000 + static_cast<int>(semitones * kUnitsPerSemitone);
+ }
+ 
++// Lifts a held note that has faded more than `db` below its peak, without a new
++// strike. A note that hasn't faded that far doesn't change at all.
++EMSCRIPTEN_KEEPALIVE
++void fm_revive(float db) {
++  if (!g_note_alive || !g_note_down || db < 0.0f) return;
++  const float kUnitsPerDb = static_cast<float>(1 << 24) / 6.0206f;
++  g_note.revive(static_cast<int32_t>(db * kUnitsPerDb));
++}
++
+ // Heap buffer JS reads directly via Module.HEAP16.
+ EMSCRIPTEN_KEEPALIVE
+ int16_t* fm_alloc(int n_samples) {
+diff -ruN a/dsp/vendor/msfa/dx7note.cc b/dsp/vendor/msfa/dx7note.cc
+--- a/dsp/vendor/msfa/dx7note.cc	2026-11-07 01:46:11.802756386 -0600
++++ b/dsp/vendor/msfa/dx7note.cc	2026-11-07 01:46:11.816679382 -0600
+@@ -218,6 +218,11 @@
+   pitchmodsens_ = pitchmodsenstab[patch[143] & 7];
+ }
+ 
++// [tend modification, 2026-11-07] See dx7note.h.
++void Dx7Note::revive(int32_t drop) {
++  for (int op = 0; op < 6; op++) env_[op].revive(drop);
++}
++
+ void Dx7Note::compute(int32_t *buf, int32_t lfo_val, int32_t lfo_delay,
+   const Controllers *ctrls, int32_t *taps) {
+   int32_t pitchmod = pitchenv_.getsample();
+diff -ruN a/dsp/vendor/msfa/dx7note.h b/dsp/vendor/msfa/dx7note.h
+--- a/dsp/vendor/msfa/dx7note.h	2026-11-07 01:46:11.802717505 -0600
++++ b/dsp/vendor/msfa/dx7note.h	2026-11-07 01:46:11.816632966 -0600
+@@ -57,6 +57,10 @@
+   // See README.md in this directory — one of three local patches.
+   void update(const char patch[156], int midinote, int velocity);
+ 
++  // [tend modification, 2026-11-07] Lift every operator's faded envelope. See
++  // Env::revive. Oscillator phases and the pitch envelope carry on untouched.
++  void revive(int32_t drop);
++
+   // TODO: parameter changes
+ 
+   // TODO: some way of indicating end-of-note. Maybe should be a return
+diff -ruN a/dsp/vendor/msfa/env.cc b/dsp/vendor/msfa/env.cc
+--- a/dsp/vendor/msfa/env.cc	2026-11-07 01:46:11.802679294 -0600
++++ b/dsp/vendor/msfa/env.cc	2026-11-07 01:46:11.816588022 -0600
+@@ -121,15 +121,34 @@
+   return outlevel >= 20 ? 28 + outlevel : levellut[outlevel];
+ }
+ 
++int32_t Env::stagetarget(int ix) const {
++  int actuallevel = scaleoutlevel(levels_[ix]) >> 1;
++  actuallevel = (actuallevel << 6) + outlevel_ - 4256;
++  actuallevel = actuallevel < 16 ? 16 : actuallevel;
++  // level here is same as Java impl
++  return actuallevel << 16;
++}
++
++// [tend modification, 2026-11-07] See env.h. It sets up a climb that leaves stage
++// `next - 1`, so that arriving carries on into stage `next` as any stage would.
++void Env::revive(int32_t drop) {
++  if (!down_ || (ix_ == 0 && rising_)) return;  // released, or still in its attack
++  int32_t peak = stagetarget(0);
++  for (int i = 1; i < 3; i++) peak = max(peak, stagetarget(i));
++  const int32_t aim = peak - drop;
++  if (aim <= level_) return;  // hasn't faded that far, which is most sounds
++  int next = 1;
++  while (next < 3 && stagetarget(next) > aim) next++;
++  advance(0);  // for the attack's rate
++  ix_ = next - 1;
++  targetlevel_ = aim;
++  rising_ = true;
++}
++
+ void Env::advance(int newix) {
+   ix_ = newix;
+   if (ix_ < 4) {
+-    int newlevel = levels_[ix_];
+-    int actuallevel = scaleoutlevel(newlevel) >> 1;
+-    actuallevel = (actuallevel << 6) + outlevel_ - 4256;
+-    actuallevel = actuallevel < 16 ? 16 : actuallevel;
+-    // level here is same as Java impl
+-    targetlevel_ = actuallevel << 16;
++    targetlevel_ = stagetarget(ix_);
+     rising_ = (targetlevel_ > level_);
+ 
+     // rate
+diff -ruN a/dsp/vendor/msfa/env.h b/dsp/vendor/msfa/env.h
+--- a/dsp/vendor/msfa/env.h	2026-11-07 01:46:11.802631731 -0600
++++ b/dsp/vendor/msfa/env.h	2026-11-07 01:46:11.816518971 -0600
+@@ -49,6 +49,13 @@
+   // See README.md in this directory — one of three local patches.
+   void update(const int rates[4], const int levels[4], int outlevel,
+       int rate_scaling);
++  // [tend modification, 2026-11-07] Lift an envelope that has faded, without
++  // restarting it. If the level has fallen more than `drop` below the envelope's
++  // highest stage, it climbs back to that point at the attack rate, then decays
++  // from there through whichever stages still lie below it. Anything already
++  // above that point, which includes every sustained sound, is left exactly as
++  // it is. `drop` is in level units, so 1 << 24 is one doubling.
++  void revive(int32_t drop);
+   static int scaleoutlevel(int outlevel);
+  private:
+   int rates_[4];
+@@ -67,6 +74,7 @@
+   bool down_;
+ 
+   void advance(int newix);
++  int32_t stagetarget(int ix) const;
+ };
+ 
+ #endif  // __ENV_H
+diff -ruN a/public/fm-worklet.js b/public/fm-worklet.js
+--- a/public/fm-worklet.js	2026-11-07 01:46:11.805247216 -0600
++++ b/public/fm-worklet.js	2026-11-07 01:46:11.816911700 -0600
+@@ -313,6 +313,11 @@
+         this.queueEvent({ t: when, on: false, midi: 0, vel: 0 });
+         break;
+       }
++      case "revive": {
++        const when = typeof msg.time === "number" ? msg.time : currentTime;
++        this.queueEvent({ t: when, revive: +msg.db });
++        break;
++      }
+       case "taps":
+         // { on: true } only from the flowsheet view; everything else pays nothing.
+         this.setTaps(!!msg.on);
+@@ -368,7 +373,8 @@
+     const q = this.pendingEvents;
+     while (q.length && q[0].t <= currentTime) {
+       const ev = q.shift();
+-      if (ev.on) m._fm_note_on(ev.midi, ev.vel);
++      if (ev.revive !== undefined) m._fm_revive(ev.revive);
++      else if (ev.on) m._fm_note_on(ev.midi, ev.vel);
+       else m._fm_note_off();
+     }
+   }

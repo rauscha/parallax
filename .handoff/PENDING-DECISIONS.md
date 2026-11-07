@@ -1,5 +1,8 @@
 # Waiting on you
 
+## Heads-up from tend, 2026-11-07: two FM patches, not applied
+tend lifted FM's ±3 semitone bend clamp and added a way to revive a faded note without a strike. Nothing here has changed. Patches and notes are in `.handoff/from-tend-2026-11-07/`. No rush, and it's fine to say no.
+
 ## Nothing is pending as of 2026-09-13.
 
 Everything below is **historical**. The last live item — item 4, the ear pass on the fourteen FM

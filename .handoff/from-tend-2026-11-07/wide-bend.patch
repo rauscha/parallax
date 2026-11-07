@@ -1,0 +1,45 @@
+diff -ruN a/dsp/shim/fm_shim.cc b/dsp/shim/fm_shim.cc
+--- a/dsp/shim/fm_shim.cc	2026-11-06 23:15:33.701948047 -0600
++++ b/dsp/shim/fm_shim.cc	2026-11-06 23:15:33.721668829 -0600
+@@ -291,17 +291,17 @@
+   g_note_down = false;
+ }
+ 
+-// Semitones, +/-. msfa hardcodes a 3-semitone bend range in Dx7Note::compute,
+-// so this maps semitones onto that range; anything wider would need the
+-// vendored constant changed. Recorded rather than silently clamped away.
++// Semitones, +/-. Dx7Note::compute scales this value so that 8192 units are 3
++// semitones, but nothing in msfa limits it, so the voice follows much further.
++// The limit here keeps the scaled value well inside its int32.
+ EMSCRIPTEN_KEEPALIVE
+ void fm_set_pitch_bend(float semitones) {
+-  const float kRange = 3.0f;
+-  float norm = semitones / kRange;
+-  if (norm > 1.0f) norm = 1.0f;
+-  if (norm < -1.0f) norm = -1.0f;
++  const float kUnitsPerSemitone = 8192.0f / 3.0f;
++  const float kLimit = 48.0f;
++  if (semitones > kLimit) semitones = kLimit;
++  if (semitones < -kLimit) semitones = -kLimit;
+   g_controllers.values_[kControllerPitch] =
+-      0x2000 + static_cast<int>(norm * 8191.0f);
++      0x2000 + static_cast<int>(semitones * kUnitsPerSemitone);
+ }
+ 
+ // Heap buffer JS reads directly via Module.HEAP16.
+diff -ruN a/public/fm-worklet.js b/public/fm-worklet.js
+--- a/public/fm-worklet.js	2026-11-06 23:15:33.703122812 -0600
++++ b/public/fm-worklet.js	2026-11-06 23:15:33.721798355 -0600
+@@ -59,10 +59,8 @@
+ class FmProcessor extends AudioWorkletProcessor {
+   static get parameterDescriptors() {
+     return [
+-      // Pitch bend in semitones. msfa hardcodes a +/-3 semitone range inside
+-      // Dx7Note::compute, so the shim maps onto that; the bounds here match it
+-      // instead of pretending to a wider range we cannot deliver.
+-      { name: "bend", defaultValue: 0, minValue: -3, maxValue: 3, automationRate: "k-rate" },
++      // Pitch bend in semitones, up to the shim's own limit.
++      { name: "bend", defaultValue: 0, minValue: -48, maxValue: 48, automationRate: "k-rate" },
+     ];
+   }
+ 

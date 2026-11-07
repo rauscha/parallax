@@ -129,7 +129,7 @@
   }
   .group-label {
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-dim);
@@ -140,6 +140,6 @@
   .knob-row {
     display: flex;
     flex-wrap: nowrap;
-    gap: 0.1rem;
+    gap: 0.35rem;   /* knobs size to their labels now, so neighbours need air between words */
   }
 </style>

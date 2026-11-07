@@ -127,7 +127,7 @@
   .explain-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-height: 0;
     overflow-y: auto;
     font-family: var(--font-mono);
@@ -156,12 +156,13 @@
     min-width: 0;
   }
   .name {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--text);
     line-height: 1.2;
   }
   .family {
-    font-size: 0.6rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.08em;
     text-transform: var(--label-case);
     color: var(--text-dim);
@@ -169,7 +170,8 @@
 
   .desc {
     margin: 0;
-    font-size: 0.74rem;
+    max-width: 80ch;          /* the panel is ~115ch wide on a laptop; long lines lose the eye */
+    font-size: var(--fs-prose);
     line-height: 1.5;
     color: var(--text-dim);
   }
@@ -178,6 +180,7 @@
      from the one-line description with a left rule so it reads as "the longer
      story." */
   .detail {
+    max-width: 80ch;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -186,14 +189,14 @@
   }
   .detail-line {
     margin: 0;
-    font-size: 0.72rem;
+    font-size: var(--fs-prose);
     line-height: 1.55;
     color: var(--text-dim);
   }
   .detail-label {
     display: inline-block;
     margin-right: 6px;
-    font-size: 0.6rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.08em;
     text-transform: var(--label-case);
     font-weight: 600;
@@ -231,20 +234,20 @@
     margin-bottom: 4px;
   }
   .knob {
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.1em;
     text-transform: var(--label-case);
     color: var(--text);
     font-weight: 600;
   }
   .val {
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: var(--signal-ink);
     font-variant-numeric: tabular-nums;
   }
   .card-text {
     margin: 0;
-    font-size: 0.72rem;
+    font-size: var(--fs-prose);
     line-height: 1.45;
     color: var(--text-dim);
   }
@@ -260,7 +263,7 @@
      running (and the label flips to ■ Stop, so the state reads without hue). */
   .show-me {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 3px 9px;
     color: var(--text-muted);

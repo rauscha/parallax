@@ -179,7 +179,7 @@
     letter-spacing: 0.04em;
     color: var(--text-dim);
   }
-  .err { margin: 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--danger); }
+  .err { margin: 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--danger); }
   .empty { margin: 2px 0; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); line-height: 1.4; }
 
   .list {
@@ -221,7 +221,7 @@
   }
   .r-meta {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     padding-left: 23px;   /* align under the name, past the glyph + gap */
   }
@@ -229,7 +229,7 @@
     align-self: center;
     margin-top: 2px;
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.03em;
     color: var(--text-dim);
     background: transparent;

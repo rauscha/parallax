@@ -554,13 +554,13 @@
     color: var(--text);
     font-variant-numeric: tabular-nums;
   }
-  .hint { margin: 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); }
+  .hint { margin: 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--text-dim); }
 
   .dual { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .pane { display: flex; flex-direction: column; gap: 4px; }
   .pane-label {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.08em;
     color: var(--text-dim);
   }
@@ -589,7 +589,7 @@
   }
   .detect-key {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-dim);
@@ -604,7 +604,7 @@
   .detect-val.muted-val { color: var(--text-dim); }
   .detect-sub {
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
@@ -634,7 +634,7 @@
   }
   .suggest-name .eng {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-dim);
@@ -681,14 +681,14 @@
   }
   .alts-label {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-dim);
   }
   .alt-chip {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--fs-label);
     padding: 4px 10px;
     color: var(--text);
     background: var(--surface-sunken);

@@ -153,14 +153,14 @@
   .status {
     margin: 2px 0 0;
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: var(--signal-ink);
     line-height: 1.4;
   }
   .note {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     line-height: 1.4;
   }

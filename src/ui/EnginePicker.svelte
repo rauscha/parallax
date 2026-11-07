@@ -59,7 +59,7 @@
   }
   .label {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     text-transform: var(--label-case);
     letter-spacing: 0.1em;
     color: var(--text-dim);

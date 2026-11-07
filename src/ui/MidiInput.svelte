@@ -85,14 +85,14 @@
   }
   .label {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     text-transform: var(--label-case);
     letter-spacing: 0.1em;
     color: var(--text-dim);
   }
   .note {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
   }
   .enable {
@@ -132,7 +132,7 @@
   }
   .ghost {
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 3px 8px;
     color: var(--text-muted);
@@ -153,13 +153,13 @@
     padding-left: 8px;
     border-left: 2px solid var(--accent);
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: var(--text);
     overflow-wrap: anywhere;
   }
   .err {
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: var(--accent);
     flex-basis: 100%;
   }

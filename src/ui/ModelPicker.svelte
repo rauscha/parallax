@@ -276,7 +276,7 @@
   }
   .family-tag {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-dim);
@@ -318,7 +318,7 @@
     padding: 4px 10px;
     background: var(--surface);
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-dim);

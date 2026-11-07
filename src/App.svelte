@@ -307,7 +307,7 @@
     /* Explain is the product, so it gets the most height. The staff scales to
        its width and left ~100px of the old 1.6fr row empty at 1440×900, so the
        sequencer gives that back. The scope keeps a floor so it never squashes. */
-    grid-template-rows: minmax(150px, 0.9fr) minmax(0, 1.6fr) minmax(170px, 1fr);
+    grid-template-rows: minmax(150px, 0.85fr) minmax(0, 1.65fr) minmax(170px, 1fr);
     grid-template-areas:
       "scope    controls"
       "explain  controls"
@@ -339,7 +339,7 @@
   }
   .viz-btn {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.08em;
     padding: 3px 8px;
     border-radius: calc(var(--radius-sm) - 2px);
@@ -490,7 +490,7 @@
   }
   .surf-btn {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     padding: 3px 8px;
     color: var(--text-dim);
@@ -578,7 +578,7 @@
   /* Status uses shape + text-case + weight, not color alone — ready/idle is
      readable in greyscale and remains accessible for colorblind users. */
   .footer-right { display: inline-flex; align-items: baseline; gap: 12px; }
-  .build { font-size: 0.62rem; color: var(--text-dim); opacity: 0.7; letter-spacing: 0.03em; }
+  .build { font-size: var(--fs-label); color: var(--text-dim); opacity: 0.7; letter-spacing: 0.03em; }
   .status { display: inline-flex; align-items: baseline; gap: 6px; }
   .status .dot {
     font-family: var(--font-mono);

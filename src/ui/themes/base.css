@@ -6,6 +6,13 @@
   box-sizing: border-box;
 }
 
+/* Type roles shared by every theme. The floor is absolute so a phone's
+   smaller root size (14px) can't take a label under 11px. */
+:root {
+  --fs-label: max(11px, 0.7rem);   /* tracked labels, meta, small buttons, readouts */
+  --fs-prose: max(13px, 0.8rem);   /* the Explain prose: the part people read */
+}
+
 html,
 body {
   margin: 0;

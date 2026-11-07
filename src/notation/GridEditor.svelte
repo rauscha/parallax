@@ -712,7 +712,7 @@
   .bar-tab {
     flex: 1;
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     text-transform: var(--label-case);
     padding: 4px 0;
@@ -864,7 +864,7 @@
   }
   .oct-btn {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     padding: 3px 6px;
     color: var(--text-dim);
     background: var(--surface-sunken);
@@ -876,7 +876,7 @@
   .oct-btn:hover:not(:disabled) { color: var(--text); }
   .oct-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .oct-label {
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     min-width: 5em;
     text-align: center;
@@ -892,7 +892,7 @@
   }
   .fold-btn {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 3px 8px;
     color: var(--text-dim);
@@ -911,7 +911,7 @@
 
   .randomize-btn {
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 4px 10px;
     color: var(--text-dim);

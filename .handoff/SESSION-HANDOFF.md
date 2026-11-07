@@ -1,43 +1,32 @@
-# Session hand-off — 2026-09-15 (machine: desktop · c:\parallax)
+# Session hand-off — 2026-11-07 (machine: tikiserv · ~/repos/parallax)
 
 ## STATE (read this first)
-- Branch: `main`, **clean + synced**. Untracked are still only the Impeccable install (`.claude/agents`, `.claude/skills`, `.github/*`), deliberately left out of git.
-- **`v1.3.0` is tagged and pushed** (annotated tag on `0f90a1e`). It covers FM engine #5, the `graph` theme, scope taps, the flowsheet view, its redesign and this session's audit fixes. 277 tests pass and `npm run check` is clean.
-- **NEXT ACTION:** run `/impeccable document` in a fresh session. It writes DESIGN.md for **all five themes** (lab, sandbox, phosphor, rings/"Soundboard", graph), derived from the shipped code.
+- Branch `main`, clean and pushed through `68d1c7f`. 137 tests pass, `npm run check` is clean, and
+  Impeccable's detector reports nothing across `src/` and `index.html`.
+- **FM is retired** (`3b33cad`): engine, flowsheet, `graph` theme, msfa, all of it. Recover from
+  the `v1.3.0` tag. Saved FM presets, recent sounds and links load the default engine and keep
+  only their melody (`share-url.test.ts`).
+- An `/impeccable audit` of the four remaining engines scored 15/20; every finding was fixed in
+  one commit per step: layout `8894b8c`, contrast `bba60d6`, type `9aa802e`, headings `a049999`,
+  lazy loading `ea832b0`, phone `d644ff0`, polish `68d1c7f`.
 
-## Done this session
-1. **`/impeccable init`**: PRODUCT.md (`c4fb0e7`). Confirmed answers: the primary user is synth-curious learners; success means "they carry it back" to hardware; the build path is deliberately not recorded in `.impeccable/config.json`.
-2. **`/impeccable audit` on the flowsheet**: 16/20 (`eae6ebe`), report in `reviews/2026-09-15-flowsheet-audit.md`. That file now ends with a resolution table.
-3. **adapt** (`4f69772`): `layout.ts` has `STANDARD` and `COMPACT` geometries, and `geometryFor(viewportW, viewportH)` picks one per window, never per algorithm.
-   - Compact: 188×114 nodes with 172×46 scopes.
-   - `layout.test.ts` asserts 1920×1080, 1536×864, 1440×900 and 1366×768: no horizontal scroll, carriers and output sum on screen.
-   - The output sum no longer wraps. Stacked algorithms lay the three summaries in a row.
-4. **Contrast** (`cac7932`): graph `--accent` changed `#B54600` → `#A84100`.
-   - Graph `--signal-ink` is now its own `#0066A0`. `--signal` stays `#0072B2` for traces.
-   - `contrast.test.ts` checks text tokens (plus `--accent`) on all four grounds in all five themes.
-   - `KNOWN_SHORTFALLS` records three older `--text-dim` pairs in lab and sandbox. The list can only shrink: an entry that starts passing fails the test.
-5. **clarify** (`a8f3121`): one `explain(op)` function feeds both the visible reading panel (fixed 5 lines) and each node's `aria-describedby`.
-   - Nodes are `role="group" tabindex="0"`, not inert buttons.
-   - Fixed two wrong claims: "IDX 0 → bare sine" (false on fan-in algorithms), and whole-number feedback operators "standing still".
-6. **polish** (`a960240`):
-   - Hover emphasis is by line weight, not opacity.
-   - The palette is cached per theme; wires redraw only when state changes.
-   - Hard-coded monospace stacks now use `var(--font-mono)`. Deleted the unused `--t-spring`. Legend entries no longer split.
-7. **Andrew's flowsheet eye pass: PASSED**, from contact sheets of all 14 voices at both sizes. He accepted two tile notes:
-   - the idle reading box leaves empty space on algorithm-32 voices
-   - Tine and Reed Piano's side column lands 1 px above the 768 fold
+## Owed: Andrew's eye
+1. **Plaits (sandbox) and Laxsynth (lab) text tokens changed** (`bba60d6`): `--text-muted` and
+   `--text-dim` both moved, keeping their step, so dim clears AA on every panel. The earlier note
+   said to propose this first since both skins had passed his eye; it was applied under "run
+   through them step by step". Revert that one commit if it reads wrong.
+2. **Explain at 1440×900**: knob cards now sit side by side and the prose is 13px with an 80ch
+   measure. Braids, Plaits and Laxsynth fit; Rings (four long cards) scrolls, with a fade at the
+   bottom edge. Grid mode gives the sequencer more height.
 
 ## Next up
-1. **`/impeccable document`**: load `.claude/skills/impeccable/reference/document.md`; the `impeccable-documenter` subagent exists for it.
-   - Theme follows engine: braids→phosphor, plaits→sandbox, laxsynth→lab, rings→rings ("Soundboard"), fm→graph. `:root` mirrors lab.
-   - All tokens live in `src/ui/themes/tokens.css`; shared base rules are in `base.css`.
-   - Record the **post-audit** graph values (accent `#A84100`, signal-ink `#0066A0`) and the two flowsheet geometries.
-   - Graph deliberately has **no fill-only colour**: every colour is text-safe.
-2. Optional follow-up: the lab/sandbox `--text-dim` shortfalls. A background task chip was offered this session. Both themes are eye-passed, so propose options with measured ratios before changing tokens.
-3. Parked audit items, not gating:
-   - Dead-path wires sit at ~2:1 (under the 1.4.11 3:1 guideline) on purpose; dash, weight, legend and node text carry that state.
-   - The idle reading box could collapse on stacked layouts.
-4. After that the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
+1. `/impeccable document`: DESIGN.md for the **four** themes (lab, sandbox, phosphor, rings).
+   Record the type roles (`--fs-label`, `--fs-prose` in `base.css`) and the new lab/sandbox text
+   values.
+2. Open question for Andrew: Explain repeats the model code, name, family and one-line
+   description that the Controls column already shows. Dropping it from Explain would free ~70px
+   for the cards. Not done, since it removes content.
+3. Then the roadmap resumes with melody tools (`docs/superpowers/specs/2026-06-20-melody-tools.md`).
 
 ## Watch out for
 - **The Bash sandbox cannot reach the preview dev server** (`localhost:5173` is refused from Bash). For scripted screenshots:

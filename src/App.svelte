@@ -183,7 +183,7 @@
     </div>
     <div class="staff-footer">
       {#if eventCount === 0 && firstRun}
-        <p class="hint">Empty sequencer — hear it go: <button class="link-btn" onclick={loadDemoMelody} disabled={!ready}>load a demo</button> or <button class="link-btn" onclick={roll} disabled={!ready || rolling}>⚄ surprise me</button>.</p>
+        <p class="hint">Empty sequencer — hear it go: <button class="link-btn" onclick={loadDemoMelody} disabled={!ready}>load a demo</button> or <span class="nowrap"><button class="link-btn" onclick={roll} disabled={!ready || rolling}>⚄ surprise me</button>.</span></p>
       {:else if eventCount === 0}
         <p class="hint">{surface === "staff" ? "Tap to place a note · drag right to extend · long-press to delete" : "Tap a cell to place a note · drag right to extend · tap again to delete"}</p>
         <button class="ghost-btn" onclick={loadDemoMelody} disabled={!ready}>Load demo</button>
@@ -325,7 +325,7 @@
   /* The step grid fills whatever height it gets (one row per pitch), the staff
      only what its width allows. So the sequencer row grows when the grid is
      showing, and Explain scrolls while you edit. */
-  @media (min-width: 721px) {
+  @media (min-width: 721px) and (min-height: 501px), (min-width: 721px) and (pointer: fine) {
     .grid.grid-surface {
       grid-template-rows: minmax(130px, 0.7fr) minmax(0, 1.15fr) minmax(0, 1.85fr);
     }
@@ -375,7 +375,7 @@
      720px-tall laptop) the text fades into the ground at the bottom edge, so a
      cut-off card reads as "more below" rather than as the end. Shown only
      while content is hidden there (scrollCue sets the attribute). */
-  @media (min-width: 721px) {
+  @media (min-width: 721px) and (min-height: 501px), (min-width: 721px) and (pointer: fine) {
   .explain::after {
     content: "";
     position: sticky;
@@ -543,6 +543,7 @@
     flex: 0 0 auto;
     min-height: 28px;
   }
+  .staff-footer .hint .nowrap { white-space: nowrap; }   /* keep the full stop with its button */
   .staff-footer .hint {
     font-family: var(--font-mono);
     font-size: 0.7rem;
@@ -593,7 +594,7 @@
   /* On a phone the transport bar has room for Play, tempo and status only; the
      build tag (a debugging aid) wrapped the bar onto two lines once labels got
      their 11px floor. It stays in the desktop footer. */
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     .build { display: none; }
   }
   .status { display: inline-flex; align-items: baseline; gap: 6px; }
@@ -608,7 +609,7 @@
     color: var(--text);
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     /* Stacked on a phone, the four regions are far taller than the viewport.
        The desktop layout never scrolls (overflow:hidden) and lets a `1fr` scope
        row eat the remaining height — on mobile that clipped the bottom region
@@ -617,7 +618,9 @@
        row to its content, with explicit heights for the two regions that have
        no intrinsic height of their own (the canvas viz and the editor). */
     .grid {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): a wide child (four engine pills, a row of selects) must
+         wrap or shrink, not widen the column past a 320px screen. */
+      grid-template-columns: minmax(0, 1fr);
       /* max-content, NOT auto: the stacked content is always taller than a phone
          viewport, so the grid is over-constrained and scrolls. With `auto` rows,
          the track-sizing algorithm shrinks rows toward their min-content to fit
@@ -685,5 +688,9 @@
     .transport {
       padding-bottom: calc(8px + env(safe-area-inset-bottom));
     }
+  }
+  /* Phone held sideways: a shorter scope leaves room to scroll to the controls. */
+  @media (pointer: coarse) and (max-height: 500px) {
+    .scope { height: 30vh; min-height: 110px; }
   }
 </style>

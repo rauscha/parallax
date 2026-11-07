@@ -171,4 +171,19 @@
     .io-btn { padding: 8px 12px; min-height: 36px; }
     .row-btn { min-height: 38px; }
   }
+
+  /* Phones: the menu sits inside the ⋯ panel, so a popover anchored to its
+     button opened partly off the left edge. Pin it under the header instead. */
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
+    .panel {
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 64px);
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      max-height: calc(100dvh - 140px);
+      overflow-y: auto;
+    }
+  }
 </style>

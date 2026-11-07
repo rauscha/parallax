@@ -150,7 +150,7 @@
   }
   /* This is a physical-QWERTY play hint — meaningless on a phone, where the
      tappable NoteStrip is the play surface. Reclaim the column space. */
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     .hint { display: none; }
   }
 </style>

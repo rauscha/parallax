@@ -64,6 +64,7 @@
 <style>
   .staff-toolbar {
     display: inline-flex;
+    flex-wrap: wrap;        /* the octave field drops below the tools on a 320px screen */
     align-items: center;
     gap: 12px;
     font-family: var(--font-mono);
@@ -121,6 +122,6 @@
   .octave-field select:hover { filter: brightness(1.1); }
   @media (pointer: coarse) {
     .tool { width: 36px; height: 36px; }
-    .octave-field select { padding: 8px 10px; min-height: 36px; }
+    .octave-field select { padding: 8px 10px; min-height: 36px; font-size: 16px; }   /* no iOS focus zoom */
   }
 </style>

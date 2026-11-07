@@ -271,4 +271,21 @@
     transition: color var(--t-fast), border-color var(--t-fast);
   }
   .reveal:hover { color: var(--text); border-color: var(--signal); }
+
+  /* Narrow phones: beside the octave buttons the keys were 26px wide on a
+     Pixel 7 and 13px on an iPhone SE. Stack instead: a slim octave row on top,
+     the keys across the full width below (about 40px each at 320px). */
+  @media (pointer: coarse) and (max-width: 560px) {
+    .note-strip:not(.collapsed) { flex-wrap: wrap; row-gap: 6px; }
+    .chips { order: 1; flex-basis: 100%; }
+    .oct { min-height: 36px; }
+    .oct.collapse { margin-left: auto; }
+  }
+  /* Phone held sideways: ~400px of height has to hold the header, the keys,
+     the transport and something to scroll. Shorter keys give it back. */
+  @media (pointer: coarse) and (max-height: 500px) {
+    .note-strip:not(.collapsed) { padding: 4px 8px; }
+    .chip { min-height: 36px; padding: 4px 2px; }
+    .oct { min-height: 36px; }
+  }
 </style>

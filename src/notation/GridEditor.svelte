@@ -82,7 +82,7 @@
 
   let narrow = $state(false);
   $effect(() => {
-    const mq = window.matchMedia("(max-width: 720px)");
+    const mq = window.matchMedia("(max-width: 720px), (pointer: coarse) and (max-height: 500px)");
     narrow = mq.matches;
     const onChange = (e: MediaQueryListEvent) => { narrow = e.matches; };
     mq.addEventListener("change", onChange);
@@ -937,7 +937,7 @@
      so the surface has an intrinsic height; the `1fr` still lets rows grow if
      there's room. Desktop keeps the pure-`1fr` fill (no clipping in Chromatic
      mode), so this stays scoped to the same breakpoint as the stacked layout. */
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     /* Size the editor to its content and let the page scroll, instead of
        filling (and being clipped by) the flex-constrained .staff-frame. Paired
        with the row floor below, this lets every row show on the phone. */

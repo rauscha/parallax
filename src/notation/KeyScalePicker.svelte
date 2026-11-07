@@ -69,6 +69,7 @@
   }
   select:hover { filter: brightness(1.1); }
   @media (pointer: coarse) {
-    select { padding: 8px 10px; min-height: 36px; }
+    /* 16px: iOS zooms the whole page when a smaller field takes focus. */
+    select { padding: 8px 10px; min-height: 36px; font-size: 16px; }
   }
 </style>

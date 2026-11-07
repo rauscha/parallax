@@ -701,7 +701,7 @@
   .alt-chip:hover:not(:disabled) { background: var(--surface-raised); color: var(--signal); }
   .alt-chip:disabled { opacity: 0.6; cursor: default; }
 
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     .overlay { padding: 0; }
     .panel { width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
     .dual { grid-template-columns: 1fr; }

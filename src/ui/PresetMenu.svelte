@@ -288,4 +288,19 @@
     /* 16px stops iOS zooming the PWA when the name field is focused. */
     .name-input { font-size: 16px; }
   }
+
+  /* Phones: the menu sits inside the ⋯ panel, so a popover anchored to its
+     button opened partly off the left edge. Pin it under the header instead. */
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
+    .panel {
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 64px);
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      max-height: calc(100dvh - 140px);
+      overflow-y: auto;
+    }
+  }
 </style>

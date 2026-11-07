@@ -301,7 +301,7 @@
   /* Tighter on phones — shrink the dial and trim the surround so more knobs fit
      per row and the controls column eats less vertical space. The whole .knob
      box is still the drag target, so this stays comfortably tappable. */
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     .knob { min-width: 3.1rem; padding: 0.1rem; gap: 0.05rem; }
     .dial { width: 2.1rem; height: 2.1rem; }
     .knob-label { letter-spacing: 0.04em; }

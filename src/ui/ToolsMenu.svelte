@@ -56,7 +56,7 @@
   .tools-toggle { display: none; }
   .tools-panel { display: contents; }
 
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
     .tools { position: relative; display: inline-flex; }
 
     .tools-toggle {

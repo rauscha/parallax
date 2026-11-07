@@ -105,4 +105,10 @@
   @media (pointer: coarse) {
     .opt { padding: 10px 14px; min-height: 44px; }
   }
+  /* Narrow phones: the four pills take the full row and share it, so they fit
+     a 320px screen instead of pushing the column wider. */
+  @media (max-width: 400px) {
+    .options { flex: 1 1 100%; }
+    .opt { flex: 1 1 0; min-width: 0; padding-inline: 4px; }
+  }
 </style>

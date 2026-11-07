@@ -26,6 +26,7 @@
   import { captureUndo } from "./state/undo";
   import { readSharedState } from "./state/share-url";
   import { listPresets } from "./state/persistence";
+  import { scrollCue } from "./ui/scrollCue";
 
   // Store subscriptions — captured and torn down in onDestroy. App is the root
   // (never unmounts in practice), but the unsubscribe-on-destroy rule is uniform
@@ -106,7 +107,7 @@
   </div>
 </header>
 
-<main class="grid">
+<main class="grid" class:grid-surface={surface === "grid"}>
   <section class="region scope" aria-label="Visualizer">
     <div class="viz-toggle" role="group" aria-label="Visualizer mode">
       <button class="viz-btn" class:active={viz === "scope"} aria-pressed={viz === "scope"}
@@ -134,7 +135,7 @@
     <KeyboardHarness />
   </section>
 
-  <section class="region explain" aria-label="Explain panel">
+  <section class="region explain" aria-label="Explain panel" use:scrollCue>
     <div class="region-label">Explain</div>
     <ExplainPanel />
   </section>
@@ -303,13 +304,22 @@
     overflow: hidden;
 
     grid-template-columns: 2fr 1fr;
-    /* Scope trimmed (1.4fr → 1.1fr) and that height handed to the Explain row
-       (1fr → 1.4fr) so the richer per-model text has room without scrolling. */
-    grid-template-rows: 1.1fr 1.4fr 1.6fr;
+    /* Explain is the product, so it gets the most height. The staff scales to
+       its width and left ~100px of the old 1.6fr row empty at 1440×900, so the
+       sequencer gives that back. The scope keeps a floor so it never squashes. */
+    grid-template-rows: minmax(150px, 0.9fr) minmax(0, 1.6fr) minmax(170px, 1fr);
     grid-template-areas:
       "scope    controls"
       "explain  controls"
       "staff    controls";
+  }
+  /* The step grid fills whatever height it gets (one row per pitch), the staff
+     only what its width allows. So the sequencer row grows when the grid is
+     showing, and Explain scrolls while you edit. */
+  @media (min-width: 721px) {
+    .grid.grid-surface {
+      grid-template-rows: minmax(130px, 0.7fr) minmax(0, 1.15fr) minmax(0, 1.85fr);
+    }
   }
 
   .region {
@@ -352,6 +362,25 @@
   .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }
   .divider  { height: 1px; background: var(--hairline-soft); margin: 4px 0; }
   .explain  { grid-area: explain; }
+  /* Scroll cue. When the prose outgrows the row (four long Rings cards, a
+     720px-tall laptop) the text fades into the ground at the bottom edge, so a
+     cut-off card reads as "more below" rather than as the end. Shown only
+     while content is hidden there (scrollCue sets the attribute). */
+  @media (min-width: 721px) {
+  .explain::after {
+    content: "";
+    position: sticky;
+    bottom: -14px;              /* sit flush on the region edge, over its padding */
+    display: block;
+    height: 40px;
+    margin: -40px -18px -14px;  /* overlay the last line, edge to edge */
+    background: linear-gradient(to bottom, transparent, var(--bg) 85%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--t-fast);
+  }
+  .explain:global([data-more-below])::after { opacity: 1; }
+  }
   .staff    { grid-area: staff; display: flex; flex-direction: column; }
 
   .region-label {

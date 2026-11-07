@@ -200,12 +200,17 @@
     color: var(--text);
   }
 
+  /* One card per macro knob, side by side like the knobs they explain. Stacked,
+     a third card sat below the fold on a 900px-tall laptop, Show me included;
+     in a row all of them fit, and the row collapses to one column on a phone. */
   .cards {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 8px;
   }
   .card {
+    display: flex;
+    flex-direction: column;
     background: var(--surface-sunken);
     border: var(--hairline-w) solid var(--hairline);
     border-radius: var(--radius-sm);
@@ -247,7 +252,8 @@
   .card-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: 6px;
+    margin-top: auto;      /* pin Show me to the card foot, so a row of cards lines up */
+    padding-top: 6px;
   }
   /* "Show me" — demonstrates the knob by sweeping it live. Quiet by default so
      it doesn't compete with the text; lights up to the signal colour while it's

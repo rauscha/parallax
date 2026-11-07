@@ -224,7 +224,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.1rem;
-    width: 3.6rem;
+    min-width: 3.6rem;     /* grows to fit a long label (Rings: "Brightness") instead of overrunning its neighbour */
     padding: 0.2rem;
     border-radius: var(--radius-md);
     cursor: ns-resize;

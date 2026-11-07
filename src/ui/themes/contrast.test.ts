@@ -24,9 +24,8 @@ const GROUNDS = ["--bg", "--surface", "--surface-sunken", "--surface-raised"];
  * moment a pair is fixed, so this list can only shrink.
  */
 const KNOWN_SHORTFALLS: ReadonlyArray<readonly [theme: string, token: string, ground: string]> = [
-  ["lab", "--text-dim", "--surface-raised"],       // 4.22:1
-  ["sandbox", "--text-dim", "--surface-sunken"],   // 4.14:1
-  ["sandbox", "--text-dim", "--surface-raised"],   // 3.89:1
+  // Empty since 2026-11-07: lab and sandbox moved --text-muted and --text-dim
+  // together, keeping the step between them, until dim cleared every ground.
 ];
 const isKnown = (theme: string, name: string, ground: string) =>
   KNOWN_SHORTFALLS.some(([t, n, g]) => t === theme && n === name && g === ground);

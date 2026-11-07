@@ -23,8 +23,8 @@
 
   /* Text — every shade meets WCAG AA (≥4.5:1) against --bg. */
   --text:             #ECEAF2;
-  --text-muted:       #B6B2C2;
-  --text-dim:         #9C98A8;        /* ~5.6:1 on --bg */
+  --text-muted:       #C2BECE;
+  --text-dim:         #A8A4B4;        /* ~6.4:1 on --bg, 4.9:1 on --surface-raised (was #9C98A8, 4.2:1 there) */
 
   /* Signal colors */
   --signal:           #4FD6C4;        /* teal — scope, active values */
@@ -84,8 +84,8 @@
   --hairline-soft:    rgba(0, 0, 0, 0.08);
 
   --text:             #1A1A1A;
-  --text-muted:       #4A4A4A;
-  --text-dim:         #5A5A5A;        /* was #7A7A7A (3.3:1) — now 5.7:1 */
+  --text-muted:       #3A3A3A;
+  --text-dim:         #4D4D4D;        /* 4.8:1 on --surface-raised, the darkest ground (was #5A5A5A, 3.9:1 there) */
 
   --signal:           #FF5A1F;        /* hot orange — scope + knob fill only (2.5:1 on --bg: NOT for text) */
   --signal-ink:       #8A2A0A;        /* AA-safe rust for text — >=4.9:1 on every surface tier */

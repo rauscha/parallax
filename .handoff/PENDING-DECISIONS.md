@@ -1,5 +1,10 @@
 # Waiting on you
 
+## Owed 2026-11-07: your eye on the Impeccable pass (all pushed, nothing blocked)
+1. **Plaits and Laxsynth text colors** (`bba60d6`). Muted and dim text both moved so dim clears AA on every panel; the gap between them is unchanged. Both skins had passed your eye before. Revert that one commit if it reads wrong.
+2. **The laptop layout**: Explain's knob cards side by side, 13px prose, no repeated model header. All four engines fit at 1440×900.
+3. **The phone, for real**: Pixel portrait and landscape (keys, the ⋯ menu sheets, Grid mode). Checked only in emulated Chromium; iOS Safari not tested at all.
+
 ## Closed 2026-11-07: tend's two FM patches. Moot, FM is retired here
 tend lifted FM's ±3 semitone bend clamp and added a way to revive a faded note without a strike (`.handoff/from-tend-2026-11-07/`). The same day Andrew retired FM from Parallax, so there is nothing to apply them to. tend is unaffected: it pins Parallax at `0c4da8f` and carries its own FM build in `engines/fm/`, which is where these patches already live.
 

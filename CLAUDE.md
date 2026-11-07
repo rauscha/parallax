@@ -3,8 +3,8 @@
 Personal web synth: real Mutable Instruments **Braids** macro-oscillator in the browser, with a live oscilloscope, a per-model "explain the controls" panel, and a clickable 4-bar/4/4 staff. Engine sits behind a hot-swappable interface; everything routes as MIDI note numbers.
 
 ## Required reading on resume
-1. `docs/roadmap-v1.0.md` — **the active work queue**: the v1.0 ship-gate punch list from the 2026-06-11 shipping review, written for autonomous execution.
-2. `reviews/2026-06-11-executive-summary.md` — the seven-agent shipping review verdict (security, code, UX, utility, fun, originality, ideas — full reports alongside it).
+1. `.handoff/SESSION-HANDOFF.md` (where things stand) and `.handoff/NEXT-STEPS.md` — **the active work queue**. `docs/roadmap-v1.0.md` is the shipped v1.0 punch list: history.
+2. `PRODUCT.md` (who it's for, principles) and `DESIGN.md` (the four-skin visual system, "The Open Panel"; its sidecar is `.impeccable/design.json`). Re-run `/impeccable document` when tokens change.
 3. `~/.claude/projects/C--GDrive-Braids-tester/memory/braids-synth-project.md` — locked decisions, defaults.
 4. `~/.claude/plans/ok-we-re-in-planning-tingly-pike.md` — full research + roadmap. Source of truth for architecture.
 
@@ -67,6 +67,11 @@ src/
 
 ## What's deferred (don't quietly add)
 - Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
+
+## Design-system traps (2026-11-07)
+- The phone layout is one media query, `(max-width: 720px), (pointer: coarse) and (max-height: 500px)`, repeated across several components (and GridEditor's `matchMedia`); desktop-only rules use its inverse. Change all of them together.
+- Svelte prunes CSS selectors for attributes set from script; wrap those in `:global(...)` or they vanish from the build.
+- Type sizes come from `--fs-label` / `--fs-prose` in `base.css` (11px / 13px floors); `contrast.test.ts` has no excused pairs left, so a token change that drops a text level under AA fails it.
 
 ## Engine #5 — FM: retired 2026-11-07
 - A six-operator FM engine (ported from msfa, Apache-2.0) and its **flowsheet** teaching view

@@ -72,7 +72,7 @@
     <div class="head">
       <span class="code">{model.code}</span>
       <div class="titles">
-        <span class="name">{model.name}</span>
+        <h3 class="name">{model.name}</h3>
         <span class="family">{familyLabel}</span>
       </div>
     </div>
@@ -156,6 +156,8 @@
     min-width: 0;
   }
   .name {
+    font-family: inherit;   /* h3 for structure; stays in the panel's face */
+    letter-spacing: inherit;
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text);

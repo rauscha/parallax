@@ -89,7 +89,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="logo">◐</span>
-    <span class="brand-name">Parallax</span>
+    <h1 class="brand-name">Parallax</h1>
   </div>
   <div class="topbar-right">
     <!-- Surprise lives OUTSIDE ToolsMenu so it stays visible on phones — it's the
@@ -109,6 +109,7 @@
 
 <main class="grid" class:grid-surface={surface === "grid"}>
   <section class="region scope" aria-label="Visualizer">
+    <h2 class="sr-only">Visualizer</h2>
     <div class="viz-toggle" role="group" aria-label="Visualizer mode">
       <button class="viz-btn" class:active={viz === "scope"} aria-pressed={viz === "scope"}
         onclick={(e) => { viz = "scope"; e.currentTarget.blur(); }}>SCOPE</button>
@@ -123,7 +124,7 @@
   </section>
 
   <section class="region controls" aria-label="Synth controls">
-    <div class="region-label">Controls</div>
+    <h2 class="region-label">Controls</h2>
     <EnginePicker />
     <div class="divider"></div>
     <ModelPicker />
@@ -136,14 +137,14 @@
   </section>
 
   <section class="region explain" aria-label="Explain panel" use:scrollCue>
-    <div class="region-label">Explain</div>
+    <h2 class="region-label">Explain</h2>
     <ExplainPanel />
   </section>
 
   <section class="region staff" aria-label="Melody sequencer">
     <div class="staff-header">
       <div class="staff-header-left">
-        <span class="region-label">Sequencer</span>
+        <h2 class="region-label">Sequencer</h2>
         <div class="surface-toggle" role="group" aria-label="Sequencer surface">
           <button
             class="surf-btn"
@@ -242,6 +243,7 @@
     font-size: 18px;
   }
   .brand-name {
+    font-size: inherit;     /* an h1 for structure; the wordmark keeps its size */
     font-family: var(--font-heading);
     font-weight: 600;
     color: var(--text);
@@ -390,6 +392,7 @@
     letter-spacing: 0.1em;
     color: var(--text-dim);
     margin-bottom: 8px;
+    font-weight: 400;     /* h2 for structure; keep the quiet label look */
   }
   .transport {
     flex: 0 0 auto;

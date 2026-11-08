@@ -2,7 +2,7 @@
 
 ## STATE (read this first)
 - Branch `main`, clean and pushed. 152 tests pass, `npm run check` clean, Impeccable detector clean on every explain-loop file.
-- **Explain-loop critique: 25 → 27/40** over three fix rounds (`9b259ba`…`f87294e`). Knobs sound when turned from silence; Show me steps and re-strikes on struck models; cards carry a ruler with end words from their own text (Rings, Plaits); knobs without a card show a slim one; phone strip; type floor fixed app-wide.
+- **Explain-loop critique: 25 → 27/40** over three fix rounds (`9b259ba`…`f87294e`). Knobs sound when turned from silence; Show me steps and re-strikes on struck models; macro knobs live in their Explain cards (`a847fe2`), which carry a ruler with end words from their own text (Rings, Plaits); knobs without a card show a slim one; phone strip; type floor fixed app-wide.
 - **Waiting on Andrew's eye and ear** (`.handoff/PENDING-DECISIONS.md`, top section) before more design work.
 
 ## Done this session

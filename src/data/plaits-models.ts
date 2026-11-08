@@ -13,7 +13,7 @@
  *  - https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/manual/
  *  - https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/firmware/
  */
-import type { EngineModel, EngineFamily } from "../audio/types";
+import type { EngineModel, EngineFamily, EngineKnobMeaning, KnobRange } from "../audio/types";
 
 export const PLAITS_FAMILIES: EngineFamily[] = [
   { id: "analog",     label: "Analog" },
@@ -28,15 +28,16 @@ export const PLAITS_FAMILIES: EngineFamily[] = [
   { id: "drum",       label: "Drums" },
 ];
 
-const k = (id: string, label: string, text: string) => ({ id, label, text });
+const k = (id: string, label: string, text: string, range?: KnobRange): EngineKnobMeaning =>
+  (range ? { id, label, text, range } : { id, label, text });
 
 export const PLAITS_MODELS: EngineModel[] = [
   // --- firmware 1.2 expansion (registry indices 0..7) -----------------------
   { index: 0, code: "VAF", name: "Classic Waveshapes + Filter", family: "analog",
     description: "Two detuned analog-style oscillators running into a self-oscillating resonant filter.",
     knobs: [
-      k("harmonics", "Harmonics", "Resonance and filter character — a gentle 24 dB/oct fully left, a harsher 12 dB/oct fully right."),
-      k("timbre", "Timbre", "Filter cutoff — opens the voice from dark and closed to bright and open."),
+      k("harmonics", "Harmonics", "Resonance and filter character — a gentle 24 dB/oct fully left, a harsher 12 dB/oct fully right.", { lo: "gentle 24 dB/oct", hi: "harsher 12 dB/oct" }),
+      k("timbre", "Timbre", "Filter cutoff — opens the voice from dark and closed to bright and open.", { lo: "dark, closed", hi: "bright, open" }),
       k("morph", "Morph", "Oscillator waveform and the amount of sub-oscillator underneath."),
     ],
     detail: {
@@ -47,7 +48,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "Casio-CZ-style phase distortion and phase modulation between two sine paths.",
     knobs: [
       k("harmonics", "Harmonics", "Distortion frequency — where in the waveform the bend happens, like a resonant peak."),
-      k("timbre", "Timbre", "Distortion amount — from clean sine to buzzy, formant-rich edges."),
+      k("timbre", "Timbre", "Distortion amount — from clean sine to buzzy, formant-rich edges.", { lo: "clean sine", hi: "buzzy" }),
       k("morph", "Morph", "Distortion asymmetry — skews the shape for a different harmonic flavour."),
     ],
     detail: {
@@ -58,7 +59,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "A two-voice, six-operator DX7-style FM engine — bank A leans to basses and synths (32 presets).",
     knobs: [
       k("harmonics", "Harmonics", "Preset selection — scrolls through the 32 factory FM patches in this bank."),
-      k("timbre", "Timbre", "Modulator level — the master 'brightness/grit' of the FM, dialing the patch from mellow to clangorous."),
+      k("timbre", "Timbre", "Modulator level — the master 'brightness/grit' of the FM, dialing the patch from mellow to clangorous.", { lo: "mellow", hi: "clangorous" }),
       k("morph", "Morph", "Envelope and modulation 'time-travel' — stretches the patch's built-in envelopes and movement."),
     ],
     detail: {
@@ -80,7 +81,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "The same six-operator FM engine — bank C leans to organs, pads and brass (32 presets).",
     knobs: [
       k("harmonics", "Harmonics", "Preset selection — scrolls the 32 organ / pad / brass FM patches."),
-      k("timbre", "Timbre", "Modulator level — from soft and hollow to bright and reedy."),
+      k("timbre", "Timbre", "Modulator level — from soft and hollow to bright and reedy.", { lo: "soft, hollow", hi: "bright, reedy" }),
       k("morph", "Morph", "Envelope and modulation stretching — reshapes the swell and movement of the patch."),
     ],
     detail: {
@@ -91,7 +92,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "Wave-terrain synthesis: a stylus traces a path across eight interpolated 2D landscapes.",
     knobs: [
       k("harmonics", "Harmonics", "Terrain — morphs continuously between the eight 2D landscapes the path runs over."),
-      k("timbre", "Timbre", "Path radius — how big a loop the stylus traces, from a tiny circle to a wide sweep."),
+      k("timbre", "Timbre", "Path radius — how big a loop the stylus traces, from a tiny circle to a wide sweep.", { lo: "tiny circle", hi: "wide sweep" }),
       k("morph", "Morph", "Path offset — slides the loop across the terrain, uncovering new contours."),
     ],
     detail: {
@@ -112,7 +113,7 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 7, code: "CHIP", name: "Chiptune", family: "chiptune",
     description: "A clocked arpeggiator driving variable-width square voices — an 8-bit games console in a patch. Each note you play steps the arpeggio one place through the chosen chord.",
     knobs: [
-      k("harmonics", "Harmonics", "Chord — the set of notes the arpeggio walks through. Turn fully down for a single note (no arpeggio); up for richer chords."),
+      k("harmonics", "Harmonics", "Chord — the set of notes the arpeggio walks through. Turn fully down for a single note (no arpeggio); up for richer chords.", { lo: "single note", hi: "richer chords" }),
       k("timbre", "Timbre", "Arpeggio pattern & range — up / down / up-down / random, across 1, 2 or 4 octaves."),
       k("morph", "Morph", "Pulse width and sync — the squelchy width-mod and ring of the squares."),
     ],
@@ -124,9 +125,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 8, code: "VA", name: "Virtual Analog", family: "analog",
     description: "A classic pair of analog waveforms — one variable square, one variable saw.",
     knobs: [
-      k("harmonics", "Harmonics", "Detuning between the two oscillators — from unison to a fat, drifting spread."),
-      k("timbre", "Timbre", "The square wave, from a narrow pulse through full square into hard-sync formants."),
-      k("morph", "Morph", "The saw wave, from triangle to sawtooth with an increasingly wide notch."),
+      k("harmonics", "Harmonics", "Detuning between the two oscillators — from unison to a fat, drifting spread.", { lo: "unison", hi: "fat, drifting" }),
+      k("timbre", "Timbre", "The square wave, from a narrow pulse through full square into hard-sync formants.", { lo: "narrow pulse", hi: "hard-sync formants" }),
+      k("morph", "Morph", "The saw wave, from triangle to sawtooth with an increasingly wide notch.", { lo: "triangle", hi: "wide notch" }),
     ],
     detail: {
       listenFor: "Pure, clean analog-style oscillators — detune them and you get a thick, beating, supersaw-ish wall.",
@@ -147,7 +148,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "Two sine oscillators in a simple FM pair, one modulating the other.",
     knobs: [
       k("harmonics", "Harmonics", "Frequency ratio between the two operators — sets the harmonic 'interval' of the FM."),
-      k("timbre", "Timbre", "Modulation index — how much FM, from pure sine to bright and clangorous."),
+      k("timbre", "Timbre", "Modulation index — how much FM, from pure sine to bright and clangorous.", { lo: "pure sine", hi: "clangorous" }),
       k("morph", "Morph", "Feedback — operator 2 modulating its own phase, adding grit and noise."),
     ],
     detail: {
@@ -159,7 +160,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     knobs: [
       k("harmonics", "Harmonics", "Frequency ratio between formant 1 and formant 2."),
       k("timbre", "Timbre", "Formant frequency — slides the resonant peak up and down like a vowel."),
-      k("morph", "Morph", "Formant width and shape — from broad and soft to narrow and sharp."),
+      k("morph", "Morph", "Formant width and shape — from broad and soft to narrow and sharp.", { lo: "broad, soft", hi: "narrow, sharp" }),
     ],
     detail: {
       listenFor: "Vocal, vowel-like resonances and buzzy formant tones that move as TIMBRE sweeps.",
@@ -170,7 +171,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     knobs: [
       k("harmonics", "Harmonics", "Number of bumps in the spectrum — how many harmonic peaks are emphasised."),
       k("timbre", "Timbre", "Index of the most prominent harmonic — which partial the spectrum centres on."),
-      k("morph", "Morph", "Bump shape — from flat and wide to peaked and narrow."),
+      k("morph", "Morph", "Bump shape — from flat and wide to peaked and narrow.", { lo: "flat, wide", hi: "peaked, narrow" }),
     ],
     detail: {
       listenFor: "Smooth, organ-like and bell-like tones built from pure partials — no filter, just harmonics.",
@@ -190,9 +191,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 14, code: "CHRD", name: "Chords", family: "harmonic",
     description: "A paraphonic four-note chord engine spanning several source waveforms.",
     knobs: [
-      k("harmonics", "Harmonics", "Chord type — from octaves and fifths up through richer chord shapes."),
+      k("harmonics", "Harmonics", "Chord type — from octaves and fifths up through richer chord shapes.", { lo: "octaves, fifths", hi: "richer chord" }),
       k("timbre", "Timbre", "Chord inversion and transposition — voices the chord higher/lower and rotates it."),
-      k("morph", "Morph", "Waveform — sweeps from organ-drawbar tones into wavetable colours."),
+      k("morph", "Morph", "Waveform — sweeps from organ-drawbar tones into wavetable colours.", { lo: "organ drawbar", hi: "wavetable" }),
     ],
     detail: {
       listenFor: "Instant four-note chords from one note in — harmonically full, with the character set by MORPH.",
@@ -202,7 +203,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "Several vocal algorithms, from formant filtering through SAM and LPC speech.",
     knobs: [
       k("harmonics", "Harmonics", "Crossfades between formant filtering, SAM, and LPC vowel sets."),
-      k("timbre", "Timbre", "Species — shifts the formants from deep 'Daleks' up to chipmunk highs."),
+      k("timbre", "Timbre", "Species — shifts the formants from deep 'Daleks' up to chipmunk highs.", { lo: "deep Daleks", hi: "chipmunk" }),
       k("morph", "Morph", "Phoneme or word-segment selection — which vowel/word is spoken."),
     ],
     detail: {
@@ -212,9 +213,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 16, code: "SWRM", name: "Swarm", family: "granular",
     description: "A swarm of enveloped sawtooth grains clustered around the pitch.",
     knobs: [
-      k("harmonics", "Harmonics", "Amount of pitch randomization across the swarm — tight unison to a wide cloud."),
+      k("harmonics", "Harmonics", "Amount of pitch randomization across the swarm — tight unison to a wide cloud.", { lo: "tight unison", hi: "wide cloud" }),
       k("timbre", "Timbre", "Grain density — how thick and busy the swarm is."),
-      k("morph", "Morph", "Grain duration and overlap — from short, separate grains to a smooth wash."),
+      k("morph", "Morph", "Grain duration and overlap — from short, separate grains to a smooth wash.", { lo: "separate grains", hi: "smooth wash" }),
     ],
     detail: {
       listenFor: "A shimmering, swarming cluster of saws — supersaw-like when tight, a noisy storm when spread.",
@@ -223,9 +224,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 17, code: "NOIS", name: "Filtered Noise", family: "noise",
     description: "Variable-clock noise through a resonant filter.",
     knobs: [
-      k("harmonics", "Harmonics", "Filter response — sweeps from low-pass through band-pass to high-pass."),
+      k("harmonics", "Harmonics", "Filter response — sweeps from low-pass through band-pass to high-pass.", { lo: "low-pass", hi: "high-pass" }),
       k("timbre", "Timbre", "Clock frequency — the 'pitch' / brightness of the noise source."),
-      k("morph", "Morph", "Filter resonance — from soft coloration to a ringing, pitched whistle."),
+      k("morph", "Morph", "Filter resonance — from soft coloration to a ringing, pitched whistle.", { lo: "soft coloration", hi: "ringing whistle" }),
     ],
     detail: {
       listenFor: "Pitched and unpitched noise — wind, hiss, surf, or a resonant whistle when MORPH rings the filter.",
@@ -235,8 +236,8 @@ export const PLAITS_MODELS: EngineModel[] = [
     description: "Particles of noise fired through a network of band-pass / all-pass filters.",
     knobs: [
       k("harmonics", "Harmonics", "Amount of frequency randomization of the particles."),
-      k("timbre", "Timbre", "Particle density — sparse clicks up to a dense crackle."),
-      k("morph", "Morph", "Filter type — from all-pass through to band-pass colour."),
+      k("timbre", "Timbre", "Particle density — sparse clicks up to a dense crackle.", { lo: "sparse clicks", hi: "dense crackle" }),
+      k("morph", "Morph", "Filter type — from all-pass through to band-pass colour.", { lo: "all-pass", hi: "band-pass" }),
     ],
     detail: {
       listenFor: "Crackle, rain, Geiger-counter clicks and granular sparkle that thickens with TIMBRE.",
@@ -245,9 +246,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 19, code: "STRG", name: "Inharmonic String", family: "physical", struck: true,
     description: "A plucked/bowed inharmonic string — Karplus-Strong physical modelling (mini-Rings).",
     knobs: [
-      k("harmonics", "Harmonics", "Inharmonicity, or material — from a clean string toward bell-like, metallic tension."),
+      k("harmonics", "Harmonics", "Inharmonicity, or material — from a clean string toward bell-like, metallic tension.", { lo: "clean string", hi: "metallic" }),
       k("timbre", "Timbre", "Excitation brightness and the density of the 'dust' that drives the string."),
-      k("morph", "Morph", "Decay time — how long the string rings, from a short pluck to a long sustain."),
+      k("morph", "Morph", "Decay time — how long the string rings, from a short pluck to a long sustain.", { lo: "short pluck", hi: "long sustain" }),
     ],
     detail: {
       listenFor: "Plucked and bowed strings with real physical body — set HARMONICS high for prepared-piano clang.",
@@ -256,9 +257,9 @@ export const PLAITS_MODELS: EngineModel[] = [
   { index: 20, code: "MODL", name: "Modal Resonator", family: "physical", struck: true,
     description: "A modal resonator — struck and bowed bars, bowls and tubes (mini-Rings).",
     knobs: [
-      k("harmonics", "Harmonics", "Inharmonicity, or material — wood and nylon through glass and metal."),
+      k("harmonics", "Harmonics", "Inharmonicity, or material — wood and nylon through glass and metal.", { lo: "wood, nylon", hi: "glass, metal" }),
       k("timbre", "Timbre", "Excitation brightness and dust density — softens or sharpens the strike."),
-      k("morph", "Morph", "Decay time — energy absorption, from a quick tap to a long ring."),
+      k("morph", "Morph", "Decay time — energy absorption, from a quick tap to a long ring.", { lo: "quick tap", hi: "long ring" }),
     ],
     detail: {
       listenFor: "Mallets, bells, bowls and tuned percussion with believable resonant bodies.",
@@ -269,7 +270,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     knobs: [
       k("harmonics", "Harmonics", "Attack sharpness and amount of overdrive — click and grit on the front of the hit."),
       k("timbre", "Timbre", "Brightness — the tone and punch of the body."),
-      k("morph", "Morph", "Decay time — from a tight thud to a long booming tail."),
+      k("morph", "Morph", "Decay time — from a tight thud to a long booming tail.", { lo: "tight thud", hi: "booming tail" }),
     ],
     detail: {
       listenFor: "A real analog kick — round and deep, with a clicky overdriven transient when HARMONICS is up.",
@@ -280,7 +281,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     knobs: [
       k("harmonics", "Harmonics", "Balance of the tonal body and the noisy 'snare' component."),
       k("timbre", "Timbre", "Balance between the different resonant modes of the drum — tunes the body."),
-      k("morph", "Morph", "Decay time — from a short snap to a ringing rattle."),
+      k("morph", "Morph", "Decay time — from a short snap to a ringing rattle.", { lo: "short snap", hi: "ringing rattle" }),
     ],
     detail: {
       listenFor: "Snares and toms — dial HARMONICS toward noise for a snare, toward tone for a tom.",
@@ -291,7 +292,7 @@ export const PLAITS_MODELS: EngineModel[] = [
     knobs: [
       k("harmonics", "Harmonics", "Balance of the metallic oscillator cluster and the filtered noise."),
       k("timbre", "Timbre", "High-pass filter cutoff — how thin and sizzly the top end is."),
-      k("morph", "Morph", "Decay time — from a tight closed hat to an open, washy cymbal."),
+      k("morph", "Morph", "Decay time — from a tight closed hat to an open, washy cymbal.", { lo: "closed hat", hi: "open cymbal" }),
     ],
     detail: {
       listenFor: "Metallic, sizzling hats and cymbals — that ringing 6-square 808 character.",

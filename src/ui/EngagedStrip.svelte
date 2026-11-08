@@ -15,17 +15,20 @@
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import { formatReadout } from "./readout";
+  import { sweepingParamStore } from "../state/show-me";
 
   let activeId = $state<string | null>(activeParamStore.get());
   let engineId = $state(engineIdStore.get());
   let modelId = $state<string | null>(patchStore.get().modelId);
   let params = $state<Record<string, number>>(patchStore.get().params);
   let ready = $state(audioReadyStore.get());
+  let sweeping = $state<string | null>(sweepingParamStore.get());
   const unsubs = [
     activeParamStore.subscribe((v) => { activeId = v; }),
     engineIdStore.subscribe((v) => { engineId = v; }),
     patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; }),
     audioReadyStore.subscribe((v) => { ready = v; }),
+    sweepingParamStore.subscribe((v) => { sweeping = v; }),
   ];
   onDestroy(() => unsubs.forEach((u) => u()));
 
@@ -37,7 +40,8 @@
   });
 
   let shown = $derived.by(() => {
-    if (!activeId) return null;
+    // Show me is started from the card itself, which is already on screen.
+    if (!activeId || sweeping) return null;
     const spec = schema.find((d) => d.id === activeId);
     if (!spec) return null;
     const card = modelFor(engineId, modelId)?.knobs.find((k) => k.id === activeId);
@@ -108,8 +112,8 @@
     letter-spacing: 0;
     color: var(--text);
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }

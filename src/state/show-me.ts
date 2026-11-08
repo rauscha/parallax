@@ -46,6 +46,7 @@ const DURATION_MS = 2600;    // total round-trip: original → min → max → o
 const STEPS = [0, 0.25, 0.5, 0.75, 1];
 const STEP_MS = 700;         // per stop: a short glide, then a hold while it rings
 const GLIDE_FRAC = 0.22;     // share of each stop spent gliding to it
+const FINAL_HOLD_MS = 1400; // the last stop rings out longer: long decays need the room
 const HOME_MS = 500;         // final glide back to the original value
 
 interface SweepState {
@@ -103,14 +104,14 @@ function strikeAgain(): void {
 }
 
 function steppedTick(s: SweepState, elapsed: number): void {
-  const stepsEnd = STEPS.length * STEP_MS;
+  const stepsEnd = STEPS.length * STEP_MS + FINAL_HOLD_MS;
   if (elapsed >= stepsEnd + HOME_MS) { finish(true); return; }
   if (elapsed >= stepsEnd) {
     // Home leg: glide from the last stop back to where the knob started.
     const t = smoothstep((elapsed - stepsEnd) / HOME_MS);
     writeParam(s.max + (s.original - s.max) * t);
   } else {
-    const i = Math.floor(elapsed / STEP_MS);
+    const i = Math.min(Math.floor(elapsed / STEP_MS), STEPS.length - 1);
     const local = (elapsed - i * STEP_MS) / STEP_MS;
     const target = s.min + (s.max - s.min) * STEPS[i];
     if (i !== s.struckStep && local < GLIDE_FRAC) {

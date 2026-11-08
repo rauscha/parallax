@@ -180,7 +180,7 @@ export class RingsEngine implements ISynthEngine {
       { id: "position", label: "Position", group: "shape", type: "continuous", min: 0, max: 1, default: 0.3,
         apply: "audioparam" },
       { id: "gain", label: "Gain", group: "output", type: "continuous", min: 0, max: 1, default: 0.6,
-        apply: "audioparam" },
+        apply: "audioparam", description: "Master output level." },
     ];
   }
 

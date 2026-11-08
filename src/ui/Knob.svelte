@@ -245,12 +245,16 @@
     -webkit-user-select: none;
     outline: none;
   }
+  /* Keyboard focus is dashed and offset, so it can't be mistaken for the
+     solid "engaged" ring below when focus and the lit card differ. */
   .knob:focus-visible {
-    box-shadow: 0 0 0 2px var(--signal);
+    outline: 2px dashed var(--signal);
+    outline-offset: 2px;
   }
   .knob-label {
     font-family: var(--font-mono);
     font-size: var(--fs-label);
+    text-transform: var(--label-case);
     letter-spacing: 0.08em;
     color: var(--text-dim);
   }

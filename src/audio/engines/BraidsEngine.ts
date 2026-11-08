@@ -290,11 +290,14 @@ export class BraidsEngine implements ISynthEngine {
           return m?.color ? { description: m.color } : {};
         } },
       { id: "fm",     label: "FM",     group: "pitch",     type: "continuous", min: -12, max: 12, default: 0,
-        unit: "semi", apply: "audioparam" },
+        unit: "semi", apply: "audioparam",
+        description: "Pitch offset in semitones, like a fixed voltage into the module's FM input: ±12 moves the note an octave either way." },
       { id: "attack", label: "Attack", group: "envelope",  type: "continuous", min: 0.001, max: 2, default: 0.005,
-        unit: "s",   apply: "audioparam" },
+        unit: "s",   apply: "audioparam",
+        description: "How fast each note fades in. Parallax's own amp envelope, not a control on the module." },
       { id: "release",label: "Release",group: "envelope",  type: "continuous", min: 0.01, max: 4, default: 0.18,
-        unit: "s",   apply: "audioparam" },
+        unit: "s",   apply: "audioparam",
+        description: "How long a note fades after you let go. Parallax's own amp envelope, not a control on the module." },
       { id: "bits",   label: "Bits",   group: "lofi",      type: "discrete",   min: 2, max: 16, step: 1, default: 16,
         unit: "bit", apply: "message",
         description: "Bit-depth reduction — the Braids 'crunch'." },
@@ -308,7 +311,7 @@ export class BraidsEngine implements ISynthEngine {
         apply: "message",
         description: "VCO drift simulation." },
       { id: "gain", label: "Gain", group: "output", type: "continuous", min: 0, max: 1, default: 0.4,
-        apply: "audioparam" },
+        apply: "audioparam", description: "Master output level." },
     ];
   }
 

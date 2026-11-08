@@ -186,7 +186,7 @@ export class PlaitsEngine implements ISynthEngine {
         apply: "message",
         description: "Low-pass-gate colour — from a plucky, filtered close to a brighter VCA-like one." },
       { id: "gain", label: "Gain", group: "output", type: "continuous", min: 0, max: 1, default: 0.6,
-        apply: "audioparam" },
+        apply: "audioparam", description: "Master output level." },
     ];
   }
 

@@ -142,7 +142,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="card"
-          class:active={activeId === knob.id}
+          class:active={activeId === knob.id || sweepingId === knob.id}
           onpointerenter={() => lift(knob.id)}
           onpointerleave={() => drop(knob.id)}
         >
@@ -153,11 +153,13 @@
               class="show-me"
               class:sweeping={sweepingId === knob.id}
               aria-pressed={sweepingId === knob.id}
+              aria-label={sweepingId === knob.id ? `Stop showing ${knob.label}` : `Show me: ${knob.label}`}
               disabled={!ready}
               onclick={() => startSweep(knob.id)}
               title={`Hear what ${knob.label} does on this model — sweeps the knob across its range`}
             >{sweepingId === knob.id ? "■ Stop" : "▸ Show me"}</button>
           </div>
+          {#if labels.length > 0 || sweepingId === knob.id}
           <div class="ruler" aria-hidden="true">
             {#each labels.filter((l) => l.kind === "mark") as m (m.text)}
               <span class="mark-label" class:near={near === m} style:left="{m.at * 100}%">{m.text}</span>
@@ -167,6 +169,11 @@
               {#each labels.filter((l) => l.kind === "mark") as m (m.text)}
                 <span class="mark-tick" style:left="{m.at * 100}%"></span>
               {/each}
+              {#if sweepingId === knob.id && model.struck}
+                {#each [0, 0.25, 0.5, 0.75, 1] as stop (stop)}
+                  <span class="stop-tick" style:left="{stop * 100}%"></span>
+                {/each}
+              {/if}
               <span class="needle" style:left="{v * 100}%"></span>
             </div>
             {#if labels.some((l) => l.kind !== "mark")}
@@ -176,10 +183,23 @@
               </div>
             {/if}
           </div>
+          {/if}
           <p class="card-text" id="explain-{knob.id}">{knob.text}</p>
         </div>
       {/each}
     </div>
+
+
+    {#if model.detail}
+      <div class="detail">
+        <p class="detail-line">
+          <span class="detail-label">Listen for</span>{model.detail.listenFor}
+        </p>
+        <p class="detail-line">
+          <span class="detail-label">Good for</span>{model.detail.goodFor}
+        </p>
+      </div>
+    {/if}
 
     {#if engagedPlain}
       <div class="plain-card" aria-hidden="true">
@@ -192,16 +212,7 @@
       <p class="sr-only" id="explain-{d.id}">{d.description}</p>
     {/each}
 
-    {#if model.detail}
-      <div class="detail">
-        <p class="detail-line">
-          <span class="detail-label">Listen for</span>{model.detail.listenFor}
-        </p>
-        <p class="detail-line">
-          <span class="detail-label">Good for</span>{model.detail.goodFor}
-        </p>
-      </div>
-    {/if}
+    <p class="sr-only" aria-live="polite">{sweepingId ? `Showing ${knobs.find((k) => k.id === sweepingId)?.label ?? ""}` : ""}</p>
   {/if}
 </div>
 
@@ -313,6 +324,7 @@
   /* Slim card for a knob without its own card (FM, envelope, lo-fi, gain):
      name, value and its one-line description, while it's engaged. */
   .plain-card {
+    margin-top: 4px;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -370,6 +382,15 @@
     width: 1px;
     height: 10px;
     background: var(--knob-tick);
+  }
+  /* The five stops of a stepped Show me (struck models), shown while it runs. */
+  .stop-tick {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 10px;
+    margin-left: -1px;
+    background: var(--text-muted);
   }
   .mark-label {
     position: absolute;

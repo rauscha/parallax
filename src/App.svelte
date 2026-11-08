@@ -124,6 +124,10 @@
       <button class="viz-btn" class:active={viz === "spectrum"} aria-pressed={viz === "spectrum"}
         onclick={(e) => { viz = "spectrum"; e.currentTarget.blur(); }}>SPECTRUM</button>
     </div>
+    <!-- Phone: one small button in place of the two-part switch above, named for
+         the view it takes you to, so it covers less of the short scope. -->
+    <button class="viz-flip" aria-label={`Switch to ${viz === "scope" ? "spectrum" : "scope"} view`}
+      onclick={(e) => { viz = viz === "scope" ? "spectrum" : "scope"; e.currentTarget.blur(); }}>{viz === "scope" ? "SPECTRUM" : "SCOPE"}</button>
     {#if viz === "scope"}
       <Oscilloscope />
     {:else}
@@ -369,6 +373,32 @@
       padding: 10px 14px;
       font-size: var(--fs-label);
       min-height: 44px;
+    }
+  }
+  .viz-flip { display: none; }
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
+    .viz-toggle { display: none; }
+    .viz-flip {
+      display: block;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      z-index: 2;
+      padding: 3px 7px;
+      font-family: var(--font-mono);
+      font-size: var(--fs-label);
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: var(--surface-raised);
+      border: var(--hairline-w) solid var(--hairline);
+      border-radius: var(--radius-sm);
+    }
+    /* Small to look at, full-size to tap: the 44px target is invisible. The
+       scope clips at its top and right edges, so it grows down and left. */
+    .viz-flip::after {
+      content: "";
+      position: absolute;
+      inset: -4px -4px -18px -14px;
     }
   }
   .controls { grid-area: controls; display: flex; flex-direction: column; gap: 12px; }

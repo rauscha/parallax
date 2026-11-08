@@ -637,8 +637,8 @@
       grid-template-rows: max-content max-content max-content max-content;
       grid-template-areas:
         "scope"
-        "controls"
         "explain"
+        "controls"
         "staff";
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;

@@ -6,10 +6,13 @@
   import { auditionMove, auditionKey, auditionEnd } from '../state/audition';
   import { formatReadout } from './readout';
 
-  let { spec, value, onchange }: {
+  // `bare` is the knob living inside its Explain card: the card already names
+  // it and shows its lit state, so the knob drops its label and engaged ring.
+  let { spec, value, onchange, bare = false }: {
     spec: ParameterDescriptor;
     value: number;
     onchange: (v: number) => void;
+    bare?: boolean;
   } = $props();
 
   const SWEEP = 270;   // total dial travel, in degrees
@@ -37,7 +40,9 @@
   // hover, so the drag is what keeps the card lit while you turn the knob.
   let hovered = $state(false);
   let focused = $state(false);
-  const engaged = $derived(hovered || focused || dragging);
+  // A bare knob ignores hover: its card lights on hover by itself, and leaving
+  // the dial for the rest of the card must not unlight it.
+  const engaged = $derived((!bare && hovered) || focused || dragging);
 
   let activeId = $state<string | null>(activeParamStore.get());
   const unsubscribe = activeParamStore.subscribe((v) => { activeId = v; });
@@ -199,6 +204,7 @@
   class="knob"
   class:dragging
   class:active
+  class:bare
   role="slider"
   tabindex="0"
   aria-label={spec.label}
@@ -219,7 +225,7 @@
   ondblclick={() => commitNow(spec.default)}
   onkeydown={onKeyDown}
 >
-  <span class="knob-label">{spec.label}</span>
+  {#if !bare}<span class="knob-label">{spec.label}</span>{/if}
   <svg class="dial" viewBox="0 0 40 40" aria-hidden="true">
     <path class="track" d={trackPath} />
     <path class="detent-tick" class:snapped={detentHeld && dragging} d={detentTick} />
@@ -307,6 +313,12 @@
     background: var(--surface-raised);
     box-shadow: 0 0 0 2px var(--signal), 0 0 14px var(--signal-glow);
   }
+  /* In a card: a bigger dial, and no ring or lift of its own (the card's edge
+     and marker carry the lit state). Dashed keyboard focus stays. */
+  .knob.bare { min-width: 3.4rem; padding: 0; }
+  .knob.bare .dial { width: 3rem; height: 3rem; }
+  .knob.bare.active, .knob.bare.dragging { background: none; box-shadow: none; }
+
   .knob-value {
     font-family: var(--font-mono);
     font-size: var(--fs-label);

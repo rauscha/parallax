@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * Phone-only strip: while a knob is engaged (dragged, focused, or swept by
-   * Show me), its name, value and meaning sit at the top of the screen.
+   * Phone-only strip: while a knob in the Controls column is engaged, its name,
+   * value and meaning sit at the top of the screen.
    *
-   * On a phone the regions stack, so the Explain card a knob lights is about
-   * 500px below the knob: turning it explained nothing you could see. This
-   * keeps the explanation on screen with the hand that's turning. Decorative
+   * On a phone the regions stack, so the slim card such a knob lights is far
+   * from the knob. Knobs with an Explain card live inside it and don't need
+   * this. It keeps the explanation on screen with the hand that's turning. Decorative
    * for assistive tech (the knob already carries the value and points
    * aria-describedby at its card text), and it never takes a touch.
    */
@@ -15,20 +15,17 @@
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import { formatReadout } from "./readout";
-  import { sweepingParamStore } from "../state/show-me";
 
   let activeId = $state<string | null>(activeParamStore.get());
   let engineId = $state(engineIdStore.get());
   let modelId = $state<string | null>(patchStore.get().modelId);
   let params = $state<Record<string, number>>(patchStore.get().params);
   let ready = $state(audioReadyStore.get());
-  let sweeping = $state<string | null>(sweepingParamStore.get());
   const unsubs = [
     activeParamStore.subscribe((v) => { activeId = v; }),
     engineIdStore.subscribe((v) => { engineId = v; }),
     patchStore.subscribe((p) => { modelId = p.modelId; params = p.params; }),
     audioReadyStore.subscribe((v) => { ready = v; }),
-    sweepingParamStore.subscribe((v) => { sweeping = v; }),
   ];
   onDestroy(() => unsubs.forEach((u) => u()));
 
@@ -40,17 +37,15 @@
   });
 
   let shown = $derived.by(() => {
-    // Show me is started from the card itself, which is already on screen.
-    if (!activeId || sweeping) return null;
+    if (!activeId) return null;
+    // A knob with a card is inside that card, which is already in view.
+    if (modelFor(engineId, modelId)?.knobs.some((k) => k.id === activeId)) return null;
     const spec = schema.find((d) => d.id === activeId);
-    if (!spec) return null;
-    const card = modelFor(engineId, modelId)?.knobs.find((k) => k.id === activeId);
-    const text = card?.text ?? spec.description;
-    if (!text) return null;
+    if (!spec?.description) return null;
     return {
-      label: card?.label ?? spec.label,
+      label: spec.label,
       value: formatReadout(spec, params[spec.id] ?? spec.default),
-      text,
+      text: spec.description,
     };
   });
 </script>

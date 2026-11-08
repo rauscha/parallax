@@ -8,15 +8,16 @@
    * the text comes straight from that table; the % readouts mirror the live
    * patch so the words line up with what you're hearing.
    *
-   * Each card carries a ruler: a needle at the knob's live value, with the two
-   * ends (and any spot the text pins down) named in the card's own words, so
-   * "where it sits" reads as a place, not a percent. Cards follow the order of
-   * the knobs in the Controls column, light up with their knob, and offer
-   * "Show me" (state/show-me.ts), which turns the knob for you.
+   * Each macro knob lives in its card, so turning it, reading what it does and
+   * watching the scope above happen in one place. The card also carries a
+   * ruler: a needle at the live value, with the two ends (and any spot the text
+   * pins down) named in the card's own words, so "where it sits" reads as a
+   * place, not a percent. "Show me" (state/show-me.ts) turns the knob for you.
    */
   import { onDestroy } from "svelte";
   import type { EngineModel, EngineKnobMeaning, ParameterDescriptor } from "../audio/types";
   import { formatReadout } from "./readout";
+  import Knob from "./Knob.svelte";
   import { audioEngine } from "../audio/AudioEngine";
   import { engineEntryOrDefault } from "../audio/registry";
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
@@ -108,20 +109,16 @@
   // engines). Falls back to 50% before the patch seeds.
   function pct(id: string): number { return Math.round((params[id] ?? 0.5) * 100); }
 
-  // Knob ↔ card highlight: mirror the shared "engaged param" store so the card
-  // lights when its knob is touched, and hovering the card lights the knob.
-  // Pointer events only (cards aren't focusable controls) — on touch the knob's
-  // drag still drives the card direction, which is the case that matters there.
+  // A card lights while its knob is engaged (the shared store: drag, keyboard
+  // focus, Show me) or while the pointer is over the card.
   let activeId = $state<string | null>(activeParamStore.get());
   const unsub = activeParamStore.subscribe((v) => { activeId = v; });
   onDestroy(() => { unsub(); unsubSweep(); unsubs.forEach((u) => u()); stopSweep(); });
 
-  function lift(id: string) { activeParamStore.set(id); }
-  function drop(id: string) {
-    // Don't drop the highlight out from under an in-progress sweep — it keeps
-    // the swept knob + card lit even if the pointer wanders off the card.
-    if (sweepingId === id) return;
-    if (activeParamStore.get() === id) activeParamStore.set(null);
+  let hoveredCard = $state<string | null>(null);
+
+  function setParam(id: string, v: number) {
+    patchStore.setKey("params", { ...patchStore.get().params, [id]: v });
   }
 </script>
 
@@ -132,23 +129,28 @@
 
     <div class="cards">
       <!-- One card per macro knob (Braids: Timbre/Color; Plaits: Harmonics/
-           Timbre/Morph). Pointer-only highlight cue: hovering the card lights
-           its knob. It's a progressive enhancement, not a control — the knob is
-           the real (keyboard-accessible) input — so no ARIA role is warranted. -->
+           Timbre/Morph), with the knob inside it. The hover highlight is a
+           pointer-only enhancement; the knob is the real input, so the card
+           itself needs no ARIA role. -->
       {#each knobs as knob (knob.id)}
         {@const v = pct(knob.id) / 100}
         {@const labels = rulerLabels(knob)}
         {@const near = nearest(labels, v)}
+        {@const spec = schema.find((d) => d.id === knob.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="card"
-          class:active={activeId === knob.id || sweepingId === knob.id}
-          onpointerenter={() => lift(knob.id)}
-          onpointerleave={() => drop(knob.id)}
+          class:active={activeId === knob.id || sweepingId === knob.id || hoveredCard === knob.id}
+          onpointerenter={() => (hoveredCard = knob.id)}
+          onpointerleave={() => { if (hoveredCard === knob.id) hoveredCard = null; }}
         >
-          <div class="card-top">
-            <span class="knob">{knob.label}</span>
-            <span class="val">{pct(knob.id)}%</span>
+          <div class="card-grid">
+            {#if spec}
+              <div class="dial-slot">
+                <Knob bare {spec} value={params[spec.id] ?? spec.default} onchange={(next) => setParam(spec.id, next)} />
+              </div>
+            {/if}
+            <span class="name">{knob.label}</span>
             <button
               class="show-me"
               class:sweeping={sweepingId === knob.id}
@@ -158,7 +160,6 @@
               onclick={() => startSweep(knob.id)}
               title={`Hear what ${knob.label} does on this model — sweeps the knob across its range`}
             >{sweepingId === knob.id ? "■ Stop" : "▸ Show me"}</button>
-          </div>
           {#if labels.length > 0 || sweepingId === knob.id}
           <div class="ruler" aria-hidden="true">
             {#each labels.filter((l) => l.kind === "mark") as m (m.text)}
@@ -185,6 +186,7 @@
           </div>
           {/if}
           <p class="card-text" id="explain-{knob.id}">{knob.text}</p>
+          </div>
         </div>
       {/each}
     </div>
@@ -203,7 +205,7 @@
 
     {#if engagedPlain}
       <div class="plain-card" aria-hidden="true">
-        <span class="knob">{engagedPlain.label}</span>
+        <span class="name">{engagedPlain.label}</span>
         <span class="val">{formatReadout(engagedPlain, params[engagedPlain.id] ?? engagedPlain.default)}</span>
         <p class="plain-text">{engagedPlain.description}</p>
       </div>
@@ -281,7 +283,7 @@
   /* A solid marker before the lit card's name: the cue that survives
      desaturation even where the wash and border are close in luminance
      (Sandbox's orange on cream). */
-  .card.active .card-top .knob::before {
+  .card.active .name::before {
     content: "";
     display: inline-block;
     width: 7px;
@@ -290,22 +292,42 @@
     background: var(--text);
     vertical-align: 0.05em;
   }
-  /* Header: name, live value, then Show me. Show me sits with the value it
-     will move rather than at the card foot, which cost Rings' four cards
-     their last row at 1440×900. */
-  .card-top {
-    display: flex;
+  /* The card's anatomy. Narrow (Rings' four across, Plaits' three): dial with
+     the name and Show me beside it, ruler and text full width underneath.
+     Wide (Braids' two, a phone): everything else beside the dial. */
+  .card { container-type: inline-size; }
+  .card-grid {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "dial name"
+      "dial show"
+      "ruler ruler"
+      "prose prose";
+    column-gap: 10px;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
   }
-  .card-top .val { margin-left: auto; }
-  .knob {
+  .dial-slot { grid-area: dial; align-self: start; }
+  .card-grid .show-me { grid-area: show; justify-self: start; }
+  .ruler { grid-area: ruler; }
+  .card-text { grid-area: prose; }
+  .name {
     font-size: var(--fs-label);
     letter-spacing: 0.1em;
     text-transform: var(--label-case);
     color: var(--text);
     font-weight: 600;
+  }
+  .card-grid .name { grid-area: name; }
+  @container (min-width: 340px) {
+    .card-grid {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "dial name show"
+        "dial ruler ruler"
+        "dial prose prose";
+    }
+    .card-grid .show-me { justify-self: end; }
   }
   .val {
     font-size: var(--fs-label);
@@ -313,7 +335,7 @@
     font-variant-numeric: tabular-nums;
   }
   .card-text {
-    margin: 0;
+    margin: 6px 0 0;
     font-size: var(--fs-prose);
     line-height: 1.45;
     letter-spacing: 0;
@@ -351,7 +373,7 @@
      heavier. Decorative for assistive tech: the knob itself is the slider. */
   .ruler {
     position: relative;
-    margin: 2px 0 8px;
+    margin: 8px 0 6px;
   }
   .ruler:has(.mark-label) { padding-top: calc(var(--fs-label) * 1.5); }
   .track {

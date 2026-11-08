@@ -4,6 +4,7 @@
   import { audioReadyStore, patchStore, engineIdStore } from "../state/stores";
   import type { ParameterDescriptor } from "../audio/types";
   import Knob from "./Knob.svelte";
+  import { modelFor } from "../audio/registry";
 
   const unsubs: Array<() => void> = [];
   let ready = $state(false);
@@ -18,7 +19,8 @@
   // "model" is excluded — the ModelPicker owns model selection.
   let specs = $state<ParameterDescriptor[]>([]);
   let values = $state<Record<string, number>>(patchStore.get().params);
-  unsubs.push(patchStore.subscribe((p) => { values = p.params; }));
+  let modelId = $state<string | null>(patchStore.get().modelId);
+  unsubs.push(patchStore.subscribe((p) => { values = p.params; modelId = p.modelId; }));
   onDestroy(() => unsubs.forEach((u) => u()));
 
   // Pull the live engine's schema when audio comes up — and again whenever the
@@ -48,11 +50,15 @@
     output: "Output",
   };
 
+  // Knobs with an Explain card live in that card, not here.
+  let carded = $derived(new Set(modelFor(engineId, modelId)?.knobs.map((k) => k.id) ?? []));
+
   // Group specs in first-seen order.
   let groups = $derived.by(() => {
     const order: string[] = [];
     const byGroup: Record<string, ParameterDescriptor[]> = {};
     for (const s of specs) {
+      if (carded.has(s.id)) continue;
       let bucket = byGroup[s.group];
       if (!bucket) { bucket = []; byGroup[s.group] = bucket; order.push(s.group); }
       bucket.push(s);

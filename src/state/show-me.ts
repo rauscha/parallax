@@ -16,6 +16,12 @@
  * click stops it; grabbing any knob, switching model/engine, or an Apply from
  * the Match panel all bail out (via the patch watcher); window blur / tab-hide
  * release the demo note and put the knob back.
+ *
+ * Struck models (EngineModel.struck: Rings, the drums and plucks) ring out on
+ * their own, and a knob that shapes the strike only changes the NEXT one, so a
+ * smooth sweep over a single strike would demonstrate nothing. Those get a
+ * stepped sweep instead: the knob glides to 0, 25, 50, 75 and 100% of its
+ * range, pausing at each step, and strikes the note again on arrival.
  */
 import { atom } from "nanostores";
 import { audioEngine } from "../audio/AudioEngine";
@@ -26,15 +32,21 @@ import {
   activeParamStore,
 } from "./stores";
 import type { ParameterDescriptor } from "../audio/types";
+import { modelFor } from "../audio/registry";
+import { DEMO_NOTE, DEMO_VELOCITY, setSweepProbe } from "./audition";
 
 /** Param id currently being demonstrated by a "Show me" sweep (null = none).
  *  Drives the Explain-card button's Show me ↔ Stop label. Transient UI state —
  *  never persisted or shared. */
 export const sweepingParamStore = atom<string | null>(null);
 
-const DEMO_NOTE = 60;        // middle C — an audible register for any model
-const DEMO_VELOCITY = 0.8;
 const DURATION_MS = 2600;    // total round-trip: original → min → max → original
+
+// Stepped sweep for struck models: five stops across the range, then home.
+const STEPS = [0, 0.25, 0.5, 0.75, 1];
+const STEP_MS = 700;         // per stop: a short glide, then a hold while it rings
+const GLIDE_FRAC = 0.22;     // share of each stop spent gliding to it
+const HOME_MS = 500;         // final glide back to the original value
 
 interface SweepState {
   paramId: string;
@@ -46,6 +58,8 @@ interface SweepState {
   raf: number;
   lastWritten: number;       // last value WE wrote (so the watcher can spot user edits)
   ownsNote: boolean;         // did we trigger the demo note (vs. riding existing audio)?
+  stepped: boolean;          // struck model → stepped sweep with a strike per stop
+  struckStep: number;        // last stop we struck at (-1 = none yet)
 }
 
 let state: SweepState | null = null;
@@ -80,9 +94,40 @@ function writeParam(v: number): void {
   applying = false;
 }
 
+function strikeAgain(): void {
+  if (!state || !state.ownsNote) return;
+  const eng = audioEngine.currentEngine;
+  if (!eng) return;
+  eng.noteOff(DEMO_NOTE);
+  eng.noteOn(DEMO_NOTE, { velocity: DEMO_VELOCITY });
+}
+
+function steppedTick(s: SweepState, elapsed: number): void {
+  const stepsEnd = STEPS.length * STEP_MS;
+  if (elapsed >= stepsEnd + HOME_MS) { finish(true); return; }
+  if (elapsed >= stepsEnd) {
+    // Home leg: glide from the last stop back to where the knob started.
+    const t = smoothstep((elapsed - stepsEnd) / HOME_MS);
+    writeParam(s.max + (s.original - s.max) * t);
+  } else {
+    const i = Math.floor(elapsed / STEP_MS);
+    const local = (elapsed - i * STEP_MS) / STEP_MS;
+    const target = s.min + (s.max - s.min) * STEPS[i];
+    if (i !== s.struckStep && local < GLIDE_FRAC) {
+      const from = i === 0 ? s.original : s.min + (s.max - s.min) * STEPS[i - 1];
+      writeParam(from + (target - from) * smoothstep(local / GLIDE_FRAC));
+    } else {
+      writeParam(target);
+      if (i !== s.struckStep) { s.struckStep = i; strikeAgain(); }
+    }
+  }
+  s.raf = requestAnimationFrame(tick);
+}
+
 function tick(ts: number): void {
   if (!state) return;
   if (state.startTs === null) state.startTs = ts;
+  if (state.stepped) { steppedTick(state, ts - state.startTs); return; }
   const p = (ts - state.startTs) / DURATION_MS;
   if (p >= 1) { finish(true); return; }   // restore = land exactly on `original`
   writeParam(pathValue(p, state.original, state.min, state.max));
@@ -115,6 +160,7 @@ function onInterrupt(): void {
 function bindListeners(): void {
   if (listenersBound) return;
   listenersBound = true;
+  setSweepProbe(() => state !== null);
 
   // Any *external* write to the patch while a sweep runs means the user (or an
   // Apply) took control — bail. Restore the knob unless they grabbed the swept
@@ -161,7 +207,11 @@ export function startSweep(paramId: string): void {
     !isPlayingStore.get() &&
     activeNotesStore.get().size === 0;
 
-  if (ownsNote) eng.noteOn(DEMO_NOTE, { velocity: DEMO_VELOCITY });
+  const p = patchStore.get();
+  const stepped = modelFor(p.engineId, p.modelId)?.struck === true;
+  // A smooth sweep holds one note for its whole length; a stepped one strikes
+  // at each stop instead (strikeAgain), so it starts silent.
+  if (ownsNote && !stepped) eng.noteOn(DEMO_NOTE, { velocity: DEMO_VELOCITY });
 
   state = {
     paramId,
@@ -173,6 +223,8 @@ export function startSweep(paramId: string): void {
     raf: 0,
     lastWritten: original,
     ownsNote,
+    stepped,
+    struckStep: -1,
   };
 
   // Light the matching knob + card for the whole sweep (reuses the existing

@@ -83,7 +83,7 @@ button {
 /* Reusable label style */
 .label {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--fs-label);
   text-transform: var(--label-case);
   letter-spacing: var(--label-tracking);
   color: var(--text-muted);

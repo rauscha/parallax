@@ -253,7 +253,7 @@
   }
   .idx {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
@@ -284,6 +284,7 @@
   .desc {
     font-family: var(--font-sans);
     font-size: 0.78rem;
+    letter-spacing: 0;      /* body text: keep the skin's label tracking off it */
     color: var(--text-muted);
     line-height: 1.4;
   }
@@ -364,17 +365,17 @@
   .item:disabled { opacity: 0.4; cursor: not-allowed; }
   .item-code {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     min-width: 3.4em;
   }
   .item-name {
     font-family: var(--font-sans);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
   }
   .empty {
     padding: 10px;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
   }
 

@@ -107,7 +107,7 @@
   .midi-menu { position: relative; display: inline-flex; }
   .io-btn {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--text);
@@ -140,7 +140,7 @@
   }
   .row-btn {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     text-align: left;
     padding: 8px 10px;
     color: var(--text);

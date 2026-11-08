@@ -268,14 +268,14 @@
   }
   .status {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--signal-ink);
     min-height: 1em;
   }
   .btns { display: inline-flex; gap: 8px; }
   .act {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     padding: 7px 14px;
     color: var(--text);
     background: var(--surface-raised);

@@ -160,7 +160,7 @@
   .preset-menu { position: relative; display: inline-flex; }
   .io-btn {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--text);
@@ -197,7 +197,7 @@
     flex: 1 1 auto;
     min-width: 0;
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     color: var(--text);
     background: var(--surface-sunken);
     border: var(--hairline-w) solid var(--hairline);
@@ -208,7 +208,7 @@
   .save-btn {
     flex: 0 0 auto;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     padding: 5px 12px;
     color: var(--on-signal);
     background: var(--signal);
@@ -221,7 +221,7 @@
   .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .err { margin: 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--danger); }
-  .empty { margin: 2px 0; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+  .empty { margin: 2px 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--text-dim); }
 
   .list {
     list-style: none;
@@ -252,7 +252,7 @@
   .load:disabled { opacity: 0.5; cursor: progress; }
   .p-name {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;

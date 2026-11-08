@@ -45,7 +45,7 @@
     align-items: center;
     gap: 10px;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
   }
   .field {
     display: inline-flex;
@@ -59,7 +59,7 @@
   }
   select {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     padding: 3px 6px;
     color: var(--text);
     background: var(--surface-raised);

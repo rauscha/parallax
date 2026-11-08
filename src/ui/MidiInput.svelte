@@ -97,7 +97,7 @@
   }
   .enable {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--on-signal);
@@ -112,7 +112,7 @@
   .field { display: inline-flex; min-width: 0; }
   select {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     max-width: 11rem;
     padding: 3px 6px;
     color: var(--text);
@@ -122,7 +122,7 @@
     cursor: pointer;
   }
   .dot {
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     transition: color var(--t-fast), text-shadow var(--t-fast);
   }

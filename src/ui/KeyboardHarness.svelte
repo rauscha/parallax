@@ -133,7 +133,7 @@
   }
   .readout {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     color: var(--text-muted);
   }
   .readout strong {
@@ -141,7 +141,7 @@
   }
   kbd {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     padding: 1px 5px;
     border: var(--hairline-w) solid var(--hairline);
     border-radius: 2px;

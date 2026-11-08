@@ -242,7 +242,7 @@
     align-self: center;
     padding: 0 6px;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
   }
   .oct-label strong {
@@ -266,7 +266,7 @@
     border-radius: var(--radius-md);
     color: var(--text-dim);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     transition: color var(--t-fast), border-color var(--t-fast);
   }

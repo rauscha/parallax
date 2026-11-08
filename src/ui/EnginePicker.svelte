@@ -79,7 +79,7 @@
     border-radius: var(--radius-sm);
     color: var(--text-muted);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.03em;
     transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
   }
@@ -97,7 +97,7 @@
   .opt:disabled:not(.selected):not(.loading) { opacity: 0.4; cursor: not-allowed; }
   .err {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--danger);
   }
 

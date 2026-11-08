@@ -44,7 +44,7 @@
     gap: 12px;
     padding: 8px 10px 8px 16px;
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     color: var(--text);
     background: var(--surface-raised);
     border: var(--hairline-w) solid var(--signal);
@@ -56,7 +56,7 @@
   .msg { white-space: nowrap; }
   .undo {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     font-weight: 600;
     letter-spacing: 0.04em;
     padding: 4px 12px;

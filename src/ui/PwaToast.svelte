@@ -39,7 +39,7 @@
     gap: 8px;
     padding: 8px 16px;
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     color: var(--text);
     background: var(--surface-raised);
     border: var(--hairline-w) solid var(--signal);

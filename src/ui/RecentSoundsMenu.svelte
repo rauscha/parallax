@@ -140,7 +140,7 @@
   .recent-menu { position: relative; display: inline-flex; }
   .io-btn {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--text);
@@ -175,12 +175,12 @@
   .title {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     color: var(--text-dim);
   }
   .err { margin: 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--danger); }
-  .empty { margin: 2px 0; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); line-height: 1.4; }
+  .empty { margin: 2px 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--text-dim); line-height: 1.4; }
 
   .list {
     list-style: none;
@@ -213,7 +213,7 @@
   .glyph { flex: 0 0 auto; font-size: 0.82rem; color: var(--text); }
   .r-name {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-label);
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;

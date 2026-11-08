@@ -79,7 +79,7 @@
   }
   .io-btn {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--text);

@@ -495,7 +495,7 @@
   .match-section { display: flex; flex-direction: column; gap: 8px; }
   .section-label {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-dim);
@@ -505,7 +505,7 @@
   .load-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .primary-btn {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     padding: 7px 14px;
     color: var(--on-signal);
@@ -518,11 +518,11 @@
   .primary-btn:hover { filter: brightness(1.08); }
   .filename {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     color: var(--text-muted);
   }
   .hidden-file { display: none; }
-  .error { margin: 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--danger); }
+  .error { margin: 0; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--danger); }
 
   .wave {
     width: 100%;
@@ -537,7 +537,7 @@
   .region-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .loop-btn {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     padding: 5px 12px;
     color: var(--text);
@@ -550,7 +550,7 @@
   .loop-btn.active { background: var(--signal); color: var(--on-signal); border-color: var(--signal); }
   .region-readout {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     color: var(--text);
     font-variant-numeric: tabular-nums;
   }
@@ -649,12 +649,12 @@
   }
   .suggest-name .mdl-name {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     color: var(--text-muted);
   }
   .apply-btn {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     padding: 7px 14px;
     color: var(--on-signal);
@@ -670,7 +670,7 @@
   .suggest-why {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     line-height: 1.5;
     color: var(--text-dim);
   }

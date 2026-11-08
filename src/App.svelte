@@ -265,7 +265,7 @@
   }
   .match-entry {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--text);
@@ -286,7 +286,7 @@
     display: inline-flex;
     align-items: center;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.04em;
     padding: 5px 12px;
     color: var(--on-signal);
@@ -316,7 +316,7 @@
     /* Explain is the product, so it gets the most height. The staff scales to
        its width and left ~100px of the old 1.6fr row empty at 1440×900, so the
        sequencer gives that back. The scope keeps a floor so it never squashes. */
-    grid-template-rows: minmax(150px, 0.85fr) minmax(0, 1.65fr) minmax(170px, 1fr);
+    grid-template-rows: minmax(150px, 0.8fr) minmax(0, 1.8fr) minmax(170px, 0.9fr);
     grid-template-areas:
       "scope    controls"
       "explain  controls"
@@ -364,7 +364,7 @@
   @media (pointer: coarse) {
     .viz-btn {
       padding: 10px 14px;
-      font-size: 0.72rem;
+      font-size: var(--fs-label);
       min-height: 44px;
     }
   }
@@ -394,7 +394,7 @@
 
   .region-label {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-dim);
@@ -466,7 +466,7 @@
   }
   .tempo-input { -moz-appearance: textfield; appearance: textfield; }
   .bpm-unit {
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     text-transform: var(--label-case);
     letter-spacing: var(--label-tracking);
@@ -546,18 +546,18 @@
   .staff-footer .hint .nowrap { white-space: nowrap; }   /* keep the full stop with its button */
   .staff-footer .hint {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
     line-height: 1.4;
   }
   .staff-footer .count {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     color: var(--text-dim);
   }
   .ghost-btn {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-label);
     letter-spacing: 0.06em;
     padding: 4px 10px;
     color: var(--text-muted);

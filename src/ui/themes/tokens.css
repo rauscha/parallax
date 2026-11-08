@@ -106,7 +106,7 @@
   --scope-persist:    0.78;
   --scope-bloom:      1.0;            /* Sandbox: warm, moderate glow */
 
-  --knob-track:       #1A1A1A;
+  --knob-track:       #B3AB99;        /* pale track, so the orange fill reads DARKER than the empty run in grayscale (protanope rule); was #1A1A1A, which made the filled part look empty */
   --knob-fill:        var(--signal);
   --knob-pointer:     #1A1A1A;        /* dark indicator — was the bg colour, invisible on the warm body */
   --knob-tick:        #4A4A4A;

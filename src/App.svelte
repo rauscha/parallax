@@ -652,7 +652,9 @@
        them to near-zero to fit the fixed height — which crushed Controls and
        Explain into unusable 46px slivers. */
     .region { overflow: visible; }
-    .scope { height: 26vh; min-height: 160px; overflow: hidden; }
+    /* Just tall enough to read the waveform: every pixel here pushes the knob
+       cards further from it. */
+    .scope { height: clamp(96px, 14vh, 130px); overflow: hidden; }
     /* No 340px floor: it over-allocated the staff, so the frame's flex share
        grew taller than the (short, single-octave) grid. Combined with the
        desktop frame's `align-items:center` + `overflow:visible`, the grid

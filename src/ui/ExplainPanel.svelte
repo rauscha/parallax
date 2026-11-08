@@ -8,12 +8,15 @@
    * the text comes straight from that table; the % readouts mirror the live
    * patch so the words line up with what you're hearing.
    *
-   * M4 groundwork: this is the data/text layer. The animated mini-diagrams and
-   * the "show me" sweep are deferred to an interactive design pass; the knob ↔
-   * card highlight (below) is the first interactive piece to land.
+   * Each card carries a ruler: a needle at the knob's live value, with the two
+   * ends (and any spot the text pins down) named in the card's own words, so
+   * "where it sits" reads as a place, not a percent. Cards follow the order of
+   * the knobs in the Controls column, light up with their knob, and offer
+   * "Show me" (state/show-me.ts), which turns the knob for you.
    */
   import { onDestroy } from "svelte";
-  import type { EngineModel } from "../audio/types";
+  import type { EngineModel, EngineKnobMeaning } from "../audio/types";
+  import { audioEngine } from "../audio/AudioEngine";
   import { engineEntryOrDefault } from "../audio/registry";
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
   import { sweepingParamStore, startSweep, stopSweep } from "../state/show-me";
@@ -44,6 +47,48 @@
     const i = models.findIndex((m) => m.code.toLowerCase() === modelId!.toLowerCase());
     return models[i >= 0 ? i : 0];
   });
+
+  // Cards follow the knobs: order them by the live engine's parameter schema
+  // (the order the Controls column draws knobs in), falling back to the
+  // corpus order before audio is up. Rings' corpus lists Damping before
+  // Position, the knobs the other way round.
+  let schemaOrder = $state<string[]>([]);
+  $effect(() => {
+    if (!ready) return;
+    void engineId;   // re-read on engine swap
+    // Knobs are drawn grouped (ParamPanel: groups in first-seen order), so
+    // order by group first, then by position within the schema.
+    const schema = audioEngine.currentEngine?.getParameterSchema() ?? [];
+    const groups: string[] = [];
+    for (const d of schema) if (!groups.includes(d.group)) groups.push(d.group);
+    schemaOrder = groups.flatMap((g) => schema.filter((d) => d.group === g).map((d) => d.id));
+  });
+  let knobs = $derived.by((): EngineKnobMeaning[] => {
+    if (!model) return [];
+    const rank = (id: string) => {
+      const i = schemaOrder.indexOf(id);
+      return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+    };
+    return [...model.knobs].sort((a, b) => rank(a.id) - rank(b.id));
+  });
+
+  // The ruler's label nearest the needle is set heavier, so you can read which
+  // end (or named spot) you're on without colour.
+  type RulerLabel = { at: number; text: string; kind: "lo" | "hi" | "mark" };
+  function rulerLabels(knob: EngineKnobMeaning): RulerLabel[] {
+    const r = knob.range;
+    if (!r) return [];
+    const out: RulerLabel[] = [];
+    if (r.lo) out.push({ at: 0, text: r.lo, kind: "lo" });
+    for (const m of r.marks ?? []) out.push({ at: m.at, text: m.label, kind: "mark" });
+    if (r.hi) out.push({ at: 1, text: r.hi, kind: "hi" });
+    return out;
+  }
+  function nearest(labels: RulerLabel[], v: number): RulerLabel | null {
+    let best: RulerLabel | null = null;
+    for (const l of labels) if (!best || Math.abs(l.at - v) < Math.abs(best.at - v)) best = l;
+    return best;
+  }
 
   // Live macro value for a knob card, as a percent (macro knobs are 0..1 in both
   // engines). Falls back to 50% before the patch seeds.
@@ -86,7 +131,10 @@
            Timbre/Morph). Pointer-only highlight cue: hovering the card lights
            its knob. It's a progressive enhancement, not a control — the knob is
            the real (keyboard-accessible) input — so no ARIA role is warranted. -->
-      {#each model.knobs as knob (knob.id)}
+      {#each knobs as knob (knob.id)}
+        {@const v = pct(knob.id) / 100}
+        {@const labels = rulerLabels(knob)}
+        {@const near = nearest(labels, v)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="card"
@@ -97,9 +145,6 @@
           <div class="card-top">
             <span class="knob">{knob.label}</span>
             <span class="val">{pct(knob.id)}%</span>
-          </div>
-          <p class="card-text">{knob.text}</p>
-          <div class="card-actions">
             <button
               class="show-me"
               class:sweeping={sweepingId === knob.id}
@@ -108,6 +153,25 @@
               title={`Hear what ${knob.label} does on this model — sweeps the knob across its range`}
             >{sweepingId === knob.id ? "■ Stop" : "▸ Show me"}</button>
           </div>
+          <div class="ruler" aria-hidden="true">
+            {#each labels.filter((l) => l.kind === "mark") as m (m.text)}
+              <span class="mark-label" class:near={near === m} style:left="{m.at * 100}%">{m.text}</span>
+            {/each}
+            <div class="track">
+              <div class="fill" style:width="{v * 100}%"></div>
+              {#each labels.filter((l) => l.kind === "mark") as m (m.text)}
+                <span class="mark-tick" style:left="{m.at * 100}%"></span>
+              {/each}
+              <span class="needle" style:left="{v * 100}%"></span>
+            </div>
+            {#if labels.some((l) => l.kind !== "mark")}
+              <div class="ends">
+                <span class:near={near?.kind === "lo"}>{knob.range?.lo ?? ""}</span>
+                <span class:near={near?.kind === "hi"}>{knob.range?.hi ?? ""}</span>
+              </div>
+            {/if}
+          </div>
+          <p class="card-text" id="explain-{knob.id}">{knob.text}</p>
         </div>
       {/each}
     </div>
@@ -137,7 +201,8 @@
     margin: 0;
     font-size: var(--fs-prose);
     line-height: 1.55;
-    color: var(--text-dim);
+    letter-spacing: 0;      /* prose, not a label: the skin's label tracking stays off it */
+    color: var(--text-muted);
   }
   .detail-label {
     display: inline-block;
@@ -173,12 +238,16 @@
     background: var(--signal-deep);
     border-color: var(--signal);
   }
+  /* Header: name, live value, then Show me. Show me sits with the value it
+     will move rather than at the card foot, which cost Rings' four cards
+     their last row at 1440×900. */
   .card-top {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 4px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
   }
+  .card-top .val { margin-left: auto; }
   .knob {
     font-size: var(--fs-label);
     letter-spacing: 0.1em;
@@ -195,15 +264,71 @@
     margin: 0;
     font-size: var(--fs-prose);
     line-height: 1.45;
-    color: var(--text-dim);
+    letter-spacing: 0;
+    color: var(--text);     /* the knob's meaning is the point of the card: full-strength text */
   }
 
-  .card-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: auto;      /* pin Show me to the card foot, so a row of cards lines up */
-    padding-top: 6px;
+  /* Ruler: where the knob sits, as a place. A filled run up to a solid needle
+     (position, not hue, carries the value), tick marks for the spots the text
+     names, and the end words underneath; the word nearest the needle is set
+     heavier. Decorative for assistive tech: the knob itself is the slider. */
+  .ruler {
+    position: relative;
+    margin: 2px 0 8px;
   }
+  .ruler:has(.mark-label) { padding-top: calc(var(--fs-label) * 1.5); }
+  .track {
+    position: relative;
+    height: 4px;
+    background: var(--knob-track);
+    border-radius: var(--radius-sm);
+  }
+  .fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--knob-fill);
+    border-radius: var(--radius-sm);
+  }
+  .needle {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: 12px;
+    margin-left: -1.5px;
+    background: var(--knob-pointer);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--surface-sunken);
+  }
+  .mark-tick {
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 10px;
+    background: var(--knob-tick);
+  }
+  .mark-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .ends {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 5px;
+  }
+  .mark-label, .ends span {
+    font-size: var(--fs-label);
+    letter-spacing: 0;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .mark-label.near, .ends span.near {
+    color: var(--text);
+    font-weight: 700;
+  }
+
   /* "Show me" — demonstrates the knob by sweeping it live. Quiet by default so
      it doesn't compete with the text; lights up to the signal colour while it's
      running (and the label flips to ■ Stop, so the state reads without hue). */

@@ -72,6 +72,18 @@ export interface EngineKnobMeaning {
   label: string;
   /** What this knob does *in this model*. The whole reason the app exists. */
   text: string;
+  /** Words for the ruler under the card, so "where it sits" reads as a place
+   *  rather than a percent. Every word must come from `text` (no new claims):
+   *  `lo`/`hi` name the two ends, `marks` name a spot the text pins down
+   *  ("perfectly harmonic about a quarter in" → { at: 0.25, label: "harmonic" }).
+   *  Omit what the text doesn't say; the ruler still shows the needle. */
+  range?: KnobRange;
+}
+
+export interface KnobRange {
+  lo?: string;
+  hi?: string;
+  marks?: { at: number; label: string }[];
 }
 
 export interface EngineModel {

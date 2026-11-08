@@ -60,26 +60,6 @@
     return order.map((id) => ({ id, label: GROUP_LABELS[id] ?? id, specs: byGroup[id] ?? [] }));
   });
 
-  function stepFor(spec: ParameterDescriptor): number {
-    return spec.step ?? (spec.max - spec.min || 1) / 1000;
-  }
-
-  // Sensible decimal count per parameter shape (mirrors the old hand-tuned panel).
-  function decimalsFor(spec: ParameterDescriptor): number {
-    if (spec.step && spec.step >= 1) return 0;     // bits, rate
-    const range = spec.max - spec.min;
-    if (range >= 50) return 0;                     // signature, drift (0..255)
-    if (range >= 8) return 1;                      // fm (-12..12 semis)
-    return 2;                                       // timbre, color, gain, env
-  }
-
-  function readout(spec: ParameterDescriptor, v: number): string {
-    if (spec.format) return spec.format(v);
-    const num = v.toFixed(decimalsFor(spec));
-    if (!spec.unit) return num;
-    return spec.unit.length > 1 ? `${num} ${spec.unit}` : `${num}${spec.unit}`;
-  }
-
   function onChange(id: string, v: number) {
     // Write to the store; the binding pushes to the engine.
     patchStore.setKey("params", { ...patchStore.get().params, [id]: v });

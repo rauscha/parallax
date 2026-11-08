@@ -4,6 +4,7 @@
   import { activeParamStore } from '../state/stores';
   import { hapticTick } from './haptics';
   import { auditionMove, auditionKey, auditionEnd } from '../state/audition';
+  import { formatReadout } from './readout';
 
   let { spec, value, onchange }: {
     spec: ParameterDescriptor;
@@ -52,10 +53,7 @@
   const step = $derived(spec.step ?? (range || 1) / 1000);
   const norm = $derived(range === 0 ? 0 : (value - spec.min) / range); // 0..1
   const angle = $derived(START + norm * SWEEP);
-  const decimals = $derived((spec.step ?? 0) >= 1 ? 0 : 2);
-  const readout = $derived(
-    spec.format ? spec.format(value) : `${value.toFixed(decimals)}${spec.unit ?? ''}`,
-  );
+  const readout = $derived(formatReadout(spec, value));
 
   function clamp(v: number) {
     return Math.min(spec.max, Math.max(spec.min, v));
@@ -201,6 +199,7 @@
   aria-valuemax={spec.max}
   aria-valuenow={value}
   aria-valuetext={readout}
+  aria-describedby="explain-{spec.id}"
   title="Drag up/down · Shift = fine · double-click resets"
   onpointerdown={onPointerDown}
   onpointermove={onPointerMove}

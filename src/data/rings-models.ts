@@ -19,7 +19,7 @@
  *  - https://pichenettes.github.io/mutable-instruments-documentation/modules/rings/manual/
  *  - dsp/vendor/rings/dsp/part.cc, string_synth_part.cc (ground truth)
  */
-import type { EngineModel, EngineFamily } from "../audio/types";
+import type { EngineModel, EngineFamily, EngineKnobMeaning, KnobRange } from "../audio/types";
 
 export const RINGS_FAMILIES: EngineFamily[] = [
   { id: "modal",   label: "Modal Resonator" },
@@ -28,22 +28,23 @@ export const RINGS_FAMILIES: EngineFamily[] = [
   { id: "synth",   label: "String Synth (Disastrous Peace)" },
 ];
 
-const k = (id: string, label: string, text: string) => ({ id, label, text });
+const k = (id: string, label: string, text: string, range?: KnobRange): EngineKnobMeaning =>
+  (range ? { id, label, text, range } : { id, label, text });
 
 // The four knob cards every Disastrous Peace variant shares, minus POSITION
 // (which is where the variants differ — each supplies its own).
 const dpChord = k("structure", "Structure", "Chord — picks the chord the paraphonic string voices spell out, from the firmware's built-in chord table.");
 const dpReg   = k("brightness", "Brightness", "Registration — the blend of octaves and harmonics feeding the ensemble, like pulling drawbars on an organ.");
-const dpEnv   = k("damping", "Damping", "Swell and fade — the envelope of the pad around each strum, from organ-stab to slow string-machine bloom.");
+const dpEnv   = k("damping", "Damping", "Swell and fade — the envelope of the pad around each strum, from organ-stab to slow string-machine bloom.", { lo: "organ stab", hi: "slow bloom" });
 
 export const RINGS_MODELS: EngineModel[] = [
   // --- rings::Part — the resonator models (indices 0..5) --------------------
   { index: 0, code: "MODL", name: "Modal Resonator", family: "modal",
     description: "A bank of tuned resonant filters — the physics of struck bells, bars, tubes and plates.",
     knobs: [
-      k("structure", "Structure", "Material and geometry — sweeps the interval between partials from tight plate-like clusters through wooden-bar spacing out to wide, bell-like inharmonic spreads."),
-      k("brightness", "Brightness", "Excitation brightness — felt-muted and dark on the left; hard, metallic, many-partialed shimmer on the right."),
-      k("damping", "Damping", "Decay time — from a dry woodblock thud to a ring that hangs in the air for many seconds."),
+      k("structure", "Structure", "Material and geometry — sweeps the interval between partials from tight plate-like clusters through wooden-bar spacing out to wide, bell-like inharmonic spreads.", { lo: "tight plate", hi: "wide bell" }),
+      k("brightness", "Brightness", "Excitation brightness — felt-muted and dark on the left; hard, metallic, many-partialed shimmer on the right.", { lo: "felt, dark", hi: "metallic" }),
+      k("damping", "Damping", "Decay time — from a dry woodblock thud to a ring that hangs in the air for many seconds.", { lo: "dry thud", hi: "ring hangs" }),
       k("position", "Position", "Strike position — where the mallet lands. Moving it nulls out different partials, like hitting a bar at its node versus its edge."),
     ],
     detail: {
@@ -53,10 +54,10 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 1, code: "SYMP", name: "Sympathetic Strings", family: "strings",
     description: "One plucked string surrounded by a set of sympathetic strings that ring along with it.",
     knobs: [
-      k("structure", "Structure", "Sympathetic tuning — the intervals of the accompanying strings: unisons and fifths on the left, wider and stranger spreads to the right."),
-      k("brightness", "Brightness", "String material — warm nylon to bright steel; the sympathetic halo shimmers more as it opens."),
-      k("damping", "Damping", "Decay time of the whole string set — short pluck to long communal ring."),
-      k("position", "Position", "Pluck position, doubled up — sets where the main string is struck (as on a bare string), while the sympathetic strings orbit that same point on a slow per-string LFO, wobbling hardest near the middle of the range and sitting still at the extremes."),
+      k("structure", "Structure", "Sympathetic tuning — the intervals of the accompanying strings: unisons and fifths on the left, wider and stranger spreads to the right.", { lo: "unisons, fifths", hi: "wide, strange" }),
+      k("brightness", "Brightness", "String material — warm nylon to bright steel; the sympathetic halo shimmers more as it opens.", { lo: "nylon", hi: "steel" }),
+      k("damping", "Damping", "Decay time of the whole string set — short pluck to long communal ring.", { lo: "short pluck", hi: "long ring" }),
+      k("position", "Position", "Pluck position, doubled up — sets where the main string is struck (as on a bare string), while the sympathetic strings orbit that same point on a slow per-string LFO, wobbling hardest near the middle of the range and sitting still at the extremes.", { lo: "still", hi: "still", marks: [{ at: 0.5, label: "wobbling" }] }),
     ],
     detail: {
       listenFor: "The halo. A single pluck sets the neighbouring strings humming in sympathy, like a sitar's drone strings answering the note.",
@@ -65,9 +66,9 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 2, code: "STRG", name: "Modulated String", family: "strings",
     description: "A physically modelled string with adjustable stiffness — from perfect harp to detuned, bell-tinged piano wire.",
     knobs: [
-      k("structure", "Structure", "Stiffness and dispersion — fully left the string rattles against a curved bridge, sitar-style; the clean, perfectly harmonic string sits about a quarter of the way in, then upper partials stretch sharp like piano wire, buzzing inharmonically at the top."),
-      k("brightness", "Brightness", "Pluck brightness — soft thumb to hard pick."),
-      k("damping", "Damping", "Decay time — staccato pluck to long singing sustain."),
+      k("structure", "Structure", "Stiffness and dispersion — fully left the string rattles against a curved bridge, sitar-style; the clean, perfectly harmonic string sits about a quarter of the way in, then upper partials stretch sharp like piano wire, buzzing inharmonically at the top.", { lo: "sitar rattle", hi: "inharmonic buzz", marks: [{ at: 0.25, label: "harmonic" }] }),
+      k("brightness", "Brightness", "Pluck brightness — soft thumb to hard pick.", { lo: "soft thumb", hi: "hard pick" }),
+      k("damping", "Damping", "Decay time — staccato pluck to long singing sustain.", { lo: "staccato", hi: "long sustain" }),
       k("position", "Position", "Pluck position — comb-filters the attack; near the bridge is thin and nasal, near the middle round and full."),
     ],
     detail: {
@@ -77,9 +78,9 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 3, code: "FMVC", name: "FM Voice", family: "fm",
     description: "A two-operator FM voice hiding inside the resonator — one of the firmware's hidden models.",
     knobs: [
-      k("structure", "Structure", "Carrier-to-modulator ratio — steps through a catalogue of tuned ratios, from consonant octaves to clangorous inharmonic pairs."),
-      k("brightness", "Brightness", "Modulation index — sine-pure on the left; bright and brassy as the modulator digs in."),
-      k("damping", "Damping", "Envelope decay of the internal FM voice — pluck to long bell."),
+      k("structure", "Structure", "Carrier-to-modulator ratio — steps through a catalogue of tuned ratios, from consonant octaves to clangorous inharmonic pairs.", { lo: "octaves", hi: "clangorous" }),
+      k("brightness", "Brightness", "Modulation index — sine-pure on the left; bright and brassy as the modulator digs in.", { lo: "sine-pure", hi: "brassy" }),
+      k("damping", "Damping", "Envelope decay of the internal FM voice — pluck to long bell.", { lo: "pluck", hi: "long bell" }),
       k("position", "Position", "Feedback — pushes the modulator into itself for raspier, noisier spectra."),
     ],
     detail: {
@@ -90,9 +91,9 @@ export const RINGS_MODELS: EngineModel[] = [
     description: "Sympathetic strings, quantized — the string set snaps to a table of real chords instead of free intervals. Hidden model.",
     knobs: [
       k("structure", "Structure", "Chord — steps through the firmware's chord table; every strum lands on a recognizable harmony."),
-      k("brightness", "Brightness", "String material — warm and dark to bright and steely."),
+      k("brightness", "Brightness", "String material — warm and dark to bright and steely.", { lo: "warm, dark", hi: "steely" }),
       k("damping", "Damping", "Decay time of the chordal string set."),
-      k("position", "Position", "Pluck position, doubled up — same as Sympathetic Strings: sets the strike point on the lead voice while its chordal partners drift around it on a slow LFO, opening into shimmer near mid-range and settling flat at the extremes."),
+      k("position", "Position", "Pluck position, doubled up — same as Sympathetic Strings: sets the strike point on the lead voice while its chordal partners drift around it on a slow LFO, opening into shimmer near mid-range and settling flat at the extremes.", { lo: "flat", hi: "flat", marks: [{ at: 0.5, label: "shimmer" }] }),
     ],
     detail: {
       listenFor: "SYMP's halo locked to actual chords — strum once and a tuned, harmonious cloud blooms every time.",
@@ -101,9 +102,9 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 5, code: "VERB", name: "String + Reverb", family: "strings",
     description: "The modulated string with a lush reverb wrapped around it — pluck and space in one voice. Hidden model.",
     knobs: [
-      k("structure", "Structure", "Stiffness and dispersion of the string — curved-bridge sitar buzz at the far left, perfectly harmonic about a quarter in, then piano-stretched to buzzy at the top."),
+      k("structure", "Structure", "Stiffness and dispersion of the string — curved-bridge sitar buzz at the far left, perfectly harmonic about a quarter in, then piano-stretched to buzzy at the top.", { lo: "sitar buzz", hi: "buzzy", marks: [{ at: 0.25, label: "harmonic" }] }),
       k("brightness", "Brightness", "Pluck brightness, and with it how much sparkle feeds the tail."),
-      k("damping", "Damping", "Decay of string AND tail together — turns a dry pluck into a wash."),
+      k("damping", "Damping", "Decay of string AND tail together — turns a dry pluck into a wash.", { lo: "dry pluck", hi: "wash" }),
       k("position", "Position", "Pluck position — the comb-filtered attack colour that the reverb then carries."),
     ],
     detail: {
@@ -114,7 +115,7 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 6, code: "DPFM", name: "Disastrous Peace · Formant", family: "synth",
     description: "The easter-egg paraphonic string synth — a 70s divide-down machine — through a vowel-like formant filter.",
     knobs: [dpChord, dpReg, dpEnv,
-      k("position", "Position", "Formant depth — vowel-like filtering over the strings; talk-box territory to the right."),
+      k("position", "Position", "Formant depth — vowel-like filtering over the strings; talk-box territory to the right.", { hi: "talk-box" }),
     ],
     detail: {
       listenFor: "A whole string section that seems to sing vowels — the formant filter makes the chord talk.",
@@ -123,7 +124,7 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 7, code: "DPCH", name: "Disastrous Peace · Chorus", family: "synth",
     description: "The easter-egg string synth through a thick stereo-style chorus.",
     knobs: [dpChord, dpReg, dpEnv,
-      k("position", "Position", "Chorus depth — from dry strings to wide, seasick ensemble motion."),
+      k("position", "Position", "Chorus depth — from dry strings to wide, seasick ensemble motion.", { lo: "dry", hi: "seasick" }),
     ],
     detail: {
       listenFor: "The chord going liquid as POSITION rises — classic chorused string-machine swim.",
@@ -132,7 +133,7 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 8, code: "DPRV", name: "Disastrous Peace · Reverb", family: "synth",
     description: "The easter-egg string synth soaked in a hall reverb.",
     knobs: [dpChord, dpReg, dpEnv,
-      k("position", "Position", "Reverb send — the hall grows around the strings until they dissolve into it."),
+      k("position", "Position", "Reverb send — the hall grows around the strings until they dissolve into it.", { hi: "dissolve" }),
     ],
     detail: {
       listenFor: "Each strum blooming into the room — the pad and its space are one instrument here.",
@@ -159,7 +160,7 @@ export const RINGS_MODELS: EngineModel[] = [
   { index: 11, code: "DPR2", name: "Disastrous Peace · Reverb II", family: "synth",
     description: "The string synth through a second reverb — tighter and brighter than the first, with more room to sweep from a short slap to a longer wash.",
     knobs: [dpChord, dpReg, dpEnv,
-      k("position", "Position", "Reverb send — a shorter, brighter tail than DPRV's at the same setting, with a wider sweep from a quick slap to a fairly long wash."),
+      k("position", "Position", "Reverb send — a shorter, brighter tail than DPRV's at the same setting, with a wider sweep from a quick slap to a fairly long wash.", { lo: "quick slap", hi: "long wash" }),
     ],
     detail: {
       listenFor: "The brighter, tighter room — same strings as DPRV, but the tail keeps more top end and covers a wider range of lengths.",

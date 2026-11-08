@@ -35,3 +35,29 @@ describe("modelFor", () => {
     expect(modelFor("braids", "nope")?.code).toBe("CSAW");
   });
 });
+
+// The ruler's words restate the card; they must never claim something the
+// card's own text doesn't. Every word (3+ letters) of every ruler label has to
+// appear in that card's text.
+describe("ruler words come from the card text", () => {
+  for (const engine of ["braids", "plaits", "laxsynth", "rings"]) {
+    it(`${engine}: no ruler word the text doesn't say`, () => {
+      const bad: string[] = [];
+      for (const m of getEngineEntry(engine)!.models) {
+        for (const k of m.knobs) {
+          const r = k.range;
+          if (!r) continue;
+          const text = k.text.toLowerCase();
+          const labels = [r.lo, r.hi, ...(r.marks ?? []).map((x) => x.label)].filter(Boolean) as string[];
+          for (const label of labels) {
+            for (const w of label.toLowerCase().split(/[^a-z]+/).filter((w) => w.length >= 3)) {
+              if (!text.includes(w)) bad.push(`${m.code}/${k.id}: "${w}"`);
+            }
+          }
+          for (const mk of r.marks ?? []) if (mk.at <= 0 || mk.at >= 1) bad.push(`${m.code}/${k.id}: mark at ${mk.at}`);
+        }
+      }
+      expect(bad).toEqual([]);
+    });
+  }
+});

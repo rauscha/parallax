@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
-  "description": "Personal web playground for the Mutable Instruments Braids macro-oscillator (MIT firmware compiled to WASM).",
+  "description": "A browser instrument that runs real synthesis engines and explains them while you play. Based on the open-source Mutable Instruments firmware (MIT).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

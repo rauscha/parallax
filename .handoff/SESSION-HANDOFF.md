@@ -1,8 +1,8 @@
-# Session hand-off — 2026-11-07 evening (machine: tikiserv · ~/repos/parallax)
+# Session hand-off — 2026-11-08 (machine: tikiserv · ~/repos/parallax)
 
 ## STATE (read this first)
 - Branch `main`, clean and pushed. 152 tests pass, `npm run check` clean, Impeccable detector clean on every explain-loop file.
-- **Explain-loop critique: 25 → 27/40** over three fix rounds (`9b259ba`…`f87294e`). Knobs sound when turned from silence; Show me steps and re-strikes on struck models; macro knobs live in their Explain cards (`a847fe2`), which carry a ruler with end words from their own text (Rings, Plaits); knobs without a card show a slim one; phone strip; type floor fixed app-wide.
+- **Explain-loop critique: 25 → 27/40** (`9b259ba`…`f87294e`); that score predates round 3 and knobs-in-cards, so re-run it. Knobs sound when turned from silence; Show me steps and re-strikes on struck models; macro knobs live in their Explain cards (`a847fe2`), which carry a ruler with end words from their own text (Rings, Plaits); knobs without a card show a slim one; a phone strip for knobs without a card; on a phone the order is scope (118px, one small toggle), Explain, Controls, sequencer; type floor fixed app-wide. `LICENSE` (MIT) added, `package.json` matches; the three stale `claude/*` branches are deleted, so `main` is the only branch.
 - **Waiting on Andrew's eye and ear** (`.handoff/PENDING-DECISIONS.md`, top section) before more design work.
 
 ## Done this session
@@ -17,6 +17,9 @@
 ## Watch out for (new)
 - **Ruler words must appear in the card text** (`registry.test.ts`): reword the range, not the test.
 - **`EngineModel.struck`** drives both audition re-strike and stepped Show me; set it on any new percussive model.
+- **Phone Scope/Spectrum**: `.viz-flip` replaces `.viz-toggle` inside the phone media query in `App.svelte`; desktop keeps the two-part switch.
+- **`Knob bare`** is the knob inside its card: no label, no ring, hover ignored (the card handles it). `ParamPanel` skips any knob the current model has a card for.
+- Stop a preview with `fuser -k 4317/tcp`: `pkill -f` matches its own shell and kills the command.
 - Scripted audio checks: scratchpad `v/lib.js` taps the output into an analyser (`window.__tap`) so RMS can be measured headless.
 
 ## Earlier this day (afternoon session)

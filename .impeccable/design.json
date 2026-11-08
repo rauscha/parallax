@@ -1033,7 +1033,7 @@
       "name": "Segmented Control",
       "kind": "nav",
       "refersTo": "segmented-option",
-      "description": "Two to four options in a sunken track: Engine, Scope/Spectrum, Staff/Grid.",
+      "description": "Two to four options in a sunken track: Engine, Scope/Spectrum (a single small toggle on phones), Staff/Grid.",
       "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Engine\"><button class=\"ds-seg-opt is-on\" aria-current=\"true\">Braids</button><button class=\"ds-seg-opt\">Plaits</button><button class=\"ds-seg-opt\">Laxsynth</button><button class=\"ds-seg-opt\">Rings</button></div>",
       "css": ".ds-seg { display: inline-flex; gap: 4px; padding: 3px; background: var(--surface-sunken); border: var(--hairline-w, 1px) solid var(--hairline); border-radius: var(--radius-md); } .ds-seg-opt { font-family: var(--font-mono); font-size: max(11px, 0.72rem); letter-spacing: 0.03em; padding: 5px 12px; color: var(--text-muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; } .ds-seg-opt:hover { color: var(--text); background: var(--surface-raised); } .ds-seg-opt.is-on { color: var(--signal-ink); background: var(--signal-deep); border-color: var(--signal); font-weight: 600; } .ds-seg-opt:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }"
     },

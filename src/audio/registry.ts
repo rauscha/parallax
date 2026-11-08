@@ -17,7 +17,7 @@ import { BraidsEngine } from "./engines/BraidsEngine";
 import { PlaitsEngine } from "./engines/PlaitsEngine";
 import { LaxsynthEngine } from "./engines/LaxsynthEngine";
 import { RingsEngine } from "./engines/RingsEngine";
-import { BRAIDS_MODELS, BRAIDS_FAMILIES } from "../data/braids-models";
+import { BRAIDS_MODELS, BRAIDS_FAMILIES, BRAIDS_STRUCK_CODES } from "../data/braids-models";
 import { PLAITS_MODELS, PLAITS_FAMILIES } from "../data/plaits-models";
 import { LAXSYNTH_MODELS, LAXSYNTH_FAMILIES } from "../data/laxsynth-models";
 import { RINGS_MODELS, RINGS_FAMILIES } from "../data/rings-models";
@@ -46,7 +46,12 @@ const BRAIDS_ENGINE_MODELS: EngineModel[] = BRAIDS_MODELS.map((m) => ({
     { id: "color", label: "Color", text: m.color },
   ],
   detail: m.detail,
+  struck: BRAIDS_STRUCK_CODES.has(m.code),
 }));
+
+// Every Rings note is a strum into the resonator (RingsEngine.noteOn), so
+// every model is struck.
+const RINGS_ENGINE_MODELS: EngineModel[] = RINGS_MODELS.map((m) => ({ ...m, struck: true }));
 
 export const DEFAULT_ENGINE_ID = "braids";
 
@@ -81,7 +86,7 @@ export const ENGINES: EngineRegistryEntry[] = [
     id: "rings",
     name: "Rings",
     createEngine: () => new RingsEngine(),
-    models: RINGS_MODELS,
+    models: RINGS_ENGINE_MODELS,
     families: RINGS_FAMILIES,
   },
 ];
@@ -106,4 +111,13 @@ export function indexForCode(engineId: string, code: string): number {
 /** engine index → modelId (lowercase code), for the active engine. */
 export function codeForIndex(engineId: string, index: number): string | null {
   return getEngineEntry(engineId)?.models[index]?.code.toLowerCase() ?? null;
+}
+
+/** The patch's current model on an engine (lowercase-code lookup), falling
+ *  back to the engine's first model. Null for an engine with no model axis. */
+export function modelFor(engineId: string, modelId: string | null): EngineModel | null {
+  const models = engineEntryOrDefault(engineId).models;
+  if (models.length === 0) return null;
+  const lower = (modelId ?? "").toLowerCase();
+  return models.find((m) => m.code.toLowerCase() === lower) ?? models[0];
 }

@@ -47,6 +47,13 @@ export interface BraidsModel {
   detail?: { listenFor: string; goodFor: string };
 }
 
+/** Models whose note is a one-shot strike that rings out on its own: the
+ *  pitched struck/plucked ones and the drums. Everything else sustains while
+ *  the key is held. See EngineModel.struck. */
+export const BRAIDS_STRUCK_CODES: ReadonlySet<string> = new Set([
+  "PLUK", "BELL", "DRUM", "KICK", "CYMB", "SNAR",
+]);
+
 export const BRAIDS_MODELS: BraidsModel[] = [
   { index: 0, code: "CSAW", name: "CS-80 Sawtooth", family: "analog",
     description: "A sawtooth with a moving notch — modeled after the Yamaha CS-80's filter character.",

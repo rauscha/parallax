@@ -3,6 +3,7 @@
   import type { ParameterDescriptor } from '../audio/types';
   import { activeParamStore } from '../state/stores';
   import { hapticTick } from './haptics';
+  import { auditionMove, auditionKey, auditionEnd } from '../state/audition';
 
   let { spec, value, onchange }: {
     spec: ParameterDescriptor;
@@ -79,8 +80,11 @@
       onchange(v);
     }
   }
-  function commit(v: number) {
+  function normOf(v: number) { return range === 0 ? 0 : (v - spec.min) / range; }
+  function commit(v: number, viaKey = false) {
     pendingValue = snap(v);
+    // Hear the knob as it turns (silent from a cold start otherwise).
+    if (viaKey) auditionKey(normOf(pendingValue)); else auditionMove(normOf(pendingValue));
     if (!rafHandle) rafHandle = requestAnimationFrame(flush);
   }
   function commitNow(v: number) {
@@ -90,6 +94,7 @@
   }
   onDestroy(() => {
     if (rafHandle) cancelAnimationFrame(rafHandle);
+    if (dragging) auditionEnd();
     unsubscribe();
     // A knob torn down mid-engage (e.g. model switch) must not leave the store
     // pointing at a param that no longer has a knob.
@@ -132,6 +137,7 @@
     detentHeld = false;
     // Flush any RAF-pending value so the engine sees the exact release point.
     if (pendingValue !== null) commitNow(pendingValue);
+    auditionEnd();
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
   }
 
@@ -151,7 +157,7 @@
     }
     e.preventDefault();
     e.stopPropagation();   // don't let the global note-key harness see this
-    commit(next);
+    commit(next, true);
   }
 
   // ── SVG dial geometry (40×40 viewBox) ──

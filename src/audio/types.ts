@@ -89,6 +89,11 @@ export interface EngineModel {
   knobs: EngineKnobMeaning[];
   /** Deeper Explain text — sonic character + musical use. */
   detail?: { listenFor: string; goodFor: string };
+  /** True when a note is a one-shot strike that rings out on its own (Rings,
+   *  the drum and plucked models). A knob that shapes the strike only changes
+   *  the NEXT strike, so Show me and knob audition re-strike instead of
+   *  sweeping over one dying note. */
+  struck?: boolean;
 }
 
 export interface EngineFamily {

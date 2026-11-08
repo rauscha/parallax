@@ -242,7 +242,7 @@ export const PLAITS_MODELS: EngineModel[] = [
       listenFor: "Crackle, rain, Geiger-counter clicks and granular sparkle that thickens with TIMBRE.",
       goodFor: "Textural percussion, rain/fire ambiences, glitchy sparkle layers." } },
 
-  { index: 19, code: "STRG", name: "Inharmonic String", family: "physical",
+  { index: 19, code: "STRG", name: "Inharmonic String", family: "physical", struck: true,
     description: "A plucked/bowed inharmonic string — Karplus-Strong physical modelling (mini-Rings).",
     knobs: [
       k("harmonics", "Harmonics", "Inharmonicity, or material — from a clean string toward bell-like, metallic tension."),
@@ -253,7 +253,7 @@ export const PLAITS_MODELS: EngineModel[] = [
       listenFor: "Plucked and bowed strings with real physical body — set HARMONICS high for prepared-piano clang.",
       goodFor: "Plucks, kalimba and koto tones, bowed pads, and inharmonic struck sounds." } },
 
-  { index: 20, code: "MODL", name: "Modal Resonator", family: "physical",
+  { index: 20, code: "MODL", name: "Modal Resonator", family: "physical", struck: true,
     description: "A modal resonator — struck and bowed bars, bowls and tubes (mini-Rings).",
     knobs: [
       k("harmonics", "Harmonics", "Inharmonicity, or material — wood and nylon through glass and metal."),
@@ -264,7 +264,7 @@ export const PLAITS_MODELS: EngineModel[] = [
       listenFor: "Mallets, bells, bowls and tuned percussion with believable resonant bodies.",
       goodFor: "Marimbas, glass/metal percussion, gongs and resonant struck/bowed tones." } },
 
-  { index: 21, code: "BD", name: "Analog Bass Drum", family: "drum",
+  { index: 21, code: "BD", name: "Analog Bass Drum", family: "drum", struck: true,
     description: "An analog bass-drum circuit simulation — the classic 808/909-style kick.",
     knobs: [
       k("harmonics", "Harmonics", "Attack sharpness and amount of overdrive — click and grit on the front of the hit."),
@@ -275,7 +275,7 @@ export const PLAITS_MODELS: EngineModel[] = [
       listenFor: "A real analog kick — round and deep, with a clicky overdriven transient when HARMONICS is up.",
       goodFor: "Kick drums of every flavour, from tight techno thumps to long 808 booms (use with a note trigger)." } },
 
-  { index: 22, code: "SD", name: "Analog Snare", family: "drum",
+  { index: 22, code: "SD", name: "Analog Snare", family: "drum", struck: true,
     description: "An analog snare/tom circuit — bridged-T resonators plus filtered noise.",
     knobs: [
       k("harmonics", "Harmonics", "Balance of the tonal body and the noisy 'snare' component."),
@@ -286,7 +286,7 @@ export const PLAITS_MODELS: EngineModel[] = [
       listenFor: "Snares and toms — dial HARMONICS toward noise for a snare, toward tone for a tom.",
       goodFor: "Snares, rimshots and toms; pitch it across the keyboard for a tom kit." } },
 
-  { index: 23, code: "HH", name: "Analog Hi-Hat", family: "drum",
+  { index: 23, code: "HH", name: "Analog Hi-Hat", family: "drum", struck: true,
     description: "An analog hi-hat / cymbal — a cluster of square oscillators with a metallic edge.",
     knobs: [
       k("harmonics", "Harmonics", "Balance of the metallic oscillator cluster and the filtered noise."),

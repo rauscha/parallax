@@ -12,6 +12,7 @@
   import NoteStrip from "./ui/NoteStrip.svelte";
   import PwaToast from "./ui/PwaToast.svelte";
   import UndoToast from "./ui/UndoToast.svelte";
+  import EngagedStrip from "./ui/EngagedStrip.svelte";
   import Oscilloscope from "./viz/Oscilloscope.svelte";
   import Spectrum from "./viz/Spectrum.svelte";
   import StaffEditor from "./notation/StaffEditor.svelte";
@@ -105,7 +106,7 @@
          Match/Share/Presets/MIDI still overflow into the menu. -->
     <button class="surprise-entry" onclick={roll} disabled={!ready || rolling}
       aria-label="Surprise me — roll a random engine, sound, and melody"
-      title="Roll a random engine, sound, and melody"><span class="dice" aria-hidden="true">⚄</span><span class="surprise-label">{rolling ? " Rolling…" : " Surprise me"}</span></button>
+      title="Roll a random engine, sound, and melody"><span class="dice" aria-hidden="true">⚄</span><span class="surprise-label">{rolling ? "Rolling…" : "Surprise me"}</span></button>
     <ToolsMenu>
       <button class="match-entry" onclick={() => (matchOpen = true)} disabled={!ready}
         title="Load a track and recreate one of its sounds">◎ Match a sound</button>
@@ -201,6 +202,7 @@
 
 <PwaToast />
 <UndoToast />
+<EngagedStrip />
 
 <footer class="transport">
   <div class="transport-left">
@@ -285,6 +287,7 @@
   .surprise-entry {
     display: inline-flex;
     align-items: center;
+    gap: 0.45em;
     font-family: var(--font-mono);
     font-size: var(--fs-label);
     letter-spacing: 0.04em;
@@ -395,7 +398,7 @@
   .region-label {
     font-family: var(--font-mono);
     font-size: var(--fs-label);
-    text-transform: uppercase;
+    text-transform: var(--label-case);
     letter-spacing: 0.1em;
     color: var(--text-dim);
     margin-bottom: 8px;
@@ -590,7 +593,7 @@
   /* Status uses shape + text-case + weight, not color alone — ready/idle is
      readable in greyscale and remains accessible for colorblind users. */
   .footer-right { display: inline-flex; align-items: baseline; gap: 12px; }
-  .build { font-size: var(--fs-label); color: var(--text-dim); opacity: 0.7; letter-spacing: 0.03em; }
+  .build { font-size: var(--fs-label); color: var(--text-dim); letter-spacing: 0.03em; }
   /* On a phone the transport bar has room for Play, tempo and status only; the
      build tag (a debugging aid) wrapped the bar onto two lines once labels got
      their 11px floor. It stays in the desktop footer. */

@@ -140,13 +140,20 @@
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    // Arrow = 1% of the range (or one step, for stepped params like Bits),
+    // Shift or PageUp/PageDown = 10%. Build on any value still waiting for its
+    // animation frame, so fast repeats aren't lost to the unflushed prop.
+    const base = pendingValue ?? value;
+    const unit = Math.max(step, range / 100);
     const mult = e.shiftKey ? 10 : 1;
-    let next = value;
+    let next = base;
     switch (e.key) {
       case 'ArrowUp':
-      case 'ArrowRight': next = value + step * mult; break;
+      case 'ArrowRight': next = base + unit * mult; break;
       case 'ArrowDown':
-      case 'ArrowLeft':  next = value - step * mult; break;
+      case 'ArrowLeft':  next = base - unit * mult; break;
+      case 'PageUp':   next = base + unit * 10; break;
+      case 'PageDown': next = base - unit * 10; break;
       case 'Home': next = spec.min; break;
       case 'End':  next = spec.max; break;
       case 'Delete':

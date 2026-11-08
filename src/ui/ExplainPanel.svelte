@@ -15,7 +15,8 @@
    * "Show me" (state/show-me.ts), which turns the knob for you.
    */
   import { onDestroy } from "svelte";
-  import type { EngineModel, EngineKnobMeaning } from "../audio/types";
+  import type { EngineModel, EngineKnobMeaning, ParameterDescriptor } from "../audio/types";
+  import { formatReadout } from "./readout";
   import { audioEngine } from "../audio/AudioEngine";
   import { engineEntryOrDefault } from "../audio/registry";
   import { activeParamStore, patchStore, engineIdStore, audioReadyStore } from "../state/stores";
@@ -53,16 +54,26 @@
   // corpus order before audio is up. Rings' corpus lists Damping before
   // Position, the knobs the other way round.
   let schemaOrder = $state<string[]>([]);
+  let schema = $state<ParameterDescriptor[]>([]);
   $effect(() => {
     if (!ready) return;
     void engineId;   // re-read on engine swap
     // Knobs are drawn grouped (ParamPanel: groups in first-seen order), so
     // order by group first, then by position within the schema.
-    const schema = audioEngine.currentEngine?.getParameterSchema() ?? [];
+    const live = audioEngine.currentEngine?.getParameterSchema() ?? [];
     const groups: string[] = [];
-    for (const d of schema) if (!groups.includes(d.group)) groups.push(d.group);
-    schemaOrder = groups.flatMap((g) => schema.filter((d) => d.group === g).map((d) => d.id));
+    for (const d of live) if (!groups.includes(d.group)) groups.push(d.group);
+    schemaOrder = groups.flatMap((g) => live.filter((d) => d.group === g).map((d) => d.id));
+    schema = live;
   });
+
+  // Knobs with no card of their own (FM, the envelope, Bits/Rate/Sign/Drift,
+  // Gain…) still say what they are: their schema description shows in a slim
+  // card while engaged, and every one is the knob's accessible description.
+  let plainKnobs = $derived(
+    schema.filter((d) => d.id !== "model" && d.description && !knobs.some((k) => k.id === d.id)),
+  );
+  let engagedPlain = $derived(plainKnobs.find((d) => d.id === activeId) ?? null);
   let knobs = $derived.by((): EngineKnobMeaning[] => {
     if (!model) return [];
     const rank = (id: string) => {
@@ -84,10 +95,13 @@
     if (r.hi) out.push({ at: 1, text: r.hi, kind: "hi" });
     return out;
   }
+  // Bold a word only when the needle is actually near it: at 50% a filter is
+  // half open, not "dark, closed", so between labels nothing is bold.
+  const NEAR = 0.2;
   function nearest(labels: RulerLabel[], v: number): RulerLabel | null {
     let best: RulerLabel | null = null;
     for (const l of labels) if (!best || Math.abs(l.at - v) < Math.abs(best.at - v)) best = l;
-    return best;
+    return best && Math.abs(best.at - v) <= NEAR ? best : null;
   }
 
   // Live macro value for a knob card, as a percent (macro knobs are 0..1 in both
@@ -115,16 +129,6 @@
   {#if model}
     <h3 class="sr-only">{model.name}</h3>
 
-    {#if model.detail}
-      <div class="detail">
-        <p class="detail-line">
-          <span class="detail-label">Listen for</span>{model.detail.listenFor}
-        </p>
-        <p class="detail-line">
-          <span class="detail-label">Good for</span>{model.detail.goodFor}
-        </p>
-      </div>
-    {/if}
 
     <div class="cards">
       <!-- One card per macro knob (Braids: Timbre/Color; Plaits: Harmonics/
@@ -148,6 +152,7 @@
             <button
               class="show-me"
               class:sweeping={sweepingId === knob.id}
+              aria-pressed={sweepingId === knob.id}
               disabled={!ready}
               onclick={() => startSweep(knob.id)}
               title={`Hear what ${knob.label} does on this model — sweeps the knob across its range`}
@@ -175,6 +180,28 @@
         </div>
       {/each}
     </div>
+
+    {#if engagedPlain}
+      <div class="plain-card" aria-hidden="true">
+        <span class="knob">{engagedPlain.label}</span>
+        <span class="val">{formatReadout(engagedPlain, params[engagedPlain.id] ?? engagedPlain.default)}</span>
+        <p class="plain-text">{engagedPlain.description}</p>
+      </div>
+    {/if}
+    {#each plainKnobs as d (d.id)}
+      <p class="sr-only" id="explain-{d.id}">{d.description}</p>
+    {/each}
+
+    {#if model.detail}
+      <div class="detail">
+        <p class="detail-line">
+          <span class="detail-label">Listen for</span>{model.detail.listenFor}
+        </p>
+        <p class="detail-line">
+          <span class="detail-label">Good for</span>{model.detail.goodFor}
+        </p>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -191,6 +218,7 @@
   /* "Listen for" / "Good for" — the model's longer story, set off by a rule. */
   .detail {
     max-width: 80ch;
+    margin-top: 4px;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -237,6 +265,19 @@
   .card.active {
     background: var(--signal-deep);
     border-color: var(--signal);
+    box-shadow: inset 0 0 0 1px var(--signal);   /* 2px edge: reads in grayscale on every skin */
+  }
+  /* A solid marker before the lit card's name: the cue that survives
+     desaturation even where the wash and border are close in luminance
+     (Sandbox's orange on cream). */
+  .card.active .card-top .knob::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    background: var(--text);
+    vertical-align: 0.05em;
   }
   /* Header: name, live value, then Show me. Show me sits with the value it
      will move rather than at the card foot, which cost Rings' four cards
@@ -265,7 +306,31 @@
     font-size: var(--fs-prose);
     line-height: 1.45;
     letter-spacing: 0;
+    text-wrap: pretty;      /* no one-word last lines */
     color: var(--text);     /* the knob's meaning is the point of the card: full-strength text */
+  }
+
+  /* Slim card for a knob without its own card (FM, envelope, lo-fi, gain):
+     name, value and its one-line description, while it's engaged. */
+  .plain-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 6px 10px;
+    background: var(--signal-deep);
+    border: var(--hairline-w) solid var(--signal);
+    box-shadow: inset 0 0 0 1px var(--signal);
+    border-radius: var(--radius-sm);
+  }
+  .plain-text {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: var(--fs-prose);
+    line-height: 1.45;
+    letter-spacing: 0;
+    color: var(--text);
   }
 
   /* Ruler: where the knob sits, as a place. A filled run up to a solid needle

@@ -29,7 +29,7 @@ export const LAXSYNTH_MODELS: EngineModel[] = [
     description: "A pure fundamental with no harmonics — until the operators add some. Raise MULT for hard-sync overtones; drop SIZE for a grittier, more aliased sine.",
     knobs: [
       k("warp", "Warp", "Bends the sine asymmetrically toward a brassy, formant-rich shape — the closest thing to a Casio-CZ resonant sweep without a filter."),
-      k("mirror", "Mirror", "Folds the sine back on itself, adding octave and odd harmonics — subtle at first, hollow and reedy past 100%."),
+      k("mirror", "Mirror", "Folds the sine back on itself, adding octave and odd harmonics — subtle at first, hollow and reedy as it nears the top of its range."),
     ],
     detail: {
       listenFor: "A clean, deep fundamental; Warp turns it vocal and brassy, MULT makes it ring like an FM carrier.",
@@ -69,7 +69,7 @@ export const LAXSYNTH_MODELS: EngineModel[] = [
     description: "A square/pulse — hollow at 50% width, nasal and thin when narrow. This is the chip-lead staple. SIZE smooths or steps the edges.",
     knobs: [
       k("warp", "Warp", "Sweeps the phase for a moving, PWM-like shimmer — hand-automate it (or an LFO later) for that classic width wobble."),
-      k("mirror", "Mirror", "Sets the pulse width directly — THIS is your PWM knob. 100% is a even square; away from centre narrows the pulse."),
+      k("mirror", "Mirror", "Sets the pulse width directly — THIS is your PWM knob. 0% and 100% are both an even square; the pulse narrows toward the middle, to about a third of the cycle at 50%."),
     ],
     detail: {
       listenFor: "Hollow square → thin nasal pulse as Mirror moves off centre; the quintessential 8-bit lead.",

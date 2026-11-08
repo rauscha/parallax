@@ -110,7 +110,7 @@
   .group-label {
     font-family: var(--font-mono);
     font-size: var(--fs-label);
-    text-transform: uppercase;
+    text-transform: var(--label-case);
     letter-spacing: 0.1em;
     color: var(--text-dim);
     white-space: nowrap;

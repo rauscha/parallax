@@ -299,6 +299,9 @@
     font-family: var(--font-mono);
     font-size: 0.78rem;
   }
+  /* Browser default placeholder grey failed AA on the light Sandbox ground
+     (2.8:1); the dim text token clears it on every skin. */
+  .search::placeholder { color: var(--text-dim); opacity: 1; }
   /* A ring, not just a recoloured hairline: a hue change on a 1px border is
      close to invisible to a colourblind eye. Matches the global focus ring. */
   .search:focus-visible {

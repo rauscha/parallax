@@ -1,5 +1,15 @@
 # Waiting on you
 
+## Owed 2026-11-07 (evening): your eye AND ear on the explain-loop pass (all pushed, nothing blocked)
+Critique 25 → 27 → 27/40 (two re-scores by fresh reviewers; the second was stricter and found new things). Ten commits `9b259ba`…`f87294e`. Try these with sound on:
+1. **Turn a knob from silence.** It now plays a held note while you turn (struck models re-strike every ~12% of travel). Does it feel right, or should a click/grab also sound?
+2. **Show me on Rings or Braids KICK.** Stepped: five stops, a strike at each, ticks on the ruler, the last one rings ~2 s. Is 700 ms per stop the right pace?
+3. **The rulers** (Rings, Plaits): the two ends are named in the card's own words; the nearer one goes bold within 20% of the needle. Worth extending to Braids? That needs Braids card text that says which end does what, checked against the firmware/manual (the card text today is one line).
+4. **Knobs-in-cards mock** (not shipped): screenshot at `/tmp/claude-1000/-home-andrew-repos-parallax/bafbf240-cce4-41f8-97bc-5fe4f6f6eb94/scratchpad/knobs-in-cards-mock.png` (gone when the container goes; re-make with the scratchpad `v/mock.js` recipe). Top = shipped, bottom = macro knobs moved into their cards. Your call whether to build it.
+5. **Sandbox knob track** went pale (`912089f`) so the orange arc reads darker than the empty run in grayscale. You passed Sandbox before; revert that hunk in `tokens.css` if it reads wrong.
+6. **Cards now come before Listen for / Good for** (`2646f8e`), and Explain's row is taller (0.8/1.8/0.9). Supersedes item 2 below.
+7. **Phone strip**: while a knob is engaged on a phone, its meaning sits in a strip at the top of the screen (covers the header while you turn).
+
 ## Owed 2026-11-07: your eye on the Impeccable pass (all pushed, nothing blocked)
 1. **Plaits and Laxsynth text colors** (`bba60d6`). Muted and dim text both moved so dim clears AA on every panel; the gap between them is unchanged. Both skins had passed your eye before. Revert that one commit if it reads wrong.
 2. **The laptop layout**: Explain's knob cards side by side, 13px prose, no repeated model header. All four engines fit at 1440×900.

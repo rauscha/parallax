@@ -1,8 +1,9 @@
-# Session hand-off — 2026-11-08 (machine: tikiserv · ~/repos/parallax)
+# Session hand-off — 2026-11-09 (machine: tikiserv · ~/repos/parallax)
 
 ## STATE (read this first)
-- Branch `main`, clean and pushed. 152 tests pass, `npm run check` clean, Impeccable detector clean on every explain-loop file.
+- Branch `main` (the only branch), clean and pushed; no worktrees. 152 tests pass, `npm run check` clean, Impeccable detector clean on every explain-loop file.
 - **Explain-loop critique: 25 → 27/40** (`9b259ba`…`f87294e`); that score predates round 3 and knobs-in-cards, so re-run it. Knobs sound when turned from silence; Show me steps and re-strikes on struck models; macro knobs live in their Explain cards (`a847fe2`), which carry a ruler with end words from their own text (Rings, Plaits); knobs without a card show a slim one; a phone strip for knobs without a card; on a phone the order is scope (118px, one small toggle), Explain, Controls, sequencer; type floor fixed app-wide. `LICENSE` (MIT) added, `package.json` matches; the three stale `claude/*` branches are deleted, so `main` is the only branch.
+- Everything is deployed at andrewrausch.com/parallax, but none of this session's work has had a human ear or a real phone on it (headless Chromium and measured output only).
 - **Waiting on Andrew's eye and ear** (`.handoff/PENDING-DECISIONS.md`, top section) before more design work.
 
 ## Done this session
@@ -39,15 +40,7 @@
 - **DESIGN.md + `.impeccable/design.json`** (`670d9fd`). North Star, mood ("bench instrument") and
   "quiet until touched" are Andrew's picks. Colors named by material and brightness, not hue.
 
-## Next up
-1. Andrew's eye pass on today's changes (three items in PENDING-DECISIONS). Act on what he says first.
-2. **`/impeccable critique`, aimed at the explain loop** (knob → card → Show me → prose). DESIGN.md
-   and PRODUCT.md now load as context. Likely follow-ups: `onboard` (start screen, empty sequencer),
-   `clarify`, `delight`.
-3. Re-run `/impeccable audit` to rescore.
-4. Then melody tools (NEXT-STEPS item 3, spec `docs/superpowers/specs/2026-06-20-melody-tools.md`).
-
-## Watch out for
+## Older gotchas, still true
 - **The phone breakpoint is one long media query repeated in several files**:
   `(max-width: 720px), (pointer: coarse) and (max-height: 500px)` (App, ToolsMenu, Knob,
   KeyboardHarness, MatchPanel, GridEditor CSS and its `matchMedia`, the three menu sheets). Change
@@ -55,8 +48,7 @@
   `(min-width: 721px) and (min-height: 501px), (min-width: 721px) and (pointer: fine)`.
 - **Svelte drops CSS selectors for attributes set from script** (`[data-more-below]` on Explain).
   Wrap them in `:global(...)` or they silently vanish from the build.
-- **Explain row heights are tuned to Rings' four cards at 1440×900.** Braids/Plaits/Laxsynth have
-  spare room under their cards on purpose; giving it to the scope pushes Rings back over.
+- **Explain's row height is tuned to Rings' four cards at 1440×900** (rows 0.8/1.8/0.9): the cards fit, and Listen for / Good for scroll. Taking height back for the scope cuts into the cards.
 - **Scripted screenshots on tikiserv:** `npm run build`, `npx vite preview --port 4317`, then node
   with `NODE_PATH=/home/andrew/repos/backlot/node_modules` and
   `executablePath: ~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome` (the module's own
@@ -64,5 +56,3 @@
   Chromium at `%LOCALAPPDATA%\ms-playwright\chromium-1234`, serve `dist/` inside the script on
   `localhost` (audioWorklet needs a secure context).
 - **`patchStore.setKey('modelId', …)` must be lowercase.** Still true.
-- **`.impeccable/config.json` still ignores a rule for the deleted `Flowsheet.svelte`.** Harmless;
-  drop it next time that file is touched.

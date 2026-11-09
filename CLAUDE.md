@@ -24,7 +24,7 @@ Parallax exists because the M8's Macro synth couldn't be learned from the hardwa
 - **Authentic Braids first** — real WASM engine before any UI flesh. No placeholder oscillator.
 - **All four themes** (Lab Instrument [SNES-inspired]; Sandbox; Phosphor; Soundboard [walnut/brass]) built from CSS custom-property tokens. **Theme follows the engine** (chosen 2026-06-09, superseding the manual runtime switcher): braids → phosphor, plaits → sandbox, laxsynth → lab, rings → soundboard (ThemeId `"rings"`; "Soundboard" is the skin name). There is no manual theme control; selecting an engine switches the skin. Braids boots first, so phosphor is the landing theme.
 - **Single responsive PWA.** No native wrapper.
-- **v1 scope** = MIDI file import/export + shareable URL links — shipped, plus more (presets, PWA, postcard, Web MIDI input, Surprise, Match tool). **`v1.0.0` shipped 2026-06-18** — the ship-gate punch list in `docs/roadmap-v1.0.md` (Phases A–D) is complete; the tag subsumes the never-cut `v0.5.0-m5`. **Deferred:** audio recording/export (one-loop export is the agreed first un-deferral after v1.0), insert FX.
+- **v1 scope** = MIDI file import/export + shareable URL links — shipped, plus more (presets, PWA, postcard, Web MIDI input, Surprise, Match tool). **`v1.0.0` shipped 2026-06-18** — the ship-gate punch list in `docs/roadmap-v1.0.md` (Phases A–D) is complete; the tag subsumes the never-cut `v0.5.0-m5`. **Deferred:** polyphony, insert FX. (One-loop audio export shipped 2026-06-21.)
 - **Snap-to-scale on by default.** Monophonic. Treble clef. 120 BPM default.
 - **Product name = "Parallax"** (chosen 2026-05-31, replacing the working name "Macroscope"). The repo is `rauscha/parallax`.
 
@@ -66,7 +66,7 @@ src/
 - **Solo dev — no PR ceremony.** Andrew works alone on `main`; PRs are not part of the workflow. Don't open PRs as a deliverable, don't ask for review, don't babysit CI or schedule PR check-ins. *(Exception: Claude Code web/remote sessions are required by their harness to open a draft PR for any branch they push — treat that as plumbing to merge or ignore, not as a review request.)*
 
 ## What's deferred (don't quietly add)
-- Polyphony, audio recording/export, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines shipped 2026-06-07; Rings engine shipped 2026-08-09.)* First un-deferral after v1.0: one-loop audio export (see roadmap "After v1.0").
+- Polyphony, insert FX. *(Web MIDI input shipped 2026-06-11; Plaits + Laxsynth engines 2026-06-07; one-loop audio export 2026-06-21; Rings 2026-08-09.)*
 
 ## Design-system traps (2026-11-07)
 - The phone layout is one media query, `(max-width: 720px), (pointer: coarse) and (max-height: 500px)`, repeated across several components (and GridEditor's `matchMedia`); desktop-only rules use its inverse. Change all of them together.
